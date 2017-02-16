@@ -1,0 +1,61 @@
+{
+	"jpsType": "update",
+	"name": "MySQL Auto Replication",
+	"description": "MySQL Auto Clustering: 1 x Master + N x Slave",
+	"globals": {
+		"KEY": "?private_token=${settings.git_token}",
+		"PATH": "${settings.path}",
+		"DB_USER": "${settings.db_user}",
+        "DB_PASS": "${settings.db_pass}",
+		"REPLICATION_USER": "repl-${fn.random}",
+		"REPLICATION_PASS": "${fn.password(20)}"
+	},
+	
+	"onAfterScaleOut[nodeGroup:sqldb]": [{
+		"forEach(event.response.nodes)": {
+			"setupUser": {
+				"filter": "${@i.id}"
+			}
+		}
+	}, {
+		"forEach(event.response.nodes)": {
+			"setupReplication": {
+				"filter": "${@i.id}"
+			}
+		}
+    }],
+	"onInstall": [{
+		"forEach(nodes.sqldb)": {
+			"setupUser": {
+				"filter": "${@i.id}"
+			}
+		}
+	}, {
+		"forEach(nodes.sqldb)": {
+			"setupReplication": {
+				"filter": "${@i.id}"
+			}
+		}
+	}],
+	"actions": {
+		"setupReplication": {
+			"cmd [${this.filter}]": [
+				"wget https://git.jelastic.com/site/scale-db-jps/raw/master/scripts/setupReplication.sh?private_token=y_HRHvDSKvA3bbRiYfo- -O /root/setupReplication.sh",
+				"bash /root/setupReplication.sh node${nodes.sqldb[0].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+			],
+            "user": "root"
+		},
+		"setupUser": {
+			"cmd[${this.filter}]": [
+				"wget https://git.jelastic.com/site/scale-db-jps/raw/master/scripts/setupUser.sh?private_token=y_HRHvDSKvA3bbRiYfo- -O /root/setupUser.sh &>> /var/log/run.log",
+				"bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
+			],
+            "user": "root"
+		},
+		"logging": {
+			"onCall": {
+				"log": "${this.message}"
+			}
+		}
+	}
+}
