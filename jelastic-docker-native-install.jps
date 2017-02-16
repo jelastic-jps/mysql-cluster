@@ -1,16 +1,9 @@
 {
 	"jpsType": "install",
-	"name": "MySQL Auto Replication",
+	"name": "DB Auto Replication",
 	"description": "MySQL Auto Clustering: 1 x Master + N x Slave",
 	"settings": {
 		"fields": [{
-			"name": "git_token",
-			"caption": "Git Access Token",
-			"type": "string",
-			"inputType": "password",
-			"default": "y_HRHvDSKvA3bbRiYfo-",
-			"required": true
-		}, {
 			"type": "spinner",
 			"name": "count",
 			"caption": "Containers",
@@ -29,16 +22,15 @@
 		"displayName": "Database"
 	}],
     "globals" : {
-        "path" : "https://git.jelastic.com/site/scale-db-jps/raw/master"
+        "path" : "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master"
     },
 	"onInstall": {
 		"installJps": {
-			"jps": "${globals.path}/cluster-configuration.jps?private_token=${settings.git_token}",
+			"jps": "${globals.path}/cluster-configuration.jps",
 			"envName": "${envName}",
 			"settings": {
 				"db_user": "jelastic-${fn.random}",
-				"db_pass": "${fn.random(20)}",
-				"git_token": "${settings.git_token}",
+				"db_pass": "${fn.password(20)}",
 				"path": "${globals.path}"
 			}
 		}
