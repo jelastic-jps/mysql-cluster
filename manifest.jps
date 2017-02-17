@@ -33,7 +33,7 @@
     },
 	"onInstall": {
 		"installJps": {
-			"jps": "${globals.path}/cluster-configuration.jps?token=AQxpqjpY-WEQO-3n7_ECvoML9E-3IfJfks5Yr24GwA%3D%3D",
+			"jps": "${globals.path}/scripts/cluster-configuration.jps?token=AQxpqjpY-WEQO-3n7_ECvoML9E-3IfJfks5Yr24GwA%3D%3D",
 			"envName": "${envName}",
 			"settings": {
 				"db_user": "jelastic-${fn.random}",
