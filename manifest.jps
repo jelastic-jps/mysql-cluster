@@ -3,21 +3,21 @@
 	"name": "DB Auto Replication",
 	"description": "MySQL Auto Clustering: 1 x Master + N x Slave",
 	"settings": {
-               "fields": [{
-                        "name": "git_token",
-                        "caption": "Git Access Token",
-                        "type": "string",
-                        "inputType": "password",
-                        "default": "AQxpqpihhxhiOrIjx7pg_yYVgu1ZM5Ceks5Yr2ikwA%3D%3D",
-                        "required": true
-                }, {
-                        "type": "spinner",
-                        "name": "count",
-                        "caption": "Containers",
-                        "min": 1,
-                        "max": 10,
-                        "increment": 1
-                }]
+		"fields": [{
+			"name": "git_token",
+			"caption": "Git Access Token",
+			"type": "string",
+			"inputType": "password",
+			"default": "AQxpqpihhxhiOrIjx7pg_yYVgu1ZM5Ceks5Yr2ikwA%3D%3D",
+			"required": true
+		}, {
+			"type": "spinner",
+			"name": "count",
+			"caption": "Containers",
+			"min": 1,
+			"max": 10,
+			"increment": 1
+		}]
 	},
 	"nodes": [{
 		"cloudlets": 8,
@@ -28,9 +28,9 @@
 		},
 		"displayName": "Database"
 	}],
-    "globals" : {
-        "path" : "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master"
-    },
+	"globals": {
+		"path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master"
+	},
 	"onInstall": {
 		"installJps": {
 			"jps": "${globals.path}/scripts/cluster-configuration.jps?token=AQxpqjpY-WEQO-3n7_ECvoML9E-3IfJfks5Yr24GwA%3D%3D",
