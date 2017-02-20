@@ -31,7 +31,8 @@
 			"settings": {
 				"db_user": "jelastic-${fn.random}",
 				"db_pass": "${fn.password(20)}",
-				"path": "${globals.path}"
+				"path": "${globals.path}",
+				"git_token":""
 			}
 		}
 	}
