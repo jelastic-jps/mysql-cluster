@@ -4,13 +4,6 @@
 	"description": "MySQL Auto Clustering: 1 x Master + N x Slave",
 	"settings": {
 		"fields": [{
-			"name": "git_token",
-			"caption": "Git Access Token",
-			"type": "string",
-			"inputType": "password",
-			"default": "AQxpqpihhxhiOrIjx7pg_yYVgu1ZM5Ceks5Yr2ikwA%3D%3D",
-			"required": true
-		}, {
 			"type": "spinner",
 			"name": "count",
 			"caption": "Containers",
@@ -38,7 +31,6 @@
 			"settings": {
 				"db_user": "jelastic-${fn.random}",
 				"db_pass": "${fn.password(20)}",
-				"git_token": "${settings.git_token}",
 				"path": "${globals.path}"
 			}
 		}
