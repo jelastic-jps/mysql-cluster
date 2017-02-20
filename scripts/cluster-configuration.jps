@@ -1,60 +1,60 @@
 {
-	"jpsType": "update",
-	"name": "Database Auto Replication",
-	"description": "DB Auto Clustering: 1 x Master + N x Slave",
-	"globals": {
-		"KEY": "?private_token=${settings.git_token}",
-		"PATH": "${settings.path}",
-		"DB_USER": "${settings.db_user}",
-		"DB_PASS": "${settings.db_pass}",
-		"REPLICATION_USER": "repl-${fn.random}",
-		"REPLICATION_PASS": "${fn.password(20)}"
-	},
-	"onAfterScaleOut[nodeGroup:sqldb]": [{
-		"forEach(event.response.nodes)": {
-			"setupUser": {
-				"filter": "${@i.id}"
-			}
-		}
-	}, {
-		"forEach(event.response.nodes)": {
-			"setupReplication": {
-				"filter": "${@i.id}"
-			}
-		}
+    "jpsType": "update",
+    "name": "Database Auto Replication",
+    "description": "DB Auto Clustering: 1 x Master + N x Slave",
+    "globals": {
+        "KEY": "?private_token=${settings.git_token}",
+        "PATH": "${settings.path}",
+        "DB_USER": "${settings.db_user}",
+        "DB_PASS": "${settings.db_pass}",
+        "REPLICATION_USER": "repl-${fn.random}",
+        "REPLICATION_PASS": "${fn.password(20)}"
+    },
+    "onAfterScaleOut[nodeGroup:sqldb]": [{
+        "forEach(event.response.nodes)": {
+            "setupUser": {
+                "filter": "${@i.id}"
+            }
+        }
+    }, {
+        "forEach(event.response.nodes)": {
+            "setupReplication": {
+                "filter": "${@i.id}"
+            }
+        }
     }],
-	"onInstall": [{
-		"forEach(nodes.sqldb)": {
-			"setupUser": {
-				"filter": "${@i.id}"
-			}
-		}
-	}, {
-		"forEach(nodes.sqldb)": {
-			"setupReplication": {
-				"filter": "${@i.id}"
-			}
-		}
-	}],
-	"actions": {
-		"setupReplication": {
-			"cmd [${this.filter}]": [
-				"wget ${globals.PATH}/scripts/setupReplication.sh${globals.KEY} -O /root/setupReplication.sh",
-				"bash /root/setupReplication.sh node${nodes.sqldb[0].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
-			],
+    "onInstall": [{
+        "forEach(nodes.sqldb)": {
+            "setupUser": {
+                "filter": "${@i.id}"
+            }
+        }
+    }, {
+        "forEach(nodes.sqldb)": {
+            "setupReplication": {
+                "filter": "${@i.id}"
+            }
+        }
+    }],
+    "actions": {
+        "setupReplication": {
+            "cmd [${this.filter}]": [
+                "wget ${globals.PATH}/scripts/setupReplication.sh${globals.KEY} -O /root/setupReplication.sh",
+                "bash /root/setupReplication.sh node${nodes.sqldb[0].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+            ],
             "user": "root"
-		},
-		"setupUser": {
-			"cmd[${this.filter}]": [
-				"wget ${globals.PATH}/scripts/setupUser.sh${globals.KEY} -O /root/setupUser.sh &>> /var/log/run.log",
-				"bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
-			],
+        },
+        "setupUser": {
+            "cmd[${this.filter}]": [
+                "wget ${globals.PATH}/scripts/setupUser.sh${globals.KEY} -O /root/setupUser.sh &>> /var/log/run.log",
+                "bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
+            ],
             "user": "root"
-		},
-		"logging": {
-			"onCall": {
-				"log": "${this.message}"
-			}
-		}
-	}
+        },
+        "logging": {
+            "onCall": {
+                "log": "${this.message}"
+            }
+        }
+    }
 }
