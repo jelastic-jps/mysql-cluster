@@ -1,5 +1,6 @@
 {
     "jpsType": "install",
+    "version": "0.99",
     "name": "MySQL DB Auto Clustering",
     "description": "1 x Master + N x Slave",
     "settings": {
