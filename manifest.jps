@@ -1,39 +1,44 @@
 {
-	"jpsType": "install",
-	"name": "MySQL DB Auto Clustering",
-	"description": "1 x Master + N x Slave",
-	"settings": {
-		"fields": [{
-			"type": "spinner",
-			"name": "count",
-			"caption": "Containers",
-			"min": 1,
-			"max": 10,
-			"increment": 1
-		}]
-	},
-	"nodes": [{
-		"cloudlets": 8,
-		"count": "${settings.count}",
-		"nodeGroup": "sqldb",
-		"docker": {
-			"image": "devbeta/mysql57:5.7.14"
-		},
-		"displayName": "Database"
-	}],
-	"globals": {
-		"path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master"
-	},
-	"onInstall": {
-		"installJps": {
-			"jps": "${globals.path}/scripts/cluster-configuration.jps?token=AQxpqjpY-WEQO-3n7_ECvoML9E-3IfJfks5Yr24GwA%3D%3D",
-			"envName": "${envName}",
-			"settings": {
-				"db_user": "jelastic-${fn.random}",
-				"db_pass": "${fn.password(20)}",
-				"path": "${globals.path}",
-				"git_token":""
-			}
-		}
-	}
+    "jpsType": "install",
+    "name": "MySQL DB Auto Clustering",
+    "description": "1 x Master + N x Slave",
+    "settings": {
+        "fields": [{
+            "type": "spinner",
+            "name": "count",
+            "caption": "Containers",
+            "min": 1,
+            "max": 10,
+            "default": 2,
+            "increment": 1
+        }]
+    },
+    "nodes": [{
+        "cloudlets": 8,
+        "count": "${settings.count}",
+        "nodeGroup": "sqldb",
+        "docker": {
+            "image": "devbeta/mysql57:5.7.14"
+        },
+        "displayName": "Database"
+    }],
+    "ssl": true,
+    "globals": {
+        "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
+        "db_user": "jelastic-${fn.random}",
+        "db_pass": "${fn.password(20)}"
+    },
+    "onInstall": {
+        "installJps": {
+            "jps": "${globals.path}/scripts/cluster-configuration.jps?token=AQxpqjpY-WEQO-3n7_ECvoML9E-3IfJfks5Yr24GwA%3D%3D",
+            "envName": "${envName}",
+            "settings": {
+                "db_user": "${globals.db_user}",
+                "db_pass": "${globals.db_pass}",
+                "path": "${globals.path}",
+                "git_token": ""
+            }
+        }
+    },
+    "success": "PHP MyAdmin <a href='${nodes.sqldb[0].url}' target='_blank'>${nodes.sqldb[0].url}</a><br/>Login: ${globals.db_user}<br/>Password: ${globals.db_pass}"
 }
