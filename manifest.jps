@@ -1,7 +1,7 @@
 {
 	"jpsType": "install",
-	"name": "DB Auto Replication",
-	"description": "MySQL Auto Clustering: 1 x Master + N x Slave",
+	"name": "MySQL DB Auto Clustering",
+	"description": "1 x Master + N x Slave",
 	"settings": {
 		"fields": [{
 			"type": "spinner",
