@@ -1,2 +1,2 @@
 # mysql-cluster (under development)
-Auto Clustering and Auto Scaling of MySQL 
+Auto Clustering of MySQL, Percona and MariaDB 
