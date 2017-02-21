@@ -35,9 +35,7 @@
             "envName": "${envName}",
             "settings": {
                 "db_user": "${globals.db_user}",
-                "db_pass": "${globals.db_pass}",
-                "path": "${globals.path}",
-                "git_token": ""
+                "db_pass": "${globals.db_pass}"
             }
         }
     },
