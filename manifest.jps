@@ -19,7 +19,7 @@
         "count": "${settings.count}",
         "nodeGroup": "sqldb",
         "docker": {
-            "image": "devbeta/mysql57:5.7.14"
+            "image": "devbeta/mysql57:5.7.14-latest"
         },
         "displayName": "Database"
     }],
