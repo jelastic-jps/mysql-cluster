@@ -4,7 +4,7 @@
 The JPS package deploys scalable MySQL Cluster that consists of one master database and the required number of slave db containers with asynchronous replication.
 
 ### Highlights
-The current implementation of MySQL Cluster is built using the devbeta/mysql57:5.7.14-latest Docker image.
+The current implementation of MySQL Cluster is built using the *devbeta/mysql57:5.7.14-latest* Docker image.
 By default, you get two **MySQL 5.7** database containers - the master and the slave. The number of databases can be increased and all the newly added nodes will be automatically configured as slaves to the initial master MySQL.
 Within the package, each database container receives the default [vertical scaling] (https://docs.jelastic.com/automatic-vertical-scaling) limit up to **8 dynamic** cloudlets (or 1 GiB of RAM and 3.2 GHz of CPU) that are provided based on the load.
 
@@ -15,8 +15,6 @@ DB                  |    devbeta/mysql57:5.7.14-latest    |       2             
 
 * DB - Database 
 * CT - Container
-
-**MySQL Database: 5.7.14**
 
 You can adjust the exact number of slaves within the Containers field during the package installation stage. Here, one container is the master and the rest of containers are the slaves.
 
