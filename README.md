@@ -1,4 +1,4 @@
-[![MySQL Database Replication](images/mysql.png)](../../../mysql-replication)
+[![MySQL Cluster](images/mysql.png)](../../../mysql-cluster)
 ## MySQL Cluster
 
 The JPS package deploys scalable MySQL Cluster that consists of one master database and the required number of slave db containers with asynchronous replication.
