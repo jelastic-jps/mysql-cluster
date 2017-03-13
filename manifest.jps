@@ -18,9 +18,7 @@
         "cloudlets": 8,
         "count": "${settings.count}",
         "nodeGroup": "sqldb",
-        "docker": {
-            "image": "devbeta/mysql57:5.7.14-latest"
-        },
+        "image": "jelastic/mysql:5.7.14",
         "displayName": "Database"
     }],
     "ssl": true,
@@ -32,7 +30,6 @@
     "onInstall": {
         "installJps": {
             "jps": "${globals.path}/scripts/cluster-configuration.jps",
-            "envName": "${envName}",
             "settings": {
                 "db_user": "${globals.db_user}",
                 "db_pass": "${globals.db_pass}"
