@@ -36,5 +36,5 @@
             }
         }
     },
-    "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${nodes.sqldb[0].url}' target='_blank'>${nodes.sqldb[0].url}</a></td></tr><tr><td>Login:</td><td><b>${globals.db_user}</b></td></tr><tr><td>Password:</td><td><b>${globals.db_pass}</b></td></tr></table>"
+    "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.db_user}</b></td></tr><tr><td>Password:</td><td><b>${globals.db_pass}</b></td></tr></table>"
 }
