@@ -2,7 +2,7 @@
     "jpsType": "install",
     "version": "0.99",
     "name": "MySQL DB Auto Clustering",
-    "description": "1 x Master + N x Slave",
+    "description": "Pre-configured and ready-to-work MySQL Cluster with master slave asynchronous replication. By default, the cluster consists of one master and one slave container. The number of slaves can be increased stating more containers below.",
     "settings": {
         "fields": [{
             "type": "spinner",
