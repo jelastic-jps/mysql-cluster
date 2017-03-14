@@ -25,7 +25,7 @@ DB                  |    devbeta/mysql57:5.7.14-latest    |       2             
 
 You can adjust the exact number of slaves within the Containers field during the package installation stage. Here, one container is the master and the rest of containers are the slaves.
 
-![Mysql cluster containers] (https://github.com/jelastic-jps/mysql-cluster/blob/master/images/mysql-cluster-containers.jpg)
+![Mysql cluster containers] (https://github.com/jelastic-jps/mysql-cluster/blob/master/images/mysql-cluster-top.png)
 
 Moreover, you can also scale containers after installation in the topology wizard with the corresponding master-slave data replication automatically enabled.
 
