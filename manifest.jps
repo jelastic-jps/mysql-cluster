@@ -1,46 +1,57 @@
 {
-    "jpsType": "install",
-    "version": "0.99",
+  "jpsType": "install",
+  "jpsVersion": "0.9",
+  "version": "0.99",
+  "application": {
     "name": "MySQL DB Auto Clustering",
     "description": "Pre-configured and ready-to-work MySQL Cluster with master slave asynchronous replication. By default, the cluster consists of one master and one slave container. The number of slaves can be increased stating more containers below.",
     "logo": "https://github.com/jelastic-jps/mysql-cluster/blob/master/images/mysql-logo.png",
     "settings": {
-        "fields": [{
-            "type": "spinner",
-            "name": "count",
-            "caption": "Containers",
-            "min": 1,
-            "max": 10,
-            "default": 2,
-            "increment": 1
-        }]
-    },
-    "nodes": [{
-        "cloudlets": 8,
-        "count": "${settings.count}",
-        "nodeGroup": "sqldb",
-        "image": "jelastic/mysql:5.7.14",
-        "displayName": "Database"
-    }],
-    "onAfterScaleOut": {
-        "forEach(event.response.nodes)": {
-            "setNodeDisplayName [${@i.id}]": "Database"
+      "fields": [
+        {
+          "type": "spinner",
+          "name": "count",
+          "caption": "Containers",
+          "min": 1,
+          "max": 10,
+          "default": 2,
+          "increment": 1
         }
+      ]
     },
-    "ssl": true,
+    "env": {
+      "topology": {
+        "nodes": [
+          {
+            "cloudlets": 8,
+            "count": "${settings.count}",
+            "nodeGroup": "sqldb",
+            "image": "jelastic/mysql:5.7.14",
+            "displayName": "Database"
+          }
+        ]
+      },
+      "onAfterScaleOut": {
+        "forEach(event.response.nodes)": {
+          "setNodeDisplayName [${@i.id}]": "Database"
+        }
+      },
+      "ssl": true
+    },
     "globals": {
-        "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
-        "db_user": "jelastic-${fn.random}",
-        "db_pass": "${fn.password(20)}"
+      "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
+      "db_user": "jelastic-${fn.random}",
+      "db_pass": "${fn.password(20)}"
     },
     "onInstall": {
-        "installJps": {
-            "jps": "${globals.path}/scripts/cluster-configuration.jps",
-            "settings": {
-                "db_user": "${globals.db_user}",
-                "db_pass": "${globals.db_pass}"
-            }
+      "installJps": {
+        "jps": "${globals.path}/scripts/cluster-configuration.jps",
+        "settings": {
+          "db_user": "${globals.db_user}",
+          "db_pass": "${globals.db_pass}"
         }
+      }
     },
     "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.db_user}</b></td></tr><tr><td>Password:</td><td><b>${globals.db_pass}</b></td></tr></table>"
+  }
 }
