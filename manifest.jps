@@ -3,6 +3,7 @@
     "version": "0.99",
     "name": "MySQL DB Auto Clustering",
     "description": "Pre-configured and ready-to-work MySQL Cluster with master slave asynchronous replication. By default, the cluster consists of one master and one slave container. The number of slaves can be increased stating more containers below.",
+    "logo": "https://github.com/jelastic-jps/mysql-cluster/blob/master/images/mysql-logo.png",
     "settings": {
         "fields": [{
             "type": "spinner",
