@@ -11,7 +11,7 @@ By default, you get two **MySQL 5.7** database containers - the master and the s
 
 Within the package, each database container receives the default [vertical scaling] (https://docs.jelastic.com/automatic-vertical-scaling) limit up to **8 dynamic** cloudlets (or 1 GiB of RAM and 3.2 GHz of CPU) that are provided based on the load.
 
-![Mysql cluster topology] (/images/mysql-cluster-topology.png)
+![Mysql cluster topology] (/images/mysql-cluster-top.png)
 
 ### Specifics
 Layer              |   Docker image    | Number of CTs <br/> by default | Cloudlets per CT <br/> (reserved/dynamic) | Options
@@ -23,7 +23,7 @@ DB                  |    devbeta/mysql57:5.7.14-latest    |       2             
 
 You can adjust the exact number of slaves within the Containers field during the package installation stage. Here, one container is the master and the rest of containers are the slaves.
 
-![Mysql cluster containers] (/images/mysql-cluster-containers.png)
+![Mysql cluster containers] (/images/mysql-cluster-containers.jpg)
 
 Moreover, you can also scale containers after installation in the topology wizard with the corresponding master-slave data replication automatically enabled.
 
