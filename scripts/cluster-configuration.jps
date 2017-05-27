@@ -32,22 +32,25 @@
     }],
     "onInstall": [{
         "forEach(nodes.sqldb)": {
-            "setupUser": {
-                "filter": "${@i.id}"
+            if (${@i.id} != ${nodes.sqldb[0].id}) {
+                "setupUser": {
+                    "filter": "${@i.id}"
+                }
             }
         }
     }, {
         "forEach(nodes.sqldb)": {
-            "setupReplication": {
-                "filter": "${@i.id}"
+            if (${@i.id} != ${nodes.sqldb[0].id}) {
+                "setupReplication": {
+                    "filter": "${@i.id}"
+                }
             }
         }
     }, {
         "cmd [ ${nodes.sqldb[0].id} ]": [
-            "/sbin/chkconfig mysql off && service mysql stop && yum remove -y mysql-community-server",
             "wget ${globals.PATH}/configs/proxysql.cnf -O /etc/proxysql.cnf",
             "yum install -y https://github.com/sysown/proxysql/releases/download/v1.4.0/proxysql-1.4.0-1-centos7.x86_64.rpm",
-             "/sbin/chkconfig proxysql on && service proxysql start && sleep 3",
+            "/sbin/chkconfig proxysql on && service proxysql start && sleep 3",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (0, 'node${nodes.sqldb[1].id}', 3306);\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 0, 200);\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 1, 0);\" ",
@@ -75,7 +78,7 @@
             "user": "root"
         },
         "addNode": {
-            "cmd[ ${nodes.sqldb[0].id} ]": [
+            "cmd[ ${nodes.sqldb[0].id}) ]": [
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (1, 'node${this.id}', 3306, 20);\" ",
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
             ]
