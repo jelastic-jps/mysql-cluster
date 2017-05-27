@@ -32,7 +32,7 @@
     }],
     "onInstall": [{
         "forEach(nodes.sqldb)": {
-            if (${@i.id} != ${nodes.sqldb[0].id}) {
+            "if (${@i.id} != ${nodes.sqldb[0].id})": {
                 "setupUser": {
                     "filter": "${@i.id}"
                 }
@@ -40,7 +40,7 @@
         }
     }, {
         "forEach(nodes.sqldb)": {
-            if (${@i.id} != ${nodes.sqldb[0].id}) {
+            "if (${@i.id} != ${nodes.sqldb[0].id})": {
                 "setupReplication": {
                     "filter": "${@i.id}"
                 }
