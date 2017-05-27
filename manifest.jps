@@ -38,11 +38,20 @@
 		"globals": {
 			"path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/proxysql",
 			"admin_user": "admin-${fn.random}",
-			"admin_pass": "${fn.password(10)}"
+			"admin_pass": "${fn.password(10)}",
 			"db_user": "jelastic-${fn.random}",
 			"db_pass": "${fn.password(20)}"
 		},
 		"onInstall": {
+			"installJps": {
+				"jps": "${globals.path}/scripts/proxy-configuration.jps",
+				"settings": {
+					"admin_user": "${globals.admin_user}",
+					"admin_pass": "${globals.admin_pass}",
+					"db_user": "${globals.db_user}",
+					"db_pass": "${globals.db_pass}"
+				}
+			},
 			"installJps": {
 				"jps": "${globals.path}/scripts/cluster-configuration.jps",
 				"settings": {
