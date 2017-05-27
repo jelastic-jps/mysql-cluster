@@ -44,7 +44,7 @@
 		},
 		"onInstall": {
 			"installJps": {
-				"jps": "${globals.path}/scripts/setup-replication.jps",
+				"jps": "${globals.path}/scripts/cluster-configuration.jps",
 				"settings": {
 					"db_user": "${globals.db_user}",
 					"db_pass": "${globals.db_pass}"
