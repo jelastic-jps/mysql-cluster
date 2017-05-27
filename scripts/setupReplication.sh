@@ -78,7 +78,7 @@ else
 		RAND="$(date +%s | rev | cut -c 1-2)$(echo ${RANDOM})"
 		echo "=> Setting master connection info on slave"
 		sed -i "s/^server-id.*/server-id = ${RAND}/" ${CONF_FILE}
-        set_mysql_variable server_id ${RAND}
+        	set_mysql_variable server_id ${RAND}
 		waiting_MYSQL_Master_Service;
 		$MYSQLREPLICATE --master=${MYSQL_ADMIN_USER}:${MYSQL_ADMIN_PASSWORD}@${DB_MASTER}:3306 --slave=${MYSQL_ADMIN_USER}:${MYSQL_ADMIN_PASSWORD}@${INTERNAL_IP}:3306 --rpl-user=${DB_REPLICA_USER}:${DB_REPLICA_PASSWORD} --start-from-beginning
 		echo "=> Done!"
