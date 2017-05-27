@@ -31,17 +31,9 @@
 		},
 		"onInstall": {
 			"installJps": {
-				"jps": "${globals.path}/scripts/proxy-configuration.jps",
-				"settings": {
-					"path": "${globals.admin_path}",
-					"admin_pass": "${globals.admin_pass}",
-					"db_user": "${globals.db_user}",
-					"db_pass": "${globals.db_pass}"
-				}
-			},
-			"installJps": {
 				"jps": "${globals.path}/scripts/cluster-configuration.jps",
 				"settings": {
+					"admin_pass": "${globals.admin_pass}",
 					"db_user": "${globals.db_user}",
 					"db_pass": "${globals.db_pass}"
 				}
