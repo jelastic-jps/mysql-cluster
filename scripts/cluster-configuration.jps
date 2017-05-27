@@ -26,7 +26,7 @@
     }, {
         "forEach(event.response.nodes)": {
             "addNode": {
-                "filter": "${@i.id}"
+                "id": "${@i.id}"
             }
         }
     }],
@@ -51,10 +51,13 @@
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (0, 'node${nodes.sqldb[1].id}', 3306);\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 0, 200);\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 1, 0);\" ",
-            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 0, 1);\" "
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 0, 1);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;\" "
         ]
     }, {
-        "addNode": {"filter": "${nodes.sqldb[1]}"}
+        "addNode": {"id": "${nodes.sqldb[1].id}"}
     }],
     "actions": {
         "setupReplication": {
@@ -73,7 +76,8 @@
         },
         "addNode": {
             "cmd[${nodes.sqldb[0]}]": [
-                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (1, 'node${nodes.sqldb[1].id}', 3306, 20);\" ",
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (1, 'node${this.id}', 3306, 20);\" ",
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
             ]
         }
     }
