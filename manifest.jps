@@ -6,18 +6,6 @@
         	"categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
 		"description": "Pre-configured and ready-to-work MySQL Cluster with master slave asynchronous replication. By default, the cluster consists of one master and one slave container. The number of slaves can be increased stating more containers below.",
 		"logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
-		"settings": {
-			"fields": [{
-					"type": "spinner",
-					"name": "count",
-					"caption": "Containers",
-					"min": 1,
-					"max": 10,
-					"default": 2,
-					"increment": 1
-				}
-			]
-		},
 		"env": {
 			"topology": {
 				"ssl": true,
