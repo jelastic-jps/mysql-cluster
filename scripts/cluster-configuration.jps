@@ -1,10 +1,11 @@
 {
     "jpsType": "update",
-    "name": "Database Auto Replication",
-    "description": "DB Auto Clustering: 1 x Master + N x Slave",
+    "name": "Distributed Database Cluster",
+    "description": "DB Auto Clustering: ProxySQL + 1 x Master + N x Slave",
     "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
     "globals": {
         "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/proxysql",
+        "ADMIN_PASS": "${settings.admin_pass}",
         "DB_USER": "${settings.db_user}",
         "DB_PASS": "${settings.db_pass}",
         "REPLICATION_USER": "repl-${fn.random}",
@@ -35,12 +36,22 @@
                 "filter": "${@i.id}"
             }
         }
+    }, {
+        "cmd [${nodes.sqldb[0]]": [
+            "/sbin/chkconfig mysql off && service mysql stop && yum remove -y mysql-community-server",
+            "wget ${globals.PATH}/configs/proxysql.cnf -O /etc/proxysql.cnf",
+            "yum install -y https://github.com/sysown/proxysql/releases/download/v1.4.0/proxysql-1.4.0-1-centos7.x86_64.rpm",
+            "/sbin/chkconfig proxysql on && service start proxysql",
+            "",    
+        ]
+
+    
     }],
     "actions": {
         "setupReplication": {
             "cmd [${this.filter}]": [
                 "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh",
-                "bash /root/setupReplication.sh node${nodes.sqldb[0].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+                "bash /root/setupReplication.sh node${nodes.sqldb[1].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
             ],
             "user": "root"
         },
@@ -50,11 +61,6 @@
                 "bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
             ],
             "user": "root"
-        },
-        "logging": {
-            "onCall": {
-                "log": "${this.message}"
-            }
         }
     }
 }
