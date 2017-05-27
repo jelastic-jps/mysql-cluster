@@ -23,27 +23,28 @@
 				"ssl": true,
 				"nodes": [{
 						"cloudlets": 8,
-						"count": "${settings.count}",
+						"count": 3,
 						"nodeGroup": "sqldb",
-						"image": "jelastic/mysql:5.7.14",
-						"displayName": "Database"
+						"image": "jelastic/mysql:5.7.14"
 					}
 				]
 			},
 			"onAfterScaleOut": {
 				"forEach(event.response.nodes)": {
-					"setNodeDisplayName [${@i.id}]": "Database"
+					"setNodeDisplayName [${@i.id}]": "Slave"
 				}
 			}
 		},
 		"globals": {
 			"path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/proxysql",
+			"admin_user": "admin-${fn.random}",
+			"admin_pass": "${fn.password(10)}"
 			"db_user": "jelastic-${fn.random}",
 			"db_pass": "${fn.password(20)}"
 		},
 		"onInstall": {
 			"installJps": {
-				"jps": "${globals.path}/scripts/cluster-configuration.jps",
+				"jps": "${globals.path}/scripts/setup-replication.jps",
 				"settings": {
 					"db_user": "${globals.db_user}",
 					"db_pass": "${globals.db_pass}"
