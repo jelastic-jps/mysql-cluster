@@ -43,7 +43,7 @@
             }
         }
     }, {
-        "cmd [${nodes.sqldb[0]}]": [
+        "cmd [nodes.sqldb[0].id]": [
             "/sbin/chkconfig mysql off && service mysql stop && yum remove -y mysql-community-server",
             "wget ${globals.PATH}/configs/proxysql.cnf -O /etc/proxysql.cnf",
             "yum install -y https://github.com/sysown/proxysql/releases/download/v1.4.0/proxysql-1.4.0-1-centos7.x86_64.rpm",
@@ -75,7 +75,7 @@
             "user": "root"
         },
         "addNode": {
-            "cmd[${nodes.sqldb[0]}]": [
+            "cmd[nodes.sqldb[0].id]": [
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (1, 'node${this.id}', 3306, 20);\" ",
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
             ]
