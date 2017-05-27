@@ -1,28 +1,14 @@
 {
     "jpsType": "update",
     "name": "Database Auto Replication",
-    "description": "DB Auto Clustering: 1 x Master + N x Slave",
-    "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
+    "description": "Distributed DB Cluster",
+    "success": "<table style='font-size:14px'><tr><td>Proxy admin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
     "globals": {
-        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/proxysql",
+        "PATH": "${settings.path}",
+        "ADMIN_PASS": "${settings.admin_pass}",
         "DB_USER": "${settings.db_user}",
-        "DB_PASS": "${settings.db_pass}",
-        "REPLICATION_USER": "repl-${fn.random}",
-        "REPLICATION_PASS": "${fn.password(20)}"
+        "DB_PASS": "${settings.db_pass}"
     },
-    "onAfterScaleOut[nodeGroup:sqldb]": [{
-        "forEach(event.response.nodes)": {
-            "setupUser": {
-                "filter": "${@i.id}"
-            }
-        }
-    }, {
-        "forEach(event.response.nodes)": {
-            "setupReplication": {
-                "filter": "${@i.id}"
-            }
-        }
-    }],
     "onInstall": [{
         "forEach(nodes.sqldb)": {
             "setupUser": {
@@ -50,11 +36,6 @@
                 "bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
             ],
             "user": "root"
-        },
-        "logging": {
-            "onCall": {
-                "log": "${this.message}"
-            }
         }
     }
 }
