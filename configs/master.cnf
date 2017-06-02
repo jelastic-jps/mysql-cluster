@@ -1,0 +1,10 @@
+[mysqld]
+log-bin = mysql-bin
+log-slave-updates
+replicate-wild-ignore-table = performance_schema.%
+replicate-wild-ignore-table = information_schema.%
+replicate-wild-ignore-table = mysql.%
+binlog_format = mixed
+
+sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+max-connections=1000
