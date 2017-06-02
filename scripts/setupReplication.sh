@@ -53,12 +53,6 @@ if [ ${IS_MASTER} == TRUE ]; then
 	echo "=> Configuring MySQL replicaiton as master ..."
 	if [ ! -f /master_repl_set ]; then
     	RAND="$(date +%s | rev | cut -c 1-2)$(echo ${RANDOM})"
-		sed -i "/\[mysqld]/a binlog_format = mixed" ${CONF_FILE}
-		sed -i "/\[mysqld]/a replicate-wild-ignore-table = mysql.%" ${CONF_FILE}
-		sed -i "/\[mysqld]/a replicate-wild-ignore-table = information_schema.%" ${CONF_FILE}
-		sed -i "/\[mysqld]/a replicate-wild-ignore-table = performance_schema.%" ${CONF_FILE}
-		sed -i "/\[mysqld]/a log-slave-updates" ${CONF_FILE}
-		sed -i "/\[mysqld]/a log-bin = mysql-bin" ${CONF_FILE}
 		sed -i "s/^server-id.*/server-id = ${RAND}/" ${CONF_FILE}
 		/sbin/service mysql restart 2>&1;
 		sleep 3
