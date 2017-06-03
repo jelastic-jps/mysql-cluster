@@ -12,7 +12,7 @@
                     "cloudlets": 8,
                     "count": 2,
                     "nodeGroup": "sqldb",
-                    "image": "devbeta/mysql:5.7.14"
+                    "image": "devbeta/mysql:5.7-latest"
                 }, {
                     "cloudlets": 8,
                     "nodeGroup": "sqlbl",
