@@ -1,11 +1,10 @@
 {
     "jpsType": "update",
-    "name": "Distributed Database Cluster",
+    "name": "Scale Database Cluster",
     "description": "DB Auto Clustering: ProxySQL + 1 x Master + N x Slave",
     "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
     "globals": {
         "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/proxysql",
-        "ADMIN_PASS": "${settings.admin_pass}",
         "DB_USER": "${settings.db_user}",
         "DB_PASS": "${settings.db_pass}",
         "REPLICATION_USER": "repl-${fn.random}",
@@ -32,7 +31,6 @@
     }],
     "onInstall": [{
         "forEach(nodes.sqldb)": {
-            "if (${@i.id} != ${nodes.sqldb[0].id})": {
                 "setupUser": {
                     "filter": "${@i.id}"
                 }
