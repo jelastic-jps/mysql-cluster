@@ -2,7 +2,6 @@
     "jpsType": "update",
     "name": "Database Auto Replication",
     "description": "Distributed DB Cluster",
-    "success": "<table style='font-size:14px'><tr><td>Proxy admin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
     "globals": {
         "PATH": "${settings.path}",
         "ADMIN_PASS": "${settings.admin_pass}",
@@ -10,18 +9,26 @@
         "DB_PASS": "${settings.db_pass}"
     },
     "onInstall": [{
-        "forEach(nodes.sqldb)": {
-            "setupUser": {
-                "filter": "${@i.id}"
-            }
-        }
-    }, {
-        "forEach(nodes.sqldb)": {
-            "setupReplication": {
-                "filter": "${@i.id}"
-            }
-        }
-    }],
+
+
+        "cmd [ ${nodes.sqldb[0].id} ]": [
+            "wget ${globals.PATH}/configs/proxysql.cnf -O /etc/proxysql.cnf",
+            "yum install -y https://github.com/sysown/proxysql/releases/download/v1.4.0/proxysql-1.4.0-1-centos7.x86_64.rpm",
+            "/sbin/chkconfig proxysql on && service proxysql start && sleep 3",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (0, 'node${nodes.sqldb[1].id}', 3306);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 0, 200);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 1, 0);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 0, 1);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;\" "
+        ]
+
+
+
+
+}],
     "actions": {
         "setupReplication": {
             "cmd [${this.filter}]": [
