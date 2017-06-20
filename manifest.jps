@@ -18,6 +18,21 @@
                     "nodeGroup": "sqlbl",
                     "image": "devbeta/proxysql"
                 }]
+            },
+            "onAfterScaleOut[nodeGroup:sqldb]": [{
+                "forEach(event.response.nodes)": {
+                    "addSlave": {
+                        "id": "${@i.id}"
+                    },
+                    "setNodeDisplayName [${@i.id}]": "Slave"
+                }
+            }],
+            "onBeforeScaleIn[nodeGroup:sqldb]": {
+                "forEach(event.response.nodes)": {
+                    "removeSlave": {
+                        "id": "${@i.id}"
+                    }
+                }
             }
         },
         "globals": {
@@ -26,14 +41,15 @@
             "db_user": "jelastic-${fn.random}",
             "db_pass": "${fn.password(20)}"
         },
-        "onInstall": {
+        "onInstall": [{
             "installJps": {
                 "jps": "${globals.path}/scripts/cluster-configuration.jps",
                 "settings": {
                     "db_user": "${globals.db_user}",
                     "db_pass": "${globals.db_pass}"
                 }
-            },
+            }
+        }, {
             "installJps": {
                 "jps": "${globals.path}/scripts/proxy-configuration.jps",
                 "settings": {
@@ -41,6 +57,28 @@
                     "db_user": "${globals.db_user}",
                     "db_pass": "${globals.db_pass}"
                 }
+            }
+        }, {
+            "log": "CP Layer Setup"
+        }, {
+            "forEach(nodes.cp)": {
+                "addSlave": {
+                    "id": "${@i.id}"
+                }
+            }
+        }],
+        "actions": {
+            "addSlave": {
+                "cmd[sqlbl]": [
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (1, 'node${this.id}', 3306, 20);\" ",
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
+                ]
+            },
+            "removeSlave": {
+                "cmd[sqlbl]": [
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (1, 'node${this.id}', 3306, 20);\" ",
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
+                ]
             }
         }
     }
