@@ -59,7 +59,7 @@
                 }
             }
         }, {
-            "log": "CP Layer Setup"
+            "log": "Add sqldb layer"
         }, {
             "forEach(nodes.sqldb)": {
                 "addSlave": {
