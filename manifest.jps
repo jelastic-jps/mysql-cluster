@@ -61,7 +61,7 @@
         }, {
             "log": "CP Layer Setup"
         }, {
-            "forEach(nodes.cp)": {
+            "forEach(nodes.sqldb)": {
                 "addSlave": {
                     "id": "${@i.id}"
                 }
@@ -76,7 +76,7 @@
             },
             "removeSlave": {
                 "cmd[sqlbl]": [
-                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (1, 'node${this.id}', 3306, 20);\" ",
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';\" ",
                     "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
                 ]
             }
