@@ -8,15 +8,18 @@
         "DB_PASS": "${settings.db_pass}",
         "MONITOR_USER": "monitor-${fn.random}",
         "MONITOR_PASS": "${fn.password(10)}"
-
     },
-    "onAfterScaleOut[nodeGroup:sqldb]": [{
-        "forEach(event.response.nodes)": {
+    "onAfterScaleOut[nodeGroup:sqldb]": {
+        "forEach(event.response.nodes)": [{
             "addSlave": {
                 "id": "${@i.id}"
             }
-        }
-    }],
+        }, {
+            "addMonitorUser": {
+                "filter": "${@i.id}"
+            }
+        }]
+    },
     "onBeforeScaleIn[nodeGroup:sqldb]": {
         "forEach(event.response.nodes)": {
             "removeSlave": {
@@ -25,6 +28,12 @@
         }
     },
     "onInstall": [{
+        "forEach(nodes.sqldb)": {
+            "addMonitorUser": {
+                "filter": "${@i.id}"
+            }
+        }
+    }, {
         "cmd [ sqlbl ]": [
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${nodes.sqldb.first.id}', 3306);\" ",
@@ -51,6 +60,13 @@
         }
     }],
     "actions": {
+        "addMonitorUser": {
+            "cmd[${this.filter}]": [
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';\" ",
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"GRANT USAGE ON *.* TO '${globals.MONITOR_USER}'@'%';\" ",
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"FLUSH PRIVILEGES;\" "
+            ]
+        },
         "addSlave": {
             "cmd[sqlbl]": [
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (11, 'node${this.id}', 3306, 20);\" ",
