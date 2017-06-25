@@ -1,2 +1,2 @@
-
-read_only = 1;
+[mysqld]
+read_only = 1
