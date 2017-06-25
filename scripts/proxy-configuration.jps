@@ -14,8 +14,7 @@
         "forEach(event.response.nodes)": {
             "addSlave": {
                 "id": "${@i.id}"
-            },
-            "setNodeDisplayName [${@i.id}]": "Slave"
+            }
         }
     }],
     "onBeforeScaleIn[nodeGroup:sqldb]": {
