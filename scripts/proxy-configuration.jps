@@ -63,7 +63,7 @@
         "addMonitorUser": {
             "cmd[${this.filter}]": [
                 "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';\" ",
-                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"GRANT USAGE ON *.* TO '${globals.MONITOR_USER}'@'%';\" ",
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';\" ",
                 "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"FLUSH PRIVILEGES;\" "
             ]
         },
