@@ -41,6 +41,14 @@
                     "db_pass": "${globals.db_pass}"
                 }
             }
+        }, {
+            "installJps": {
+                "jps": "${globals.path}/scripts/orchestrator-configuration.jps",
+                "settings": {
+                    "db_user": "${globals.db_user}",
+                    "db_pass": "${globals.db_pass}"
+                }
+            }
         }]
     }
 }
