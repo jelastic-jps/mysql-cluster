@@ -15,6 +15,8 @@
             "sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json",
             "sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json",
             "sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json",
             "/etc/init.d/iptables restart && /etc/init.d/orchestrator restart"
         ]
     }
