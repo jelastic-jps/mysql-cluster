@@ -1,6 +1,6 @@
 {
     "jpsType": "update",
-    "name": "Database Auto Replication",
+    "name": "Orchestrator Configuration",
     "description": "Distributed DB Cluster",
     "globals": {
         "PATH": "${settings.path}",
@@ -8,18 +8,15 @@
         "DB_PASS": "${settings.db_pass}",
         "ORCH_PASS": "${fn.password(10)}"
     },
-    "onInstall": [{
+    "onInstall": {
         "cmd [ sqlbl ]": [
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"CREATE DATABASE IF NOT EXISTS orchestrator;\" ",
-            "mysql -h 127.0.0.1 -P3360 -uroot -e \"GRANT ALL PRIVILEGES ON \`orchestrator\`.* TO 'orchestrator'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';\" ",
-
-            "sed -i -e 's/:3000/:80/g' /etc/orchestrator.conf.json",
-            ""
-            
+            "mysql -h 127.0.0.1 -P3360 -uroot -e \"GRANT ALL PRIVILEGES ON `orchestrator`.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';\" ",
+            "sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json",
+            "/etc/init.d/orchestrator restart"
         ]
     }
-    }],
-        }
-    }
 }
-
