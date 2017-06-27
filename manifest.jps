@@ -15,7 +15,7 @@
                     "image": "devbeta/mysql:5.7-latest"
                 }, {
                     "cloudlets": 8,
-                    "nodeGroup": "sqlbl",
+                    "nodeGroup": "bl",
                     "image": "devbeta/proxysql"
                 }]
             }
