@@ -35,7 +35,7 @@
             }
         }
     }, {
-        "cmd [ sqlbl ]": [
+        "cmd [ bl ]": [
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${nodes.sqldb.first.id}', 3306);\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${nodes.sqldb.first.id}', 3306);\" ",
@@ -69,13 +69,13 @@
             ]
         },
         "addSlave": {
-            "cmd[sqlbl]": [
+            "cmd[bl]": [
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (11, 'node${this.id}', 3306, 20);\" ",
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
             ]
         },
         "removeSlave": {
-            "cmd[sqlbl]": [
+            "cmd[bl]": [
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';\" ",
                 "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
             ]
