@@ -21,7 +21,7 @@
             }
         },
         "globals": {
-            "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/orchestrator",
+            "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/orchestrator1",
             "db_user": "jelastic-${fn.random}",
             "db_pass": "${fn.password(20)}"
         },
@@ -38,7 +38,8 @@
                 "jps": "${globals.path}/scripts/proxy-configuration.jps",
                 "settings": {
                     "db_user": "${globals.db_user}",
-                    "db_pass": "${globals.db_pass}"
+                    "db_pass": "${globals.db_pass}",
+                    "proxy_nodeGroup": "bl"
                 }
             }
         }, {
@@ -46,7 +47,8 @@
                 "jps": "${globals.path}/scripts/orchestrator-configuration.jps",
                 "settings": {
                     "db_user": "${globals.db_user}",
-                    "db_pass": "${globals.db_pass}"
+                    "db_pass": "${globals.db_pass}",
+                    "proxy_nodeGroup": "bl"
                 }
             }
         }]
