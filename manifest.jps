@@ -39,7 +39,7 @@
                 "settings": {
                     "db_user": "${globals.db_user}",
                     "db_pass": "${globals.db_pass}",
-                    "proxy_nodeGroup": "bl"
+                    "proxy_ng": "bl"
                 }
             }
         }, {
@@ -48,7 +48,7 @@
                 "settings": {
                     "db_user": "${globals.db_user}",
                     "db_pass": "${globals.db_pass}",
-                    "proxy_nodeGroup": "bl"
+                    "proxy_ng": "bl"
                 }
             }
         }]
