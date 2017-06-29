@@ -6,10 +6,11 @@
     "globals": {
         "DB_USER": "${settings.db_user}",
         "DB_PASS": "${settings.db_pass}",
+        "PROXY_NG": "${settings.proxy_ng}",
         "ORCH_PASS": "${fn.password(10)}"
     },
     "onInstall": {
-        "cmd [ bl ]": [
+        "cmd [ ${globals.PROXY_NG} ]": [
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"CREATE DATABASE IF NOT EXISTS orchestrator;\" ",
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';\" ",
             "sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json",
