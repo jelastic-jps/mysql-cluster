@@ -4,11 +4,12 @@
     "description": "DB Auto Clustering: 1 x Master + N x Slave",
     "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
     "globals": {
-        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/orchestrator",
+        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/custom-conf",
         "DB_USER": "${settings.db_user}",
         "DB_PASS": "${settings.db_pass}",
         "REPLICATION_USER": "repl-${fn.random}",
-        "REPLICATION_PASS": "${fn.password(20)}"
+        "REPLICATION_PASS": "${fn.password(20)}",
+        "CUSTOM_CONF": "${settings.custom_conf}"
     },
     "onAfterScaleOut[nodeGroup:sqldb]": [{
         "forEach(event.response.nodes)": {
@@ -32,7 +33,6 @@
     "onInstall": [{
         "cmd[${nodes.sqldb.first.id}]": [
             "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log",
-            "wget ${globals.PATH}/configs/db.cnf -O /etc/mysql/conf.d/db.cnf &>> /var/log/run.log"
         ]
     }, {
         "forEach(nodes.sqldb)": {
@@ -70,7 +70,6 @@
         },
         "setupSlave": {
             "cmd[${this.filter}]": [
-                "wget ${globals.PATH}/configs/db.cnf -O /etc/mysql/conf.d/db.cnf &>> /var/log/run.log",
                 "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log"
             ]
         }
