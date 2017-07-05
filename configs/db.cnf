@@ -1,3 +1,0 @@
-[mysqld]
-sql_mode = ''
-max-connections = 1000
