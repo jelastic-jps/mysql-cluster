@@ -33,6 +33,7 @@
     "onInstall": [{
         "cmd[${nodes.sqldb.first.id}]": [
             "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log",
+            "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log"
         ]
     }, {
         "forEach(nodes.sqldb)": {
@@ -70,7 +71,8 @@
         },
         "setupSlave": {
             "cmd[${this.filter}]": [
-                "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log"
+                "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log",
+                "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log"
             ]
         }
     }
