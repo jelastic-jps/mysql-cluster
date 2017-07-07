@@ -1,9 +1,12 @@
 {
     "jpsType": "install",
     "application": {
-        "name": "Scalable distributed DB cluster",
+        "name": "Scalable MySQL Cluster with Load Balancing",
         "categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
-        "description": "asd can be increased stating more containers below.",
+        "description": {
+           "text": "Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator GUI for convenient cluster management and provides even load distribution, slaves healthcheck and autodiscovery of newly added DB nodes",
+           "short": "Scalable MySQL cluster with ProxySQL for even load distribution"
+        },
         "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
         "env": {
             "topology": {
