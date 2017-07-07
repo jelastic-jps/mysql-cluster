@@ -40,6 +40,6 @@ Now, you can access cluster via the in-built _Orchestrator_ tool by clicking the
 ## Management Information
 
 After successful installation, you’ll receive the following email notifications with important administrating information on your MySQL cluster:
-- **Scale Database Cluster** - provides access data to PHPMyAdmin panel for managing databases
+- **Scalable Database Cluster** - provides access data to PHPMyAdmin panel for managing databases
 - **Database Auto Replication** - displays cluster connection information to bind your application with database
 - **Orchestrator Configuration** - gives credentials to access the _Orchestrator_ panel for convenient cluster management
