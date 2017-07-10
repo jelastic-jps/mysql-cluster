@@ -1,0 +1,84 @@
+{
+    "jpsType": "update",
+    "name": "Database Auto Replication",
+    "description": "Distributed DB Cluster",
+    "success": "<table style='font-size:14px'><tr><td>Endpoint for connect:</td><td><a href='${env.domain}:3306' target='_blank'>${env.domain}:3306</a></td></tr><tr><td>User:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
+    "globals": {
+        "PATH": "${settings.path}",
+        "DB_USER": "${settings.db_user}",
+        "DB_PASS": "${settings.db_pass}",
+        "MONITOR_USER": "monitor-${fn.random}",
+        "MONITOR_PASS": "${fn.password(10)}"
+    },
+    "onAfterScaleOut[nodeGroup:sqldb]": {
+        "forEach(event.response.nodes)": [{
+            "addSlave": {
+                "id": "${@i.id}"
+            }
+        }, {
+            "addMonitorUser": {
+                "filter": "${@i.id}"
+            }
+        }]
+    },
+    "onBeforeScaleIn[nodeGroup:sqldb]": {
+        "forEach(event.response.nodes)": {
+            "removeSlave": {
+                "id": "${@i.id}"
+            }
+        }
+    },
+    "onInstall": [{
+        "forEach(nodes.sqldb)": {
+            "addMonitorUser": {
+                "filter": "${@i.id}"
+            }
+        }
+    }, {
+        "cmd [ bl ]": [
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${nodes.sqldb.first.id}', 3306);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${nodes.sqldb.first.id}', 3306);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 10, 1000);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;\" "
+        ]
+    }, {
+        "log": "Add sqldb layer"
+    }, {
+        "forEach(nodes.sqldb)": {
+            "if (${@i.id} != ${nodes.sqldb.first.id})": {
+                "addSlave": {
+                    "id": "${@i.id}"
+                }
+            }
+        }
+    }],
+    "actions": {
+        "addMonitorUser": {
+            "cmd[${this.filter}]": [
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';\" ",
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';\" ",
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"FLUSH PRIVILEGES;\" "
+            ]
+        },
+        "addSlave": {
+            "cmd[bl]": [
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (11, 'node${this.id}', 3306, 20);\" ",
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
+            ]
+        },
+        "removeSlave": {
+            "cmd[bl]": [
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';\" ",
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
+            ]
+        }
+    }
+}
