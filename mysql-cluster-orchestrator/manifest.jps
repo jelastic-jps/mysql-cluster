@@ -24,7 +24,7 @@
             }
         },
         "globals": {
-            "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/orchestrator",
+            "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/mysql-cluster-orchestrator",
             "db_user": "jelastic-${fn.random}",
             "db_pass": "${fn.password(20)}"
         },
