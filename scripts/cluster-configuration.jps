@@ -83,7 +83,7 @@
                 "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log",
                 "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log"
             ],
-            "setNodeDisplayName[${@i.id}]": "Slave"
+            "setNodeDisplayName[${this.filter}]": "Slave"
         }
     }
 }
