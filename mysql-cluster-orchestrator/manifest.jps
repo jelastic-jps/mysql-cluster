@@ -19,7 +19,7 @@
                 }, {
                     "cloudlets": 8,
                     "nodeGroup": "bl",
-                    "image": "devbeta/proxysql"
+                    "image": "jelastic/proxysql"
                 }]
             }
         },
