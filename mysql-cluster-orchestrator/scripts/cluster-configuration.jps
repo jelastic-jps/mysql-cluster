@@ -33,7 +33,8 @@
         "cmd[${nodes.sqldb.first.id}]": [
             "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log",
             "wget ${globals.PATH}/configs/db.cnf -O /etc/mysql/conf.d/db.cnf &>> /var/log/run.log"
-        ]
+        ],
+        "user": "root"
     }, {
         "forEach(nodes.sqldb)": {
             "if (${@i.id} != ${nodes.sqldb.first.id})": {
@@ -60,19 +61,22 @@
             "cmd [${this.filter}]": [
                 "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh &>> /var/log/run.log",
                 "bash /root/setupReplication.sh node${nodes.sqldb.first.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
-            ]
+            ],
+            "user": "root"
         },
         "setupUser": {
             "cmd[${this.filter}]": [
                 "wget ${globals.PATH}/scripts/setupUser.sh -O /root/setupUser.sh &>> /var/log/run.log",
                 "bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
-            ]
+            ],
+            "user": "root"
         },
         "setupSlave": {
             "cmd[${this.filter}]": [
                 "wget ${globals.PATH}/configs/db.cnf -O /etc/mysql/conf.d/db.cnf &>> /var/log/run.log",
                 "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log"
-            ]
+            ],
+            "user": "root"
         }
     }
 }
