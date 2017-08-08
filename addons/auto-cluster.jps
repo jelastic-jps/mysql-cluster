@@ -13,6 +13,18 @@
         "db_pass": "${fn.password(20)}"
     },
     "onInstall": [{
+        "addNodes": {
+            "cloudlets": 8,
+            "displayName": "ProxySQL",
+            "nodeType": "docker",
+            "nodeGroup": "bl",
+            "dockerName": "jelastic/proxysql",
+            "dockerTag": "latest",
+            "metadata": {
+                "layer": "bl"
+            }
+        }
+    }, {
         "installJps": {
             "jps": "${globals.path}/scripts/cluster-configuration.jps",
             "settings": {
