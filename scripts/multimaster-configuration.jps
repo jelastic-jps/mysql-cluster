@@ -1,0 +1,46 @@
+{
+    "jpsType": "update",
+    "name": "Database Auto Replication",
+    "description": "DB Auto Clustering: MultiMaster",
+    "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
+    "globals": {
+        "PATH": "https://raw.githubusercontent.com/sych74/mysql-cluster/master",
+        "DB_USER": "${settings.db_user}",
+        "DB_PASS": "${settings.db_pass}",
+        "REPLICATION_USER": "repl-${fn.random}",
+        "REPLICATION_PASS": "${fn.password(20)}"
+    },
+    "onInstall": [{
+        "forEach(nodes.sqldb)": {
+            "setupUser": {
+                "filter": "${@i.id}"
+            }
+        }
+    }, {
+        "cmd[${nodes.sqldb[0].id}]": [
+            "wget ${globals.PATH}/scripts/serverConfiguration.sh -O /root/serverConfiguration.sh",
+            "bash /root/serverConfiguration.sh ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} 1 &>> /var/log/run.log"
+        ],
+        "cmd[${nodes.sqldb[1].id}]": [
+            "wget ${globals.PATH}/scripts/serverConfiguration.sh -O /root/serverConfiguration.sh",
+            "bash /root/serverConfiguration.sh ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} 2 &>> /var/log/run.log"
+        ]
+    }, {
+        "cmd[${nodes.sqldb[0].id}]": [
+            "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh",
+            "bash /root/setupReplication.sh node${nodes.sqldb[1].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+        ],
+        "cmd[${nodes.sqldb[1].id}]": [
+            "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh",
+            "bash /root/setupReplication.sh node${nodes.sqldb[0].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+        ]
+    }],
+    "actions": {
+        "setupUser": {
+            "cmd[${this.filter}]": [
+                "wget ${globals.PATH}/scripts/setupUser.sh -O /root/setupUser.sh &>> /var/log/run.log",
+                "bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
+            ]
+        }
+    }
+}
