@@ -18,7 +18,7 @@
                     "image": "jelastic/mysql:5.7-latest"
                 }, {
                     "cloudlets": 8,
-                    "nodeGroup": "bl",
+                    "nodeGroup": "proxy",
                     "image": "jelastic/proxysql"
                 }]
             }
