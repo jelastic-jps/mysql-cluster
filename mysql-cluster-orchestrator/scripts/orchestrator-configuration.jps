@@ -10,11 +10,11 @@
     },
     "onAfterScaleIn[nodeGroup:sqldb]": {
         "forEach(event.response.nodes)": {
-            "cmd [bl] ": "mysql -h 127.0.0.1 -P3360 -uadmin -p${globals.ORCH_PASS} -e \"DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';\" "
+            "cmd [proxy] ": "mysql -h 127.0.0.1 -P3360 -uadmin -p${globals.ORCH_PASS} -e \"DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';\" "
         }
     },
     "onInstall": {
-        "cmd [ bl ]": [
+        "cmd [ proxy ]": [
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"CREATE DATABASE IF NOT EXISTS orchestrator;\" ",
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';\" ",
             "sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json",
