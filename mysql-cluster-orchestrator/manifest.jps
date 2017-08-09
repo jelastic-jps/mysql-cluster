@@ -10,7 +10,6 @@
         "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
         "env": {
             "topology": {
-                "ssl": true,
                 "nodes": [{
                     "cloudlets": 8,
                     "count": 2,
