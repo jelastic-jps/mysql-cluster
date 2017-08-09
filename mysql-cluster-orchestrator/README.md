@@ -8,7 +8,6 @@ The **Scalable MySQL Cluster with Load Balancing** package can be installed in j
 - by default, includes 1 ProxySQL load balancer node (based on _jelastic/proxysql_ image) and a pair of MySQL database servers (built over the  _[jelastic/mysql](https://hub.docker.com/r/jelastic/mysql/):5.7-latest_ template) with asynchronous replication between them
 - one MySQL container is assigned a _master_ role, whilst the second one (and all the further manually added nodes) will serve as _slave_
 - each container is assigned the default 8-cloudlet limit (equals to _1 GiB_ of RAM and _3.2 GHz_ of CPU) for [automatic vertical scaling](https://docs.jelastic.com/automatic-vertical-scaling)
-- additional connection security is gained with out-of-box [Jelastic SSL](https://docs.jelastic.com/jelastic-ssl) certificate
 
 ![mysql-cluster-scheme](images/mysql-cluster-scheme.png)
 
