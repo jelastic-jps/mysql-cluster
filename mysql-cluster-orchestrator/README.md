@@ -18,6 +18,8 @@ Being delivered with a set of special preconfigurations, the current Scalable My
 - _**comfortable GUI**_ - the solution includes pre-installed [Orchestrator](https://github.com/github/orchestrator) tool to simplify cluster management
 - _**scalability and autodiscovery**_ - new MySQL nodes, added during manual DB server [horizontal scaling](https://docs.jelastic.com/multi-nodes), are included into a cluster as _slaves_ with all the required adjustments being applied automatically
 
+Before proceeding to the package installation, consider, that the appropriate Platform should run Jelastic 5.0.5 version or higher.
+
 ## How to Install MySQL Cluster into Jelastic Cloud
 
 Deployment of the current **Scalable MySQL Cluster** solution represents a completely automated process, allowing to deploy a dedicated database cluster in a matter of minutes. In case you don’t have Jelastic account yet, click the button below and provide the required signup data within the opened page to automatically register at the chosen [Jelastic Public Cloud](https://jelastic.cloud/) and proceed with package installation.
