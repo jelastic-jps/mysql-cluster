@@ -1,25 +1,28 @@
 {
     "jpsType": "update",
-    "id": "mysql-backup",
+    "id": "mysql-backup-addon",
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/docker-native/master/addons",
     "description": {
-        "short": "Mysql backup"
+        "short": "Mysql Backup"
+    },
+    "globals": {
+        "volume": "/root/backups",
+        "backupIni": "/var/lib/jelastic/backup/backup.ini"
     },
     "name": "Mysql Backup",
     "settings": {
         "fields": [{
             "name": "backup-mode",
-            "caption": "Backup Mode",
+            "caption": "Backup To",
             "type": "radio-fieldset",
             "values": {
-                "local": "Backup to local FS",
-                "storage": "Backup to storage",
-                "S3": "Backup to S3",
-                "loc": "Backup to local FS"
+                "lfs": "Local file system",
+                "nfs": "Storage Container",
+                "-s3": "S3 Service"
             },
-            "default": "local",
+            "default": "lfs",
             "showIf": {
-                "S3": [{
+                "-s3": [{
                     "name": "host_base",
                     "type": "string",
                     "caption": "S3 Host Base URI",
@@ -37,67 +40,19 @@
                     "caption": "Secret Key",
                     "default": "",
                     "required": true
-                }, {
-                    "name": "repo",
-                    "type": "string",
-                    "caption": "Compose Repo",
-                    "default": "https://github.com/vegasbrianc/docker-compose-demo.git",
-                    "required": true,
-                    "vtype": "url"
-                }],
-                "loc": [{
-                    "name": "token",
-                    "type": "string",
-                    "caption": "Join Token ",
-                    "default": "",
-                    "required": true
-                }, {
-                    "name": "host",
-                    "type": "string",
-                    "caption": "Host IP",
-                    "default": "",
-                    "required": true,
-                    "regex": "^(?=\\d+\\.\\d+\\.\\d+\\.\\d+$)(?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])\\.?){4}$",
-                    "regexText": "Invalid IP address format"
                 }]
             }
         }, {
             "name": "cron",
-            "caption": "Cron * * * * *",
-            "type": "compositefield",
-            "items": [{
-                "width": 50,
-                "type": "spinner",
-                "name": "minute",
-                "caption": "Minute",
-                "min": 0,
-                "max": 59,
-                "default": "*"
-            }, {
-                "width": 50,
-                "type": "spinner",
-                "name": "hour",
-                "caption": "Hour",
-                "min": 0,
-                "max": 23,
-                "default": "*"
-            }, {
-                "width": 50,
-                "type": "spinner",
-                "name": "day",
-                "caption": "Day",
-                "min": 0,
-                "max": 31,
-                "default": "*"
-            }, {
-                "width": 50,
-                "type": "spinner",
-                "name": "month",
-                "caption": "Month",
-                "min": 0,
-                "max": 12,
-                "default": "*"
-            }]
+            "caption": "When",
+            "type": "list",
+            "values": {
+                "hourly": "Hourly",
+                "daily": "Daily",
+                "montly": "Montly",
+                "custom": "Custom"
+            },
+            "default": "daily"
         }, {
             "type": "spinner",
             "name": "backup_count",
@@ -107,29 +62,62 @@
             "default": 5
         }]
     },
+    "onInstall": [{
+        "if ('${settings.backup-mode}' == 'nfs')": "addStorage"
+    }, "setup"],
     "actions": {
-        "deploy": {
-            "if ('${settings.mode}' == 'deploy')": {
-                "install": {
-                    "jps": "${baseUrl}/docker-deploy.jps",
-                    "settings": {
-                        "repo": "${settings.repo}",
-                        "type": "compose"
-                    }
-                }
+        "setup": {
+            "cmd[${nodes.sqldb.first.id}]": [
+                "echo \"BACKUP_MODE='lfs' #lfs nfs s3\" > ${globals.backupIni}",
+                "echo DB_USER='jelastic-5790456' >> ${globals.backupIni}",
+                "echo DB_PASSWORD='RzcujH7o6cydGHgjJxp3' >> ${globals.backupIni}",
+                "echo BACKUPDIR='${globals.volume}' >> ${globals.backupIni}",
+                "echo NUMBER_OF_BACKUPS=6 >> ${globals.backupIni}"
+            ]
+        },
+        "addStorage": [{
+            "addNodes": {
+                "cloudlets": 8,
+                "displayName": "Backup",
+                "nodeType": "docker",
+                "nodeGroup": "backup",
+                "dockerName": "jelastic/storage",
+                "dockerTag": "latest",
+                "metadata": {
+                    "layer": "backup"
+                },
+                "dockerVolumes": [
+                    "${globals.volume}"
+                ]
             }
-        },
-        "connect-to-swarm": {
-            "if ('${settings.mode}' == 'swarm')": [{
-                "sleep": "10000"
-            }, {
-                "cmd[cp]": "docker swarm join --token ${settings.token} ${settings.host}:2377"
-            }]
-        },
-        "success": {
-            "text": "/text/engine-success.md",
-            "email": "/text/engine-success.md"
-        },
-        "jpsVersion": "1.1"
-    }
+        }, {
+            "script": [
+                "var resp = jelastic.environment.control.GetEnvInfo('${env.envName}', session);",
+                "for (var i = 0, node; node = resp.nodes[i]; i++) {",
+                "  if (node.nodeGroup == 'backup' && node.ismaster) {",
+                "    return { result: 0, onAfterReturn : {addBackupVolume: {backupNodeId: node.id}}};",
+                "  }",
+                "}"
+            ]
+        }],
+        "addBackupVolume": [{
+            "api": "env.control.AddContainerVolume",
+            "nodeId": "${nodes.sqldb.first.id}",
+            "path": "${globals.volume}"
+        }, {
+            "api": "env.file.AddMountPointById",
+            "nodeId": "${nodes.sqldb.first.id}",
+            "path": "${globals.volume}",
+            "protocol": "nfs",
+            "sourcePath": "${globals.volume}",
+            "sourceNodeId": "${this.backupNodeId}",
+            "name": "Backup Volume",
+            "readOnly": false
+        }]
+    },
+    "success": {
+        "text": "success! ",
+        "email": "success! "
+    },
+    "jpsVersion": "0.9"
 }
