@@ -7,9 +7,9 @@
     },
     "globals": {
         "volume": "/root/backups",
+        "backupScript": "/var/lib/jelastic/backup/backup.sh",
         "backupIni": "/var/lib/jelastic/backup/backup.ini",
-        "s3cfg": "/var/lib/jelastic/backup/s3cfg",
-        "test": "#wget https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup/backup.sh -O /var/lib/jelastic/backup/backup.sh"
+        "s3cfg": "/var/lib/jelastic/backup/s3cfg"
     },
     "name": "Mysql Backup",
     "settings": {
@@ -61,12 +61,13 @@
             "caption": "When",
             "type": "list",
             "values": {
-                "hourly": "Hourly",
-                "daily": "Daily",
-                "montly": "Montly",
-                "custom": "Custom"
+                "*/3 * * * *": "Every 3 min: */3 * * * *",
+                "0 * * * *": "Hourly: 0 * * * *",
+                "0 */6 * * *": "4 times per day: 0 */6 * * *",
+                "0 */12 * * *": "2 times per day: 0 */12 * * *",
+                "0 0 * * *": "Once everyday: 0 0 * * *"
             },
-            "default": "daily"
+            "default": "0 */12 * * *"
         }, {
             "type": "spinner",
             "name": "backup_count",
@@ -81,7 +82,8 @@
             "if ('${settings.backup-mode}' == 'nfs')": "addStorage"
         }, {
             "if ('${settings.backup-mode}' == 's3')": "setupS3"
-        }
+        },
+        "setupCron"
     ],
     "actions": {
         "setup": {
@@ -104,31 +106,35 @@
                 "echo S3_CONF='${globals.s3cfg}' >> ${globals.backupIni}"
             ]
         },
-        "addStorage": [{
-            "addNodes": {
-                "cloudlets": 8,
-                "displayName": "Backup",
-                "nodeType": "docker",
-                "nodeGroup": "backup",
-                "dockerName": "jelastic/storage",
-                "dockerTag": "latest",
-                "metadata": {
-                    "layer": "backup"
-                },
-                "dockerVolumes": [
-                    "${globals.volume}"
+        "addStorage": {
+            "if (!nodes.backup)": [{
+                "addNodes": {
+                    "cloudlets": 8,
+                    "displayName": "Backup",
+                    "nodeType": "docker",
+                    "nodeGroup": "backup",
+                    "dockerName": "jelastic/storage",
+                    "dockerTag": "latest",
+                    "metadata": {
+                        "layer": "backup"
+                    },
+                    "dockerVolumes": [
+                        "${globals.volume}"
+                    ]
+                }
+            }, {
+                "script": [
+                    "var resp = jelastic.environment.control.GetEnvInfo('${env.envName}', session);",
+                    "if (resp.result != 0) return resp;",
+                    "for (var i = 0; resp.nodes; i++) {",
+                    "  var node = resp.nodes[i]",
+                    "  if (node.nodeGroup == 'backup' && node.ismaster) {",
+                    "    return { result: 0, onAfterReturn : {addBackupVolume: {backupNodeId: node.id}}};",
+                    "  }",
+                    "}"
                 ]
-            }
-        }, {
-            "script": [
-                "var resp = jelastic.environment.control.GetEnvInfo('${env.envName}', session);",
-                "for (var i = 0, node; node = resp.nodes[i]; i++) {",
-                "  if (node.nodeGroup == 'backup' && node.ismaster) {",
-                "    return { result: 0, onAfterReturn : {addBackupVolume: {backupNodeId: node.id}}};",
-                "  }",
-                "}"
-            ]
-        }],
+            }]
+        },
         "addBackupVolume": [{
             "api": "env.control.AddContainerVolume",
             "nodeId": "${nodes.sqldb.first.id}",
@@ -142,7 +148,13 @@
             "sourceNodeId": "${this.backupNodeId}",
             "name": "Backup Volume",
             "readOnly": false
-        }]
+        }],
+        "setupCron": {
+            "cmd[${nodes.sqldb.first.id}]": [
+                "crontab -l 2>/dev/null | sed \"/backup/d\" | crontab -",
+                "crontab -l 2>/dev/null | { cat; echo \"${settings.cron}  /bin/bash ${globals.backupScript}\n\"; } | crontab - ;"
+            ]
+        }
     },
     "success": {
         "text": "success! ",
