@@ -7,11 +7,24 @@
     },
     "globals": {
         "volume": "/root/backups",
-        "backupIni": "/var/lib/jelastic/backup/backup.ini"
+        "backupIni": "/var/lib/jelastic/backup/backup.ini",
+        "s3cfg": "/var/lib/jelastic/backup/s3cfg"
     },
     "name": "Mysql Backup",
     "settings": {
         "fields": [{
+            "name": "db_user",
+            "type": "string",
+            "caption": "DB User",
+            "default": "",
+            "required": true
+        }, {
+            "name": "db_password",
+            "type": "string",
+            "caption": "DB Password",
+            "default": "",
+            "required": true
+        }, {
             "name": "backup-mode",
             "caption": "Backup To",
             "type": "radio-fieldset",
@@ -64,15 +77,26 @@
     },
     "onInstall": [{
         "if ('${settings.backup-mode}' == 'nfs')": "addStorage"
+    }, {
+        "if ('${settings.backup-mode}' == '-s3')": "setupS3"
     }, "setup"],
     "actions": {
         "setup": {
             "cmd[${nodes.sqldb.first.id}]": [
                 "echo \"BACKUP_MODE='lfs' #lfs nfs s3\" > ${globals.backupIni}",
-                "echo DB_USER='jelastic-5790456' >> ${globals.backupIni}",
-                "echo DB_PASSWORD='RzcujH7o6cydGHgjJxp3' >> ${globals.backupIni}",
+                "echo DB_USER='${settings.db_user}' >> ${globals.backupIni}",
+                "echo DB_PASSWORD='${settings.db_password}' >> ${globals.backupIni}",
                 "echo BACKUPDIR='${globals.volume}' >> ${globals.backupIni}",
-                "echo NUMBER_OF_BACKUPS=6 >> ${globals.backupIni}"
+                "echo NUMBER_OF_BACKUPS='${settings.backup_count}' >> ${globals.backupIni}",
+                "wget https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup/backup.sh -O /var/lib/jelastic/backup/backup.sh"
+            ]
+        },
+        "setupS3": {
+            "cmd[${nodes.sqldb.first.id}]": [
+                "echo [default] > ${globals.s3cfg}",
+                "echo access_key = '${settings.access_key}' >> ${globals.s3cfg}",
+                "echo secret_key = '${settings.secret_key}' >> ${globals.s3cfg}",
+                "echo host_base = '${settings.host_base}' >> ${globals.s3cfg}"
             ]
         },
         "addStorage": [{
