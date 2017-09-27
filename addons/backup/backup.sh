@@ -4,7 +4,11 @@
 # ---------------------------------------------------------------------------------------------
 # Copyright (c) 2017 Hivext Technologies
 
-. backup.ini
+
+
+BACKUP_CONF='/var/lib/jelastic/backup/backup.ini'
+
+source ${BACKUP_CONF}
 
 TMP_PATH='/tmp/backups'
 S3_BUCKET_NAME=${HOSTNAME}
@@ -20,10 +24,9 @@ MOUNT=`which mount`
 GREP=`which grep`
 #---------------------------
 OPTS="--quote-names --opt --databases --compress"
-S3_OPTS="--no-check-hostname"
+S3_OPTS="--no-check-hostname --config=${S3_CONF}"
 
-
-DATE=`date +%Y-%m-%d_%Hh%Mm%Ss`
+DATE=`date +%Y-%m-%d_%Hh:%Mm`
 
 __VERBOSE=1
 
