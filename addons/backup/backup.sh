@@ -4,19 +4,20 @@
 # ---------------------------------------------------------------------------------------------
 # Copyright (c) 2017 Hivext Technologies
 
-. .backup.ini
+. backup.ini
 
-NUMBER_OF_BACKUPS=6
 TMP_PATH='/tmp/backups'
 S3_BUCKET_NAME=${HOSTNAME}
 
 LOG_FILE="/var/log/mysql/db_bckp.log"
 SOCKET='/var/lib/mysql/mysql.sock'
-EXCLUDE=('information_schema')
+EXCLUDE=('information_schema' 'performance_schema')
 #---------------------------
 MYSQL=`which mysql`
 MDUMP=`which mysqldump`
 MKDIR=`which mkdir`
+MOUNT=`which mount`
+GREP=`which grep`
 #---------------------------
 OPTS="--quote-names --opt --databases --compress"
 S3_OPTS="--no-check-hostname"
@@ -85,8 +86,7 @@ create_dumps() {
          	else
              		log "ERROR making dump. DB: ${DB}. DATE: ${DATE}.";
          	fi
-done
-
+	done
 	log "Done backing up all databases.";
 }
 
@@ -99,7 +99,8 @@ remove_old_backups_s3() {
 }
 
 remove_old_backups() {
-	ls -tp | grep -v '/$' | tail -n +${NUMBER_OF_BACKUPS} | xargs -I {} rm -- {}
+	local back_dir=$1
+	ls -tp ${back_dir} | grep -v '/$' | tail -n +${NUMBER_OF_BACKUPS} | xargs -I {} rm -- ${back_dir}/{}
 }
 
 check_mount() {
@@ -107,10 +108,9 @@ check_mount() {
 	if ${MOUNT} | ${GREP} ${mount_point} > /dev/null; then
 		echo "yay"
 	else
-    		echo "nay"
+    		log "ERROR: ${mount_point} Mount point not found";
 	fi
 }
-
 
 if [ ! -e "${TMP_PATH}" ]; then mkdir -p "${TMP_PATH}"; fi
 
@@ -122,11 +122,12 @@ case $BACKUP_MODE in
      "lfs" )
 	create_directories $BACKUPDIR
 	mv ~/BACKUP-${DATE}.tar.gz $BACKUPDIR
-	remove_old_backups
+	remove_old_backups $BACKUPDIR
          ;;
      "nfs" )
 	check_mount $BACKUPDIR
 	mv ~/BACKUP-${DATE}.tar.gz $BACKUPDIR
+	remove_old_backups $BACKUPDIR
          ;;
      "s3" )
 	rpm -qa | grep -qw s3cmd || yum install -y s3cmd
@@ -139,3 +140,4 @@ esac
 
 rm -f ~/BACKUP-${DATE}.tar.gz
 rm -rf ${TMP_PATH}
+exit 0
