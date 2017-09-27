@@ -4,96 +4,138 @@
 # ---------------------------------------------------------------------------------------------
 # Copyright (c) 2017 Hivext Technologies
 
-#. backups.cfg
-
-#USER='jelastic-5790456'
-#PASSWORD='RzcujH7o6cydGHgjJxp3'
-#HOST='localhost'
-#BACKUPDIR='/root/backups'
-
 . .backup.ini
-
 
 NUMBER_OF_BACKUPS=6
 TMP_PATH='/tmp/backups'
 S3_BUCKET_NAME=${HOSTNAME}
 
+LOG_FILE="/var/log/mysql/db_bckp.log"
 SOCKET='/var/lib/mysql/mysql.sock'
 EXCLUDE=('information_schema')
-
 #---------------------------
 MYSQL=`which mysql`
 MDUMP=`which mysqldump`
-S3CMD=`which s3cmd`
+MKDIR=`which mkdir`
 #---------------------------
 OPTS="--quote-names --opt --databases --compress"
 S3_OPTS="--no-check-hostname"
+
+
 DATE=`date +%Y-%m-%d_%Hh%Mm%Ss`
 
-DATESTAMP=$(date +".%m.%d.%Y")
+__VERBOSE=1
+
+log() {
+     if [ $__VERBOSE -gt 0 ]; then
+         echo -n `date +%D.%k:%M:%S.%N` >> ${LOG_FILE}
+         echo ": $@" >> ${LOG_FILE}
+     fi
+     if [ $__VERBOSE -gt 1 ]; then
+         echo -n `date +%D.%k:%M:%S.%N`
+         echo ": $@"
+     fi
+}
 
 db_dump () {
     local db_name=$1
     local file_name=$2
-    ${MDUMP} --user=${USER} --password=${PASSWORD} ${OPTS} ${db_name} > ${file_name}
+    ${MDUMP} --user=${DB_USER} --password=${DB_PASSWORD} ${OPTS} ${db_name} > ${file_name}
     return $?
 }
 
 get_databases() {
     local tables
     local tbl
-    tables=`${MYSQL} --user=${USER} --password=${PASSWORD} --batch --skip-column-names -e "show databases" | sed 's/ /%/g'`
+    tables=`${MYSQL} --user=${DB_USER} --password=${DB_PASSWORD} --batch --skip-column-names -e "show databases" | sed 's/ /%/g'`
     for i in $(seq 0 $((${#EXCLUDE[@]} - 1))) ; do
         tables=`echo ${tables} | sed "s/\b${EXCLUDE[$i]}\b//g"`
     done
     DBS=(`echo ${tables}`)
 }
 
-if [ ! -e "${BACKUPDIR}" ]; then mkdir -p "${BACKUPDIR}"; fi
+
+create_directories() {
+    local back_dir=$1
+    [ ! -d "$back_dir" ] && {
+        $MKDIR -p $back_dir 2>/dev/null;
+         [ "$?" -ne 0 ]  && {
+             log "Error creating backup_dir. Exiting..";
+             exit;
+         }
+     }
+}
 
 create_S3_bucket() {
 	count=`${S3CMD} ls ${S3_OPTS} | grep ${S3_BUCKET_NAME}  | wc -l`
 	if [[ $count == 0 ]]; then
 		${S3CMD} mb s3://${S3_BUCKET_NAME} ${S3_OPTS}
-		echo "New S3 BUCKET ${S3_BUCKET_NAME} has been created....";
+		log "New S3 BUCKET ${S3_BUCKET_NAME} has been created....";
 	fi
 }
 
-get_databases
-
-if [ ! -e "${TMP_PATH}" ]; then mkdir -p "${TMP_PATH}"; fi
-
-for i in $(seq 0 $((${#DBS[@]} - 1))); do
-    DB=${DBS[$i]}
-    echo "Backuping ${DB}"
-    db_dump "${DB}" "${TMP_PATH}/${DB}.sql"
-#       [ $? -eq 0 ] && find "${BACKUPDIR}" -mtime +10 -type f -exec rm -v {} \;
+create_dumps() {
+	for i in $(seq 0 $((${#DBS[@]} - 1))); do
+    		DB=${DBS[$i]}
+    		log "Backuping ${DB}"
+    		db_dump "${DB}" "${TMP_PATH}/${DB}-${DATE}.sql"
+    		if [ $? -eq 0 ];
+         	then
+             		log "Done! DB: ${DB}-${DATE}.sql. DATE: ${DATE}";
+         	else
+             		log "ERROR making dump. DB: ${DB}. DATE: ${DATE}.";
+         	fi
 done
 
-echo "Done backing up all databases."
-
-echo "Starting compression..."
-tar czf ~/${DATE}.tar.gz -C ${TMP_PATH}/ .
-echo "Done compressing the backup file."
-
-create_S3_bucket
-
-echo "Uploading the new backup..."
-${S3CMD} put ${S3_OPTS} -f ~/${DATE}.tar.gz s3://${S3_BUCKET_NAME}/${DATE}.tar.gz
-echo "New backup uploaded."
+	log "Done backing up all databases.";
+}
 
 remove_old_backups_s3() {
 	${S3CMD} ${S3_OPTS} ls s3://${S3_BUCKET_NAME} |sort -k1,2 -r|tail -n +${NUMBER_OF_BACKUPS} | awk '{print $4}' | while read -r OLD_BACKUP;
   	do
 		if [[ ${OLD_BACKUP} != "" ]];  then ${S3CMD} ${S3_OPTS} del "${OLD_BACKUP}"; fi
-		echo "Old Backup ${OLD_BACKUP} has been deleted ....."
+		log "Old Backup ${OLD_BACKUP} has been deleted ....."
 	done;
 }
 
-remove_old_backups_s3
-
 remove_old_backups() {
-	ls -tp | grep -v '/$' | tail -n +3 | xargs -I {} rm -- {}
+	ls -tp | grep -v '/$' | tail -n +${NUMBER_OF_BACKUPS} | xargs -I {} rm -- {}
 }
 
+check_mount() {
+	local mount_point=$1
+	if ${MOUNT} | ${GREP} ${mount_point} > /dev/null; then
+		echo "yay"
+	else
+    		echo "nay"
+	fi
+}
+
+
+if [ ! -e "${TMP_PATH}" ]; then mkdir -p "${TMP_PATH}"; fi
+
+get_databases
+create_dumps
+tar czf ~/BACKUP-${DATE}.tar.gz -C ${TMP_PATH}/ .
+
+case $BACKUP_MODE in
+     "lfs" )
+	create_directories $BACKUPDIR
+	mv ~/BACKUP-${DATE}.tar.gz $BACKUPDIR
+	remove_old_backups
+         ;;
+     "nfs" )
+	check_mount $BACKUPDIR
+	mv ~/BACKUP-${DATE}.tar.gz $BACKUPDIR
+         ;;
+     "s3" )
+	rpm -qa | grep -qw s3cmd || yum install -y s3cmd
+	S3CMD=`which s3cmd`
+	create_S3_bucket
+	${S3CMD} put ${S3_OPTS} -f ~/BACKUP-${DATE}.tar.gz s3://${S3_BUCKET_NAME}/BACKUP-${DATE}.tar.gz
+	remove_old_backups_s3
+	;;
+esac
+
+rm -f ~/BACKUP-${DATE}.tar.gz
 rm -rf ${TMP_PATH}
