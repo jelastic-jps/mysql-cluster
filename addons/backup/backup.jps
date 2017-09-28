@@ -93,7 +93,7 @@
                 "echo DB_PASSWORD='${settings.db_password}' >> ${globals.backupIni}",
                 "echo BACKUPDIR='${globals.volume}' >> ${globals.backupIni}",
                 "echo NUMBER_OF_BACKUPS='${settings.backup_count}' >> ${globals.backupIni}",
-                "wget https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup/backup.sh -O /var/lib/jelastic/backup/backup.sh"
+                "wget https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup/backup.sh -O ${globals.backupScript}"
             ]
         },
         "setupS3": {
