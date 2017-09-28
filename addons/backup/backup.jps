@@ -152,7 +152,7 @@
         "setupCron": {
             "cmd[${nodes.sqldb.first.id}]": [
                 "crontab -l 2>/dev/null | sed \"/backup/d\" | crontab -",
-                "crontab -l 2>/dev/null | { cat; echo \"${settings.cron}  /bin/bash ${globals.backupScript}\n\"; } | crontab - ;"
+                "crontab -l 2>/dev/null | { cat; echo \"${settings.cron}  /bin/bash ${globals.backupScript} ${globals.backupIni}\n\"; } | crontab - ;"
             ]
         }
     },
