@@ -4,11 +4,7 @@
 # ---------------------------------------------------------------------------------------------
 # Copyright (c) 2017 Hivext Technologies
 
-
-
-BACKUP_CONF='/var/lib/jelastic/backup/backup.ini'
-
-source ${BACKUP_CONF}
+BACKUP_CONF=$1
 
 TMP_PATH='/tmp/backups'
 S3_BUCKET_NAME=${HOSTNAME}
@@ -23,6 +19,15 @@ MKDIR=`which mkdir`
 MOUNT=`which mount`
 GREP=`which grep`
 #---------------------------
+
+if [ ! -f ${BACKUP_CONF} ]
+then
+    echo "ERROR: Configuration file not found ....." >> ${LOG_FILE}
+    exit 1
+fi
+
+source ${BACKUP_CONF}
+
 OPTS="--quote-names --opt --databases --compress"
 S3_OPTS="--no-check-hostname --config=${S3_CONF}"
 
