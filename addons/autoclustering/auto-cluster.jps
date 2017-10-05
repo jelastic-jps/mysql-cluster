@@ -17,11 +17,11 @@
             "cloudlets": 8,
             "displayName": "ProxySQL",
             "nodeType": "docker",
-            "nodeGroup": "bl",
+            "nodeGroup": "proxy",
             "dockerName": "jelastic/proxysql",
             "dockerTag": "latest",
             "metadata": {
-                "layer": "bl"
+                "layer": "proxy"
             }
         }
     }, {
