@@ -6,7 +6,7 @@
         "short": "Mysql Backup"
     },
     "globals": {
-        "volume": "/var/lib/jelastic/backup",
+        "volume": "/root/backup",
         "backupScript": "/var/lib/jelastic/bin/backup.sh",
         "backupIni": "/var/lib/jelastic/bin/backup.ini",
         "s3cfg": "/var/lib/jelastic/backup/s3cfg"
