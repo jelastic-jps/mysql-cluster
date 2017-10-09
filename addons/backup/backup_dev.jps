@@ -49,7 +49,7 @@
       {
         "type": "spinner",
         "name": "backup_count",
-        "caption": "Retain last N backups",
+        "caption": "N backups",
         "min": 1,
         "max": 100,
         "default": 5
@@ -60,10 +60,9 @@
         "type": "radio-fieldset",
         "values": {
           "nfs": "Storage Container",
-          "lfs": "Local file system",
           "s3": "S3 Service"
         },
-        "default": "lfs",
+        "default": "nfs",
         "showIf": {
           "s3": [
             {
