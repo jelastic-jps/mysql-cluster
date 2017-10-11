@@ -66,24 +66,30 @@
                 "default": "nfs",
                 "showIf": {
                     "s3": [{
-                        "name": "host_base",
-                        "type": "string",
-                        "caption": "S3 Host Base URI",
-                        "default": "s3.amazonaws.com",
-                        "required": true
-                    }, {
-                        "name": "access_key",
-                        "type": "string",
-                        "caption": "Access Key",
-                        "default": "",
-                        "required": true
-                    }, {
-                        "name": "secret_key",
-                        "type": "string",
-                        "caption": "Bucket name",
-                        "default": "",
-                        "required": true
-                    }],
+                            "name": "host_base",
+                            "type": "string",
+                            "caption": "S3 Host Base URI",
+                            "default": "s3.amazonaws.com",
+                            "required": true
+                        }, {
+                            "name": "access_key",
+                            "type": "string",
+                            "caption": "Access Key",
+                            "default": "",
+                            "required": true
+                        }, {
+                            "name": "secret_key",
+                            "type": "string",
+                            "caption": "Secret Key",
+                            "default": "",
+                            "required": true
+                        }, {
+                            "name": "bucket_name",
+                            "type": "string",
+                            "caption": "Bucket name",
+                            "default": ""
+                        }
+                    ],
                     "nfs": [{
                         "name": "storage",
                         "caption": "Storage container",
@@ -96,7 +102,9 @@
                     }, {
                         "name": "backup_path",
                         "caption": "Backup path",
-                        "type": "string"
+                        "type": "string",
+                        "default": "/root/backups",
+                        "required": true
                     }]
                 }
             }, {
@@ -129,7 +137,7 @@
     ],
     "addons": [{
         "id": "setup-addon",
-        "buttons": {
+        "buttons": [{
             "settings": "main",
             "procedure": [
                 "setup", {
@@ -141,12 +149,12 @@
             "caption": "Setup",
             "logsPath": "/var/log/build.log",
             "successText": "Build are launched."
-        }
+        }]
     }],
     "actions": {
         "setup": {
             "cmd[${nodes.sqldb.first.id}]": [
-                "echo \"BACKUP_MODE='${settings.backup-mode}' #lfs nfs s3\" > ${globals.backupIni}",
+                "echo \"BACKUP_MODE='${settings.backup-mode}' #nfs s3\" > ${globals.backupIni}",
                 "echo DB_USER='${settings.db_user}' >> ${globals.backupIni}",
                 "echo DB_PASSWORD='${settings.db_password}' >> ${globals.backupIni}",
                 "echo BACKUPDIR='${globals.volume}' >> ${globals.backupIni}",
