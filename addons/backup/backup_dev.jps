@@ -13,104 +13,106 @@
     },
     "name": "Mysql Backup",
     "settings": {
-        "fields": [{
-            "name": "cron",
-            "caption": "Backup schedule",
-            "type": "radio-fieldset",
-            "values": {
-                "default": "Use template",
-                "advanced": "Advanced backup schedule"
-            },
-            "default": "default",
-            "showIf": {
-                "default": {
-                    "name": "template_cron",
-                    "caption": "Backup schedule",
-                    "type": "list",
-                    "values": {
-                        "0 6 1/1 * *": "Daily at 6:00 am",
-                        "*/30 * * * *": "Every 30 minutes",
-                        "0 */1 * * *": "Hourly",
-                        "0 */4 * * *": "Every 4 hours",
-                        "0 */6 * * *": "Every 6 hours",
-                        "0 */12 * * *": "Every 12 hours",
-                        "0 6 1/7 * *": "Each Sunday at 6:00 am"
-                    },
-                    "default": "0 */12 * * *"
+        "main": {
+            "fields": [{
+                "name": "cron",
+                "caption": "Backup schedule",
+                "type": "radio-fieldset",
+                "values": {
+                    "default": "Use template",
+                    "advanced": "Advanced backup schedule"
                 },
-                "advanced": {
-                    "type": "string",
-                    "name": "advanced_cron",
-                    "default": "0 */1 * * *",
-                    "regexText": "Cron syntax is incorrect!",
-                    "regex": "^(((([\\\\*]{1}){1,})|((\\\\*\\\\\\\/){0,1}(([0-9\\\/\\*\\-\\,]{1}){1,}|(([1-5]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,}){1}))) ((([\\\\*]{1}){1,})|((\\\\*\\\\\\\/){0,1}(([0-9\\\/\\*\\-\\,]{1}){1,}|(([1]{1}){1}([0-9\\\/\\*\\-\\,-]{1}){1,}){1}|([2]{1}){1}([0-3]{1}){1}))) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([1-9]{1}){1}|(([1-2]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,5}){1}|([3]{1}){1}([0-1]{1}){1}))) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([1-9]{1}){1}|(([1-2]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,}){1}|([3]{1}){1}([0-1]{1}){1}))|(jan|feb|mar|apr|may|jun|jul|aug|sep|okt|nov|dec)(-?\\w+?)?) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([0-7]{1}){1}))|(sun|mon|tue|wed|thu|fri|sat)(-?\\w+?)?))$",
-                    "caption": "Advanced"
-                }
-            }
-        }, {
-            "type": "spinner",
-            "name": "backup_count",
-            "caption": "N backups",
-            "min": 1,
-            "max": 100,
-            "default": 5
-        }, {
-            "name": "backup-mode",
-            "caption": "Backup location",
-            "type": "radio-fieldset",
-            "values": {
-                "nfs": "Storage Container",
-                "s3": "S3 Service"
-            },
-            "default": "nfs",
-            "showIf": {
-                "s3": [{
-                    "name": "host_base",
-                    "type": "string",
-                    "caption": "S3 Host Base URI",
-                    "default": "s3.amazonaws.com",
-                    "required": true
-                }, {
-                    "name": "access_key",
-                    "type": "string",
-                    "caption": "Access Key",
-                    "default": "",
-                    "required": true
-                }, {
-                    "name": "secret_key",
-                    "type": "string",
-                    "caption": "Bucket name",
-                    "default": "",
-                    "required": true
-                }],
-                "nfs": [{
-                    "name": "storage",
-                    "caption": "Storage container",
-                    "type": "list",
-                    "values": {
-                        "existed_contained": "Use existing storage container",
-                        "new_storage": "Create new storage container"
+                "default": "default",
+                "showIf": {
+                    "default": {
+                        "name": "template_cron",
+                        "caption": "Backup schedule",
+                        "type": "list",
+                        "values": {
+                            "0 6 1/1 * *": "Daily at 6:00 am",
+                            "*/30 * * * *": "Every 30 minutes",
+                            "0 */1 * * *": "Hourly",
+                            "0 */4 * * *": "Every 4 hours",
+                            "0 */6 * * *": "Every 6 hours",
+                            "0 */12 * * *": "Every 12 hours",
+                            "0 6 1/7 * *": "Each Sunday at 6:00 am"
+                        },
+                        "default": "0 */12 * * *"
                     },
-                    "default": "existed_contained"
-                }, {
-                    "name": "backup_path",
-                    "caption": "Backup path",
-                    "type": "string"
-                }]
-            }
-        }, {
-            "name": "db_user",
-            "type": "string",
-            "caption": "DB User",
-            "default": "",
-            "required": true
-        }, {
-            "name": "db_password",
-            "type": "string",
-            "caption": "DB Password",
-            "default": "",
-            "required": true
-        }]
+                    "advanced": {
+                        "type": "string",
+                        "name": "advanced_cron",
+                        "default": "0 */1 * * *",
+                        "regexText": "Cron syntax is incorrect!",
+                        "regex": "^(((([\\\\*]{1}){1,})|((\\\\*\\\\\\\/){0,1}(([0-9\\\/\\*\\-\\,]{1}){1,}|(([1-5]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,}){1}))) ((([\\\\*]{1}){1,})|((\\\\*\\\\\\\/){0,1}(([0-9\\\/\\*\\-\\,]{1}){1,}|(([1]{1}){1}([0-9\\\/\\*\\-\\,-]{1}){1,}){1}|([2]{1}){1}([0-3]{1}){1}))) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([1-9]{1}){1}|(([1-2]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,5}){1}|([3]{1}){1}([0-1]{1}){1}))) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([1-9]{1}){1}|(([1-2]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,}){1}|([3]{1}){1}([0-1]{1}){1}))|(jan|feb|mar|apr|may|jun|jul|aug|sep|okt|nov|dec)(-?\\w+?)?) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([0-7]{1}){1}))|(sun|mon|tue|wed|thu|fri|sat)(-?\\w+?)?))$",
+                        "caption": "Advanced"
+                    }
+                }
+            }, {
+                "type": "spinner",
+                "name": "backup_count",
+                "caption": "N backups",
+                "min": 1,
+                "max": 100,
+                "default": 5
+            }, {
+                "name": "backup-mode",
+                "caption": "Backup location",
+                "type": "radio-fieldset",
+                "values": {
+                    "nfs": "Storage Container",
+                    "s3": "S3 Service"
+                },
+                "default": "nfs",
+                "showIf": {
+                    "s3": [{
+                        "name": "host_base",
+                        "type": "string",
+                        "caption": "S3 Host Base URI",
+                        "default": "s3.amazonaws.com",
+                        "required": true
+                    }, {
+                        "name": "access_key",
+                        "type": "string",
+                        "caption": "Access Key",
+                        "default": "",
+                        "required": true
+                    }, {
+                        "name": "secret_key",
+                        "type": "string",
+                        "caption": "Bucket name",
+                        "default": "",
+                        "required": true
+                    }],
+                    "nfs": [{
+                        "name": "storage",
+                        "caption": "Storage container",
+                        "type": "list",
+                        "values": {
+                            "existed_contained": "Use existing storage container",
+                            "new_storage": "Create new storage container"
+                        },
+                        "default": "existed_contained"
+                    }, {
+                        "name": "backup_path",
+                        "caption": "Backup path",
+                        "type": "string"
+                    }]
+                }
+            }, {
+                "name": "db_user",
+                "type": "string",
+                "caption": "DB User",
+                "default": "",
+                "required": true
+            }, {
+                "name": "db_password",
+                "type": "string",
+                "caption": "DB Password",
+                "default": "",
+                "required": true
+            }]
+        }
     },
     "onInstall": [
         "setup", {
@@ -118,8 +120,29 @@
         }, {
             "if ('${settings.backup-mode}' == 's3')": "setupS3"
         },
-        "setupCron"
+        "setupCron", {
+            "installAddon": {
+                "id": "setup-addon",
+                "nodeGroup": "sqldb"
+            }
+        }
     ],
+    "addons": [{
+        "id": "setup-addon",
+        "buttons": {
+            "settings": "main",
+            "procedure": [
+                "setup", {
+                    "if ('${settings.backup-mode}' == 'nfs')": "addStorage"
+                }, {
+                    "if ('${settings.backup-mode}' == 's3')": "setupS3"
+                }
+            ],
+            "caption": "Setup",
+            "logsPath": "/var/log/build.log",
+            "successText": "Build are launched."
+        }
+    }],
     "actions": {
         "setup": {
             "cmd[${nodes.sqldb.first.id}]": [
