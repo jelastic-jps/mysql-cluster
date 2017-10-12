@@ -9,7 +9,7 @@ BACKUP_CONF=$1
 TMP_PATH='/tmp/backups'
 S3_BUCKET_NAME=${HOSTNAME}
 
-LOG_FILE="/var/log/mysql/db_bckp.log"
+LOG_FILE="/var/log/db_backup.log"
 SOCKET='/var/lib/mysql/mysql.sock'
 EXCLUDE=('information_schema' 'performance_schema')
 #---------------------------
