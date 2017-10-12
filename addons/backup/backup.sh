@@ -56,7 +56,7 @@ db_dump () {
 get_databases() {
     local tables
     local tbl
-    tables=`${MYSQL} --user=${DB_USER} --password=${DB_PASSWORD} --batch --skip-column-names -e "show databases" | sed 's/ /%/g'`
+    tables=`${MYSQL} --user=${DB_USER} --password=${DB_PASSWORD} --batch --skip-column-names -e "show databases" | sed 's/#.*//'|sed 's/ /%/g'`
     for i in $(seq 0 $((${#EXCLUDE[@]} - 1))) ; do
         tables=`echo ${tables} | sed "s/\b${EXCLUDE[$i]}\b//g"`
     done
