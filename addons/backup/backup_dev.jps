@@ -1,14 +1,14 @@
 {
     "jpsType": "update",
-    "id": "mysql-backup-addon",
+    "id": "sql-backup-addon",
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/docker-native/master/addons",
     "description": {
         "short": "Mysql Backup"
     },
     "globals": {
-        "volume": "/root/backup",
-        "backupScript": "/var/lib/jelastic/bin/backup.sh",
-        "backupIni": "/var/lib/jelastic/bin/backup.ini",
+        "work_dir": "/var/lib/jelastic/backup",
+        "backupScript": "/var/lib/jelastic/backup/backup.sh",
+        "backupIni": "/var/lib/jelastic/backup/backup.ini",
         "s3cfg": "/var/lib/jelastic/backup/s3cfg"
     },
     "name": "Mysql Backup",
@@ -154,13 +154,17 @@
     "actions": {
         "setup": {
             "cmd[${nodes.sqldb.first.id}]": [
+                "if [ ! -d ${globals.work_dir} ]; then mkdir -p ${globals.work_dir}; fi",
+                "if [ ! -d ${settings.backup_path} ]; then mkdir -p ${settings.backup_path}; fi",
                 "echo \"BACKUP_MODE='${settings.backup-mode}' #nfs s3\" > ${globals.backupIni}",
                 "echo DB_USER='${settings.db_user}' >> ${globals.backupIni}",
                 "echo DB_PASSWORD='${settings.db_password}' >> ${globals.backupIni}",
-                "echo BACKUPDIR='${globals.volume}' >> ${globals.backupIni}",
+                "echo BACKUPDIR='${settings.backup_path}' >> ${globals.backupIni}",
                 "echo NUMBER_OF_BACKUPS='${settings.backup_count}' >> ${globals.backupIni}",
-                "wget https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup/backup.sh -O ${globals.backupScript}"
-            ]
+                "wget https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup/backup.sh -O ${globals.backupScript}",
+                "chown jelastic:jelastic -R ${settings.backup_path}"
+            ],
+            "user": "root"
         },
         "setupS3": {
             "cmd[${nodes.sqldb.first.id}]": [
@@ -170,7 +174,8 @@
                 "echo host_base = '${settings.host_base}' >> ${globals.s3cfg}",
                 "echo host_bucket = '${settings.host_base}' >> ${globals.s3cfg}",
                 "echo S3_CONF='${globals.s3cfg}' >> ${globals.backupIni}"
-            ]
+            ],
+            "user": "root"
         },
         "addStorage": {
             "if (!nodes.backup)": [{
@@ -185,7 +190,7 @@
                         "layer": "backup"
                     },
                     "dockerVolumes": [
-                        "${globals.volume}"
+                        "${settings.backup_path}"
                     ]
                 }
             }, {
@@ -204,13 +209,13 @@
         "addBackupVolume": [{
             "api": "env.control.AddContainerVolume",
             "nodeId": "${nodes.sqldb.first.id}",
-            "path": "${globals.volume}"
+            "path": "${settings.backup_path}"
         }, {
             "api": "env.file.AddMountPointById",
             "nodeId": "${nodes.sqldb.first.id}",
-            "path": "${globals.volume}",
+            "path": "${settings.backup_path}",
             "protocol": "nfs",
-            "sourcePath": "${globals.volume}",
+            "sourcePath": "${settings.backup_path}",
             "sourceNodeId": "${this.backupNodeId}",
             "name": "Backup Volume",
             "readOnly": false
