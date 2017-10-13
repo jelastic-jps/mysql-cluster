@@ -1,5 +1,5 @@
 #!/bin/bash
-#  Script for backup mysql databases
+#  Script for backup databases
 #
 # ---------------------------------------------------------------------------------------------
 # Copyright (c) 2017 Hivext Technologies
@@ -9,16 +9,9 @@ BACKUP_CONF=$1
 TMP_PATH='/tmp/backups'
 S3_BUCKET_NAME=${HOSTNAME}
 
-LOG_FILE="/var/log/db_backup.log"
+LOG_FILE="/tmp/db_backup.log"
 SOCKET='/var/lib/mysql/mysql.sock'
-EXCLUDE=('information_schema' 'performance_schema')
-#---------------------------
-MYSQL=`which mysql`
-MDUMP=`which mysqldump`
-MKDIR=`which mkdir`
-MOUNT=`which mount`
-GREP=`which grep`
-#---------------------------
+
 
 if [ ! -f ${BACKUP_CONF} ]
 then
@@ -28,7 +21,36 @@ fi
 
 source ${BACKUP_CONF}
 
-OPTS="--quote-names --opt --databases --compress"
+#-----Check server---------
+
+if [ -x "$(command -v psql)" ]; then
+  echo "INFO: Determine PostgreSQL server ....." >> ${LOG_FILE};
+  SQL=`which psql`
+  DUMP=`which pg_dump`
+  OPTS=""
+  EXCLUDE=('information_schema' 'performance_schema')
+  PGPASSWORD=${DB_PASSWORD}
+  DB_DUMP="${DUMP} --username=${DB_USER} ${OPTS}"
+  GET_TABLES="`${SQL} -U ${DB_USER} -l -A -F: | sed -ne "/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }"`"
+
+fi
+
+if [ -x "$(command -v mysql)" ]; then
+  echo "INFO: Determine MySQL server ....." >> ${LOG_FILE};
+  SQL=`which mysql`
+  DUMP=`which mysqldump`
+  OPTS="--quote-names --opt --databases --compress"
+  EXCLUDE=('information_schema' 'performance_schema')
+  DB_DUMP="${SQL} --user=${DB_USER} --password=${DB_PASSWORD} ${OPTS}"
+  GET_TABLES=`${MYSQL} --user=${DB_USER} --password=${DB_PASSWORD} --batch --skip-column-names -e "show databases" | sed 's/#.*//'|sed 's/ /%/g'`
+fi
+
+#---------------------------
+MKDIR=`which mkdir`
+MOUNT=`which mount`
+GREP=`which grep`
+#---------------------------
+
 S3_OPTS="--no-check-hostname --config=${S3_CONF}"
 
 DATE=`date +%Y-%m-%d_%Hh:%Mm`
@@ -49,14 +71,14 @@ log() {
 db_dump () {
     local db_name=$1
     local file_name=$2
-    ${MDUMP} --user=${DB_USER} --password=${DB_PASSWORD} ${OPTS} ${db_name} > ${file_name}
+    ${DB_DUMP} ${db_name} > ${file_name}
     return $?
 }
 
 get_databases() {
     local tables
     local tbl
-    tables=`${MYSQL} --user=${DB_USER} --password=${DB_PASSWORD} --batch --skip-column-names -e "show databases" | sed 's/#.*//'|sed 's/ /%/g'`
+    tables=${GET_TABLES}
     for i in $(seq 0 $((${#EXCLUDE[@]} - 1))) ; do
         tables=`echo ${tables} | sed "s/\b${EXCLUDE[$i]}\b//g"`
     done
@@ -70,7 +92,7 @@ create_directories() {
         $MKDIR -p $back_dir 2>/dev/null;
          [ "$?" -ne 0 ]  && {
              log "Error creating backup_dir. Exiting..";
-             exit;
+    #         exit;
          }
      }
 }
