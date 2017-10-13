@@ -41,8 +41,8 @@ if [ -x "$(command -v mysql)" ]; then
   DUMP=`which mysqldump`
   OPTS="--quote-names --opt --databases --compress"
   EXCLUDE=('information_schema' 'performance_schema')
-  DB_DUMP="${SQL} --user=${DB_USER} --password=${DB_PASSWORD} ${OPTS}"
-  GET_TABLES=`${MYSQL} --user=${DB_USER} --password=${DB_PASSWORD} --batch --skip-column-names -e "show databases" | sed 's/#.*//'|sed 's/ /%/g'`
+  DB_DUMP="${DUMP} --user=${DB_USER} --password=${DB_PASSWORD} ${OPTS}"
+  GET_TABLES=`${SQL} --user=${DB_USER} --password=${DB_PASSWORD} --batch --skip-column-names -e "show databases" | sed 's/#.*//'|sed 's/ /%/g'`
 fi
 
 #---------------------------
