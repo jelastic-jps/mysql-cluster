@@ -207,10 +207,6 @@
             }]
         },
         "addBackupVolume": [{
-            "api": "env.control.AddContainerVolume",
-            "nodeId": "${nodes.sqldb.first.id}",
-            "path": "${settings.backup_path}"
-        }, {
             "api": "env.file.AddMountPointById",
             "nodeId": "${nodes.sqldb.first.id}",
             "path": "${settings.backup_path}",
