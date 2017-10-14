@@ -13,9 +13,15 @@
         "db_pass": "${fn.password(20)}"
     },
     "onInstall": {
-        "if (nodes.sqldb.length > 1)": "setupCluster"
+        "if (nodes.proxy)": [
+            "cleanCluster",
+            "setupCluster"
+        ],
+        "if (!nodes.proxy)": {
+            "if (nodes.sqldb.length > 1)": "setupCluster"
+        }
     },
-    "onAfterScaleOut[mysqldb]": {
+    "onAfterScaleOut[sqldb]": {
         "if (!nodes.proxy)": "setupCluster"
     },
     "onAfterClone": {
@@ -25,6 +31,9 @@
         }
     },
     "actions": {
+        "cleanCluster" : {
+            "log": " -- TEST -- "
+        },
         "setupCluster": [{
             "addNodes": {
                 "cloudlets": 8,
