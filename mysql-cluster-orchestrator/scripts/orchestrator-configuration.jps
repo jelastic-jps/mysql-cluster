@@ -16,6 +16,7 @@
     },
     "onInstall": {
         "cmd [ proxy ]": [
+            "mysql -h 127.0.0.1 -P3360 -uroot -e \"DROP DATABASE IF EXISTS orchestrator;\" ",
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"CREATE DATABASE IF NOT EXISTS orchestrator;\" ",
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';\" ",
             "wget ${globals.PATH}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log",
