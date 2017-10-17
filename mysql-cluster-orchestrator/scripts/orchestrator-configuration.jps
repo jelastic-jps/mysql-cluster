@@ -4,7 +4,7 @@
     "description": "Distributed DB Cluster",
     "success": "<table style='font-size:14px'><tr><td>Cluster Manager:</td><td><a href='${env.protocol}://node${nodes.proxy[0].id}-${env.domain}' target='_blank'>${env.protocol}://node${nodes.proxy[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>admin</b></td></tr><tr><td>Password:</td><td><b>${globals.ORCH_PASS}</b></td></tr></table>",
     "globals": {
-        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/orchestrator",
+        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/mysql-cluster-orchestrator",
         "DB_USER": "${settings.db_user}",
         "DB_PASS": "${settings.db_pass}",
         "ORCH_PASS": "${fn.password(10)}"
