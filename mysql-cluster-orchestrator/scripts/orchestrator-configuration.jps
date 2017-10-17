@@ -4,6 +4,7 @@
     "description": "Distributed DB Cluster",
     "success": "<table style='font-size:14px'><tr><td>Cluster Manager:</td><td><a href='${env.protocol}://node${nodes.proxy[0].id}-${env.domain}' target='_blank'>${env.protocol}://node${nodes.proxy[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>admin</b></td></tr><tr><td>Password:</td><td><b>${globals.ORCH_PASS}</b></td></tr></table>",
     "globals": {
+        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/mysql-cluster-orchestrator",
         "DB_USER": "${settings.db_user}",
         "DB_PASS": "${settings.db_pass}",
         "ORCH_PASS": "${fn.password(10)}"
@@ -15,8 +16,10 @@
     },
     "onInstall": {
         "cmd [ proxy ]": [
+            "mysql -h 127.0.0.1 -P3360 -uroot -e \"DROP DATABASE IF EXISTS orchestrator;\" ",
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"CREATE DATABASE IF NOT EXISTS orchestrator;\" ",
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';\" ",
+            "wget ${globals.PATH}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log",
             "sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json",
             "sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json",
             "sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json",
