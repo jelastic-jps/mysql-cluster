@@ -11,7 +11,9 @@
     "globals": {
         "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/mysql-cluster-orchestrator",
         "db_user": "jelastic-${fn.random}",
-        "db_pass": "${fn.password(20)}"
+        "db_pass": "${fn.password(20)}",
+        "repl_user": "repl-${fn.random}",
+        "repl_pass": "${fn.password(20)}"
     },
     "onInstall": {
         "if (nodes.proxy)": [
@@ -58,6 +60,15 @@
                 }
             }
         }, {
+            "forEach(nodes.sqldb)": {
+                "if (${@i.id} != ${nodes.sqldb.first.id})": {
+                    "cmd [${@i.id}]": [
+                        "mysql -u${globals.db_user} -p${globals.db_pass} -e \"STOP SLAVE; RESET SLAVE\" ",
+                        "mysqlreplicate --master=${globals.db_user}:${globals.db_pass}@node${nodes.sqldb.first.id}:3306 --slave=${globals.db_user}:${globals.db_pass}@${@i.intIP}:3306 --rpl-user=${globals.repl_user}:${globals.repl_pass}"
+                    ]
+                }
+            }
+        }, {
             "installJps": {
                 "jps": "${globals.path}/scripts/proxy-configuration.jps",
                 "settings": {
@@ -73,6 +84,8 @@
                     "db_pass": "${globals.db_pass}"
                 }
             }
+        }, {
+            "cmd [ proxy ]": "/etc/init.d/orchestrator restart"
         }]
     }
 }
