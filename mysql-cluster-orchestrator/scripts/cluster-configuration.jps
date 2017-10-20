@@ -9,7 +9,6 @@
         "REPLICATION_USER": "repl-${fn.random}",
         "REPLICATION_PASS": "${fn.password(20)}",
         "resOutput": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='https://node${@i.id}-${env.domain}' target='_blank'>https://node${@i.id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>"
-
     },
     "onAfterScaleOut[nodeGroup:sqldb]": [{
         "forEach(event.response.nodes)": {
@@ -33,11 +32,10 @@
     "onInstall": [{
         "forEach(nodes.sqldb)": {
             "if (${@i.ismaster})": {
-                "cmd[${@i.id}]": [
-                    "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log"
-                ],
+                "cmd[${@i.id}]": "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log",
                 "setNodeDisplayName[${@i.id}]": "Master"
-            }
+            },
+            "user": "root"
         }
     }, {
         "forEach(nodes.sqldb)": {
@@ -76,7 +74,8 @@
                     "cmd [${this.filter}]": [
                         "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh &>> /var/log/run.log",
                         "bash /root/setupReplication.sh node${@i.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
-                    ]
+                    ],
+                    "user": "root"
                 }
             }
         },
@@ -84,13 +83,13 @@
             "cmd[${this.filter}]": [
                 "wget ${globals.PATH}/scripts/setupUser.sh -O /root/setupUser.sh &>> /var/log/run.log",
                 "bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
-            ]
+            ],
+            "user": "root"
         },
         "setupSlave": {
-            "cmd[${this.filter}]": [
-                "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log"
-            ],
-            "setNodeDisplayName[${this.filter}]": "Slave"
+            "cmd[${this.filter}]": "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log",
+            "setNodeDisplayName[${this.filter}]": "Slave",
+            "user": "root"
         }
     }
 }
