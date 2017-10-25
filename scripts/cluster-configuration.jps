@@ -1,16 +1,23 @@
 {
     "jpsType": "update",
-    "name": "Database Auto Replication",
+    "name": "Scale Database Cluster",
     "description": "DB Auto Clustering: 1 x Master + N x Slave",
-    "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
     "globals": {
-        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
+        "PATH": "https://raw.githubusercontent.com/sych74/mysql-cluster-1/master",
         "DB_USER": "${settings.db_user}",
         "DB_PASS": "${settings.db_pass}",
         "REPLICATION_USER": "repl-${fn.random}",
-        "REPLICATION_PASS": "${fn.password(20)}"
+        "REPLICATION_PASS": "${fn.password(20)}",
+        "resOutput": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://node${@i.id}-${env.domain}' target='_blank'>${env.protocol}://node${@i.id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>"
+
     },
     "onAfterScaleOut[nodeGroup:sqldb]": [{
+        "forEach(event.response.nodes)": {
+            "setupSlave": {
+                "filter": "${@i.id}"
+            }
+        }
+    }, {
         "forEach(event.response.nodes)": {
             "setupUser": {
                 "filter": "${@i.id}"
@@ -25,6 +32,23 @@
     }],
     "onInstall": [{
         "forEach(nodes.sqldb)": {
+            "if (${@i.ismaster})": {
+                "cmd[${@i.id}]": [
+                    "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log"
+                ],
+                "setNodeDisplayName[${@i.id}]": "Master"
+            }
+        }
+    }, {
+        "forEach(nodes.sqldb)": {
+            "if (!${@i.ismaster})": {
+                "setupSlave": {
+                    "filter": "${@i.id}"
+                }
+            }
+        }
+    }, {
+        "forEach(nodes.sqldb)": {
             "setupUser": {
                 "filter": "${@i.id}"
             }
@@ -35,26 +59,38 @@
                 "filter": "${@i.id}"
             }
         }
+    }, {
+        "forEach(nodes.sqldb)": {
+            "if (${@i.ismaster})": {
+                "return": {
+                    "result": "success",
+                    "email": "${globals.resOutput}"
+                }
+            }
+        }
     }],
     "actions": {
         "setupReplication": {
-            "cmd [${this.filter}]": [
-                "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh",
-                "bash /root/setupReplication.sh node${nodes.sqldb[0].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
-            ],
-            "user": "root"
+            "forEach(nodes.sqldb)": {
+                "if (${@i.ismaster})": {
+                    "cmd [${this.filter}]": [
+                        "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh &>> /var/log/run.log",
+                        "bash /root/setupReplication.sh node${@i.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+                    ]
+                }
+            }
         },
         "setupUser": {
             "cmd[${this.filter}]": [
                 "wget ${globals.PATH}/scripts/setupUser.sh -O /root/setupUser.sh &>> /var/log/run.log",
                 "bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
-            ],
-            "user": "root"
+            ]
         },
-        "logging": {
-            "onCall": {
-                "log": "${this.message}"
-            }
+        "setupSlave": {
+            "cmd[${this.filter}]": [
+                "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log"
+            ],
+            "setNodeDisplayName[${this.filter}]": "Slave"
         }
     }
 }

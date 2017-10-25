@@ -35,10 +35,17 @@
             }
         }
     }, {
+        "forEach(nodes.sqldb)": {
+            "if (${@i.ismaster})": {
+                "cmd [ proxy ]": [
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@i.id}', 3306);\" ",
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@i.id}', 3306);\" "
+                ]
+            }
+        }
+    }, {
         "cmd [ proxy ]": [
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');\" ",
-            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${nodes.sqldb.first.id}', 3306);\" ",
-            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${nodes.sqldb.first.id}', 3306);\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 10, 1000);\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);\" ",
             "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);\" ",

@@ -6,47 +6,87 @@
         "text": "Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator GUI for convenient cluster management and provides even load distribution, slaves healthcheck and autodiscovery of newly added DB nodes",
         "short": "Scalable MySQL cluster with ProxySQL for even load distribution"
     },
+    "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/auto-clustering",
     "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
     "globals": {
         "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/mysql-cluster-orchestrator",
         "db_user": "jelastic-${fn.random}",
-        "db_pass": "${fn.password(20)}"
+        "db_pass": "${fn.password(20)}",
+        "repl_user": "repl-${fn.random}",
+        "repl_pass": "${fn.password(20)}"
     },
-    "onInstall": [{
-        "addNodes": {
-            "cloudlets": 8,
-            "displayName": "ProxySQL",
-            "nodeType": "docker",
-            "nodeGroup": "proxy",
-            "dockerName": "jelastic/proxysql",
-            "dockerTag": "latest",
-            "metadata": {
-                "layer": "proxy"
-            }
+    "onInstall": {
+        "if (nodes.proxy)": [
+            "cleanCluster",
+            "setupCluster"
+        ],
+        "if (!nodes.proxy)": {
+            "if (nodes.sqldb.length > 1)": "setupCluster"
         }
-    }, {
-        "installJps": {
-            "jps": "${globals.path}/scripts/cluster-configuration.jps",
-            "settings": {
-                "db_user": "${globals.db_user}",
-                "db_pass": "${globals.db_pass}"
-            }
+    },
+    "onAfterScaleOut[sqldb]": {
+        "if (!nodes.proxy)": "setupCluster"
+    },
+    "onAfterClone": {
+        "install": {
+            "jps": "${baseUrl}/auto-cluster.jps?_r=${fn.random}",
+            "envName": "${event.response.env.envName}"
         }
-    }, {
-        "installJps": {
-            "jps": "${globals.path}/scripts/proxy-configuration.jps",
-            "settings": {
-                "db_user": "${globals.db_user}",
-                "db_pass": "${globals.db_pass}"
+    },
+    "actions": {
+        "cleanCluster": {
+            "log": " -- TEST -- "
+        },
+        "setupCluster": [{
+            "if (!nodes.proxy)": {
+                "addNodes": {
+                    "cloudlets": 8,
+                    "displayName": "ProxySQL",
+                    "nodeType": "docker",
+                    "nodeGroup": "proxy",
+                    "dockerName": "devbeta/proxysql",
+                    "dockerTag": "latest",
+                    "metadata": {
+                        "layer": "proxy"
+                    }
+                }
             }
-        }
-    }, {
-        "installJps": {
-            "jps": "${globals.path}/scripts/orchestrator-configuration.jps",
-            "settings": {
-                "db_user": "${globals.db_user}",
-                "db_pass": "${globals.db_pass}"
+        }, {
+            "installJps": {
+                "jps": "${globals.path}/scripts/cluster-configuration.jps",
+                "settings": {
+                    "path": "${globals.path}",
+                    "db_user": "${globals.db_user}",
+                    "db_pass": "${globals.db_pass}"
+                }
             }
-        }
-    }]
+        }, {
+            "forEach(nodes.sqldb)": {
+                "if (${@i.id} != ${nodes.sqldb.first.id})": {
+                    "cmd [${@i.id}]": [
+                        "mysql -u${globals.db_user} -p${globals.db_pass} -e \"STOP SLAVE; RESET SLAVE\" ",
+                        "mysqlreplicate --master=${globals.db_user}:${globals.db_pass}@node${nodes.sqldb.first.id}:3306 --slave=${globals.db_user}:${globals.db_pass}@${@i.intIP}:3306 --rpl-user=${globals.repl_user}:${globals.repl_pass}"
+                    ]
+                }
+            }
+        }, {
+            "installJps": {
+                "jps": "${globals.path}/scripts/proxy-configuration.jps",
+                "settings": {
+                    "path": "${globals.path}",
+                    "db_user": "${globals.db_user}",
+                    "db_pass": "${globals.db_pass}"
+                }
+            }
+        }, {
+            "installJps": {
+                "jps": "${globals.path}/scripts/orchestrator-configuration.jps",
+                "settings": {
+                    "path": "${globals.path}",
+                    "db_user": "${globals.db_user}",
+                    "db_pass": "${globals.db_pass}"
+                }
+            }
+        }]
+    }
 }

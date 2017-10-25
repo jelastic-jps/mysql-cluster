@@ -4,7 +4,7 @@
     "description": "Distributed DB Cluster",
     "success": "<table style='font-size:14px'><tr><td>Cluster Manager:</td><td><a href='${env.protocol}://node${nodes.proxy[0].id}-${env.domain}' target='_blank'>${env.protocol}://node${nodes.proxy[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>admin</b></td></tr><tr><td>Password:</td><td><b>${globals.ORCH_PASS}</b></td></tr></table>",
     "globals": {
-        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/mysql-cluster-orchestrator",
+        "PATH": "${settings.path}",
         "DB_USER": "${settings.db_user}",
         "DB_PASS": "${settings.db_pass}",
         "ORCH_PASS": "${fn.password(10)}"
@@ -14,7 +14,7 @@
             "cmd [proxy] ": "mysql -h 127.0.0.1 -P3360 -uadmin -p${globals.ORCH_PASS} -e \"DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';\" "
         }
     },
-    "onInstall": {
+    "onInstall": [{
         "cmd [ proxy ]": [
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"DROP DATABASE IF EXISTS orchestrator;\" ",
             "mysql -h 127.0.0.1 -P3360 -uroot -e \"CREATE DATABASE IF NOT EXISTS orchestrator;\" ",
@@ -26,8 +26,13 @@
             "sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json",
             "sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json",
             "sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json",
-            "/etc/init.d/iptables restart && /etc/init.d/orchestrator restart",
-            "/usr/local/orchestrator/orchestrator -c discover -i node${nodes.sqldb.first.id} cli"
+            "systemctl restart orchestrator"
         ]
-    }
+    }, {
+        "forEach(nodes.sqldb)": {
+            "if (${@i.ismaster})": {
+                "cmd [ proxy]": "/usr/local/orchestrator/orchestrator -c discover -i node${@i.id} cli"
+            }
+        }
+    }]
 }
