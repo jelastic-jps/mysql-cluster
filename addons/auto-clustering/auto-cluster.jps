@@ -44,7 +44,7 @@
                     "displayName": "ProxySQL",
                     "nodeType": "docker",
                     "nodeGroup": "proxy",
-                    "dockerName": "jelastic/proxysql",
+                    "dockerName": "devbeta/proxysql",
                     "dockerTag": "latest",
                     "metadata": {
                         "layer": "proxy"
@@ -87,8 +87,6 @@
                     "db_pass": "${globals.db_pass}"
                 }
             }
-        }, {
-            "cmd [ proxy ]": "/etc/init.d/orchestrator restart"
         }]
     }
 }
