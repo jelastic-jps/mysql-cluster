@@ -31,6 +31,7 @@
             "installJps": {
                 "jps": "${globals.path}/scripts/cluster-configuration.jps",
                 "settings": {
+                    "path": "${globals.path}",
                     "db_user": "${globals.db_user}",
                     "db_pass": "${globals.db_pass}"
                 }
@@ -39,6 +40,7 @@
             "installJps": {
                 "jps": "${globals.path}/scripts/proxy-configuration.jps",
                 "settings": {
+                    "path": "${globals.path}",
                     "db_user": "${globals.db_user}",
                     "db_pass": "${globals.db_pass}"
                 }
@@ -47,6 +49,7 @@
             "installJps": {
                 "jps": "${globals.path}/scripts/orchestrator-configuration.jps",
                 "settings": {
+                    "path": "${globals.path}",
                     "db_user": "${globals.db_user}",
                     "db_pass": "${globals.db_pass}"
                 }
