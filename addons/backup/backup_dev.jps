@@ -1,6 +1,7 @@
 {
     "jpsType": "update",
     "id": "sql-backup-addon",
+    "name": "Mysql Backup",
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/docker-native/master/addons",
     "description": {
         "short": "Mysql Backup"
@@ -11,7 +12,9 @@
         "backupIni": "/var/lib/jelastic/backup/backup.ini",
         "s3cfg": "/var/lib/jelastic/backup/s3cfg"
     },
-    "name": "Mysql Backup",
+    "targetNodes": {
+        "nodeGroup": "*"
+    },
     "settings": {
         "main": {
             "fields": [{
@@ -19,8 +22,8 @@
                 "caption": "Backup schedule",
                 "type": "radio-fieldset",
                 "values": {
-                    "default": "Use template",
-                    "advanced": "Advanced backup schedule"
+                    "default": "Template schedule",
+                    "advanced": "Custom schedule"
                 },
                 "default": "default",
                 "showIf": {
@@ -42,7 +45,7 @@
                     "advanced": {
                         "type": "string",
                         "name": "advanced_cron",
-                        "default": "*/1 * * * *",
+                        "default": "0 */1 * * *",
                         "regexText": "Cron syntax is incorrect!",
                         "regex": "^(((([\\\\*]{1}){1,})|((\\\\*\\\\\\\/){0,1}(([0-9\\\/\\*\\-\\,]{1}){1,}|(([1-5]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,}){1}))) ((([\\\\*]{1}){1,})|((\\\\*\\\\\\\/){0,1}(([0-9\\\/\\*\\-\\,]{1}){1,}|(([1]{1}){1}([0-9\\\/\\*\\-\\,-]{1}){1,}){1}|([2]{1}){1}([0-3]{1}){1}))) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([1-9]{1}){1}|(([1-2]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,5}){1}|([3]{1}){1}([0-1]{1}){1}))) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([1-9]{1}){1}|(([1-2]{1}){1}([0-9\\\/\\*\\-\\,]{1}){1,}){1}|([3]{1}){1}([0-1]{1}){1}))|(jan|feb|mar|apr|may|jun|jul|aug|sep|okt|nov|dec)(-?\\w+?)?) ((([\\\\*]{1}){1})|((\\\\*\\\\\\\/){0,1}(([0-7]{1}){1}))|(sun|mon|tue|wed|thu|fri|sat)(-?\\w+?)?))$",
                         "caption": "Advanced"
@@ -51,7 +54,7 @@
             }, {
                 "type": "spinner",
                 "name": "backup_count",
-                "caption": "N backups",
+                "caption": "N of stored backups",
                 "min": 1,
                 "max": 100,
                 "default": 5
@@ -66,94 +69,122 @@
                 "default": "nfs",
                 "showIf": {
                     "s3": [{
-                        "name": "host_base",
-                        "type": "string",
-                        "caption": "S3 Host Base URI",
-                        "default": "s3.amazonaws.com",
-                        "required": true
+                        "pack": "start",
+                        "align": "middle",
+                        "defaultMargins": {
+                            "top": 0,
+                            "right": 5,
+                            "bottom": 0,
+                            "left": 0
+                        },
+                        "caption": "S3 Host & Bucket",
+                        "type": "compositefield",
+                        "items": [{
+                            "width": 198,
+                            "name": "host_base",
+                            "type": "string",
+                            "default": "s3.amazonaws.com",
+                            "required": true
+                        }, {
+                            "width": 197,
+                            "name": "bucket_name",
+                            "type": "string",
+                            "default": ""
+                        }]
                     }, {
-                        "name": "access_key",
-                        "type": "string",
-                        "caption": "Access Key",
-                        "default": "",
-                        "required": true
-                    }, {
-                        "name": "secret_key",
-                        "type": "string",
-                        "caption": "Secret Key",
-                        "default": "",
-                        "required": true
-                    }, {
-                        "name": "bucket_name",
-                        "type": "string",
-                        "caption": "Bucket name",
-                        "default": ""
+                        "pack": "start",
+                        "align": "middle",
+                        "defaultMargins": {
+                            "top": 0,
+                            "right": 5,
+                            "bottom": 0,
+                            "left": 0
+                        },
+                        "caption": "Access & Secret Key",
+                        "type": "compositefield",
+                        "items": [{
+                            "width": 198,
+                            "name": "access_key",
+                            "type": "string",
+                            "default": "",
+                            "required": true
+                        }, {
+                            "width": 197,
+                            "name": "secret_key",
+                            "type": "string",
+                            "default": "",
+                            "required": true
+                        }]
                     }],
                     "nfs": [{
-                        "name": "storage",
-                        "caption": "Storage container",
-                        "type": "list",
-                        "values": {
-                            "existed_contained": "Use existing storage container",
-                            "new_storage": "Create new storage container"
+                        "pack": "start",
+                        "align": "middle",
+                        "defaultMargins": {
+                            "top": 0,
+                            "right": 5,
+                            "bottom": 0,
+                            "left": 0
                         },
-                        "default": "existed_contained"
-                    }, {
-                        "name": "backup_path",
-                        "caption": "Backup path",
-                        "type": "string",
-                        "default": "/root/backups",
-                        "required": true
+                        "caption": "Storage & Path",
+                        "type": "compositefield",
+                        "items": [{
+                            "width": 120,
+                            "name": "storage",
+                            "type": "list",
+                            "values": {
+                                "existed_contained": "Use existing",
+                                "new_storage": "Create new"
+                            },
+                            "default": "existed_contained"
+                        }, {
+                            "width": 275,
+                            "name": "backup_path",
+                            "type": "string",
+                            "default": "/root/backups",
+                            "required": true
+                        }]
                     }]
                 }
             }, {
-                "name": "db_user",
-                "type": "string",
-                "caption": "DB User",
-                "default": "",
-                "required": true
-            }, {
-                "name": "db_password",
-                "type": "string",
-                "caption": "DB Password",
-                "default": "",
-                "required": true
+                "pack": "start",
+                "align": "middle",
+                "defaultMargins": {
+                    "top": 0,
+                    "right": 5,
+                    "bottom": 0,
+                    "left": 0
+                },
+                "caption": "DB User & Password",
+                "type": "compositefield",
+                "items": [{
+                    "width": 207,
+                    "name": "db_user",
+                    "type": "string",
+                    "default": "",
+                    "required": true
+                }, {
+                    "width": 207,
+                    "name": "db_password",
+                    "type": "string",
+                    "inputType": "password",
+                    "default": "",
+                    "required": true
+                }]
             }]
         }
     },
     "onInstall": [
-        "setup", {
-            "if ('${settings.storage}' == 'new_storage')": "addStorage"
-        }, {
-            "if ('${settings.storage}' == 'existed_contained')": "setupCron"
-        }, {
-            "if ('${settings.backup-mode}' == 's3')": "setupS3"
-        },
-        "setupCron", {
-            "installAddon": {
-                "id": "setup-addon",
-                "nodeGroup": "sqldb"
-            }
-        }
+        "setup"
     ],
-    "addons": [{
-        "id": "setup-addon",
-        "buttons": [{
-            "settings": "main",
-            "procedure": [
-                "setup", {
-                    "if ('${settings.backup-mode}' == 'nfs')": "addStorage"
-                }, {
-                    "if ('${settings.backup-mode}' == 's3')": "setupS3"
-                }
-            ],
-            "caption": "Setup",
-            "logsPath": "/var/log/build.log",
-            "successText": "Build are launched."
-        }]
-    }],
+    "buttons": {
+        "settings": "main",
+        "caption": "Configure",
+        "loadingText": "Updating...",
+        "action": "setup",
+        "successText": "The backup add-on has been successfully updated."
+    },
     "actions": {
-        "setup": {
+        "setup": [{
             "cmd[${nodes.sqldb.first.id}]": [
                 "if [ ! -d ${globals.work_dir} ]; then mkdir -p ${globals.work_dir}; fi",
                 "if [ ! -d ${settings.backup_path} ]; then mkdir -p ${settings.backup_path}; fi",
@@ -166,7 +197,11 @@
                 "chown jelastic -R ${settings.backup_path}"
             ],
             "user": "root"
-        },
+        }, {
+            "if ('${settings.backup-mode}' == 'nfs')": "addStorage"
+        }, {
+            "if ('${settings.backup-mode}' == 's3')": "setupS3"
+        }],
         "setupS3": {
             "cmd[${nodes.sqldb.first.id}]": [
                 "echo [default] > ${globals.s3cfg}",
@@ -201,20 +236,6 @@
                     "for (var i = 0; resp.nodes; i++) {",
                     "  var node = resp.nodes[i]",
                     "  if (node.nodeGroup == 'backup' && node.ismaster) {",
-                    "    return { result: 0, onAfterReturn : {addBackupVolume: {backupNodeId: node.id}}};",
-                    "  }",
-                    "}"
-                ]
-            }]
-        },
-        "exStorage": {
-            "if (nodes.storage)": [{
-                "script": [
-                    "var resp = jelastic.environment.control.GetEnvInfo('${env.envName}', session);",
-                    "if (resp.result != 0) return resp;",
-                    "for (var i = 0; resp.nodes; i++) {",
-                    "  var node = resp.nodes[i]",
-                    "  if (node.nodeGroup == 'storage' && node.ismaster) {",
                     "    return { result: 0, onAfterReturn : {addBackupVolume: {backupNodeId: node.id}}};",
                     "  }",
                     "}"
