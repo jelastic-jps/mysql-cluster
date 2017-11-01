@@ -18,28 +18,28 @@
         }
     }, {
         "cmd[${nodes.sqldb[0].id}]": [
-            "wget ${globals.PATH}/scripts/serverConfiguration.sh -O /root/serverConfiguration.sh",
-            "bash /root/serverConfiguration.sh ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} 1 &>> /var/log/run.log"
+            "wget ${globals.PATH}/scripts/serverConfiguration.sh -O ~/serverConfiguration.sh",
+            "bash ~/serverConfiguration.sh ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} 1 &>> /var/log/run.log"
         ],
         "cmd[${nodes.sqldb[1].id}]": [
-            "wget ${globals.PATH}/scripts/serverConfiguration.sh -O /root/serverConfiguration.sh",
-            "bash /root/serverConfiguration.sh ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} 2 &>> /var/log/run.log"
+            "wget ${globals.PATH}/scripts/serverConfiguration.sh -O ~/serverConfiguration.sh",
+            "bash ~/serverConfiguration.sh ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} 2 &>> /var/log/run.log"
         ]
     }, {
         "cmd[${nodes.sqldb[0].id}]": [
-            "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh",
-            "bash /root/setupReplication.sh node${nodes.sqldb[1].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+            "wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh",
+            "bash ~/setupReplication.sh node${nodes.sqldb[1].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
         ],
         "cmd[${nodes.sqldb[1].id}]": [
-            "wget ${globals.PATH}/scripts/setupReplication.sh -O /root/setupReplication.sh",
-            "bash /root/setupReplication.sh node${nodes.sqldb[0].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+            "wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh",
+            "bash ~/setupReplication.sh node${nodes.sqldb[0].id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
         ]
     }],
     "actions": {
         "setupUser": {
             "cmd[${this.filter}]": [
-                "wget ${globals.PATH}/scripts/setupUser.sh -O /root/setupUser.sh &>> /var/log/run.log",
-                "bash /root/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
+                "wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log",
+                "bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
             ]
         }
     }
