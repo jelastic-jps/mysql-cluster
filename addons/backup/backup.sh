@@ -20,6 +20,7 @@ then
 fi
 
 source ${BACKUP_CONF}
+let NUMBER_OF_BACKUPS++
 
 #-----Check server---------
 
