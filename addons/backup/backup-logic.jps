@@ -14,7 +14,7 @@
     "onInstall": [
         "setup"
     ],
-    "onUnistall": "cleanCron",
+    "onUninstall": "cleanCron",
     "actions": {
         "setup": [
             "setupBackupUser",
