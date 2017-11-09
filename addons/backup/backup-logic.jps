@@ -53,7 +53,9 @@
                 "addNodes": {
                     "cloudlets": 8,
                     "displayName": "Backup",
-                    "nodeType": "storage",
+                    "nodeType": "docker",
+                    "dockerName": "jelastic/storage",
+                    "dockerTag": "latest",
                     "nodeGroup": "backup",
                     "metadata": {
                         "layer": "backup"
