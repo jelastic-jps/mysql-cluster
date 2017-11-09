@@ -1,5 +1,6 @@
 {
     "jpsType": "update",
+    "id": "backup-logic",
     "name": "backup-logic",
     "globals": {
         "work_dir": "/var/lib/jelastic/backup",
