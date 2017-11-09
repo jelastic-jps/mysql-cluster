@@ -3,9 +3,9 @@
     "name": "backup-logic",
     "globals": {
         "work_dir": "/var/lib/jelastic/backup",
-        "backupScript": "/var/lib/jelastic/backup/backup.sh?_r=${fn.random}",
-        "backupIni": "/var/lib/jelastic/backup/backup.ini?_r=${fn.random}",
-        "s3cfg": "/var/lib/jelastic/backup/s3cfg?_r=${fn.random}",
+        "backupScript": "/var/lib/jelastic/backup/backup.sh",
+        "backupIni": "/var/lib/jelastic/backup/backup.ini",
+        "s3cfg": "/var/lib/jelastic/backup/s3cfg",
         "backup_path": "/data/backups",
         "backup_user": "backup-user-${fn.random(5)}",
         "backup_password": "${fn.password}"
@@ -43,7 +43,7 @@
                 "echo DB_PASSWORD='${globals.backup_password}' >> ${globals.backupIni}",
                 "echo BACKUPDIR='${globals.backup_path}' >> ${globals.backupIni}",
                 "echo NUMBER_OF_BACKUPS='${settings.backup_count}' >> ${globals.backupIni}",
-                "wget ${settings.baseUrl}/backup.sh -O ${globals.backupScript}",
+                "wget ${settings.baseUrl}/backup.sh?_r=${fn.random} -O ${globals.backupScript}",
                 "chown jelastic -R ${globals.backup_path}"
             ],
             "user": "root"
@@ -53,7 +53,9 @@
                 "addNodes": {
                     "cloudlets": 8,
                     "displayName": "Backup",
-                    "nodeType": "storage",
+                    "nodeType": "docker",
+                    "dockerName": "jelastic/storage",
+                    "dockerTag": "latest",
                     "nodeGroup": "backup",
                     "metadata": {
                         "layer": "backup"
