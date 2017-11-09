@@ -2,7 +2,8 @@
     "jpsType": "update",
     "id": "sql-backup-addon-to-s3",
     "name": "Mysql Backup to S3",
-    "description": "An easy way to backup your MySQL or MariaDB",
+    "description": "An easy way to backup your MySQL or MariaDB to S3 bucket",
+    "short": "Backup for MySQL or MariaDB to S3",
     "targetNodes": {
         "nodeType": [
             "mysql",
