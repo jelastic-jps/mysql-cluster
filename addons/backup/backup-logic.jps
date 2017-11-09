@@ -1,6 +1,6 @@
 {
     "jpsType": "update",
-    "name": "mysql-backup-logic",
+    "name": "backup-logic",
     "globals": {
         "work_dir": "/var/lib/jelastic/backup",
         "backupScript": "/var/lib/jelastic/backup/backup.sh?_r=${fn.random}",
