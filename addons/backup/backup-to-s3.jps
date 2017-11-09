@@ -100,7 +100,7 @@
                         "backup_count": "${settings.backup_count}",
                         "baseUrl": "${baseUrl}"
                     },
-                    "jps": "${baseUrl}/mysql-backup-logic.jps"
+                    "jps": "${baseUrl}/backup-logic.jps"
                 }
             }
         }
