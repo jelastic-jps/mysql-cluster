@@ -18,9 +18,9 @@
         "setup": [
             "setupBackupUser",
             "setupConfig", {
-                "if ('${settings.backup-mode}' == 'nfs')": "addStorage"
+                "if ('${settings.backup_mode}' == 'nfs')": "addStorage"
             }, {
-                "if ('${settings.backup-mode}' == 's3')": "setupS3"
+                "if ('${settings.backup_mode}' == 's3')": "setupS3"
             }, "setupCron"
         ],
         "setupS3": {
@@ -38,7 +38,7 @@
             "cmd[${settings.nodeId}]": [
                 "if [ ! -d ${globals.work_dir} ]; then mkdir -p ${globals.work_dir}; fi",
                 "if [ ! -d ${globals.backup_path} ]; then mkdir -p ${globals.backup_path}; fi",
-                "echo \"BACKUP_MODE='${settings.backup-mode}' #nfs s3\" > ${globals.backupIni}",
+                "echo \"BACKUP_MODE='${settings.backup_mode}' #nfs s3\" > ${globals.backupIni}",
                 "echo DB_USER='${globals.backup_user}' >> ${globals.backupIni}",
                 "echo DB_PASSWORD='${globals.backup_password}' >> ${globals.backupIni}",
                 "echo BACKUPDIR='${globals.backup_path}' >> ${globals.backupIni}",
