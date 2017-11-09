@@ -1,0 +1,90 @@
+{
+    "jpsType": "update",
+    "id": "sql-backup-addon-to-storage",
+    "name": "Mysql Backup to Storage ",
+    "description": "An easy way to backup your MySQL or MariaDB to Storage Container",
+    "short": "Backup for MySQL or MariaDB to Storage Container",
+    "targetNodes": {
+        "nodeType": [
+            "mysql",
+            "mysql5",
+            "mysql5-6",
+            "mariadb",
+            "mariadb10"
+        ]
+    },
+    "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
+    "settings": {
+        "main": {
+            "fields": [{
+                "caption": "DB User",
+                "name": "db_user",
+                "type": "string",
+                "default": "",
+                "required": true
+            }, {
+                "caption": "DB Password",
+                "name": "db_password",
+                "type": "string",
+                "inputType": "password",
+                "default": "",
+                "required": true
+            }, {
+                "name": "cron",
+                "caption": "Backup schedule",
+                "type": "list",
+                "editable": true,
+                "values": {
+                    "0 6 1/1 * *": "0 6 1/1 * * #Daily at 6:00 am",
+                    "*/30 * * * *": "*/30 * * * * #Every 30 minutes",
+                    "0 */1 * * *": "0 */1 * * * #Hourly",
+                    "0 */4 * * *": "0 */4 * * * #Every 4 hours",
+                    "0 */6 * * *": "0 */6 * * * #Every 6 hours",
+                    "0 */12 * * *": "0 */12 * * * #Every 12 hours",
+                    "0 6 1/7 * *": "0 6 1/7 * * #Each Sunday at 6:00 am"
+                },
+                "default": "0 */12 * * *"
+            }, {
+                "type": "spinner",
+                "name": "backup_count",
+                "caption": "N of stored backups",
+                "min": 1,
+                "max": 100,
+                "default": 5
+            }, {
+                "name": "backup_mode",
+                "caption": "Backup location",
+                "type": "string",
+                "inputType": "hidden",
+                "default": "nfs"
+            }]
+        }
+    },
+    "onInstall": {
+        "forEach(nodes.${targetNodes.nodeGroup})": {
+            "if (${@i.ismaster})": {
+                "install": {
+                    "settings": {
+                        "nodeId": "${@i.id}",
+                        "backup_mode": "${settings.backup_mode}",
+                        "host_base": "${settings.host_base}",
+                        "access_key": "${settings.access_key}",
+                        "secret_key": "${settings.secret_key}",
+                        "bucket_name": "${settings.bucket_name}",
+                        "db_user": "${settings.db_user}",
+                        "db_password": "${settings.db_password}",
+                        "cron": "${settings.cron}",
+                        "backup_count": "${settings.backup_count}",
+                        "baseUrl": "${baseUrl}"
+                    },
+                    "jps": "${baseUrl}/backup-logic.jps"
+                }
+            }
+        }
+    },
+    "success": {
+        "text": "success! ",
+        "email": "success! "
+    },
+    "jpsVersion": "0.9"
+}
