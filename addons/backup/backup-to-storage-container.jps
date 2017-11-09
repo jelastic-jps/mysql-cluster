@@ -62,7 +62,7 @@
     },
     "onInstall": {
         "forEach(nodes.${targetNodes.nodeGroup})": {
-            "if (${@i.ismaster})": {
+            "if (!${@i.ismaster} || nodes.${targetNodes.nodeGroup}.length == 1)": {
                 "install": {
                     "settings": {
                         "nodeId": "${@i.id}",
