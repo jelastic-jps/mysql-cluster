@@ -7,7 +7,6 @@
         "backupScript": "/var/lib/jelastic/backup/backup.sh",
         "backupIni": "/var/lib/jelastic/backup/backup.ini",
         "s3cfg": "/var/lib/jelastic/backup/s3cfg",
-        "backup_path": "/data/backups",
         "backup_user": "backup-user-${fn.random(5)}",
         "backup_password": "${fn.password}"
     },
@@ -38,14 +37,14 @@
         "setupConfig": {
             "cmd[${settings.nodeId}]": [
                 "if [ ! -d ${globals.work_dir} ]; then mkdir -p ${globals.work_dir}; fi",
-                "if [ ! -d ${globals.backup_path} ]; then mkdir -p ${globals.backup_path}; fi",
+                "if [ ! -d ${settings.backup_path} ]; then mkdir -p ${settings.backup_path}; fi",
                 "echo \"BACKUP_MODE='${settings.backup_mode}' #nfs s3\" > ${globals.backupIni}",
                 "echo DB_USER='${globals.backup_user}' >> ${globals.backupIni}",
                 "echo DB_PASSWORD='${globals.backup_password}' >> ${globals.backupIni}",
-                "echo BACKUPDIR='${globals.backup_path}' >> ${globals.backupIni}",
+                "echo BACKUPDIR='${settings.backup_path}' >> ${globals.backupIni}",
                 "echo NUMBER_OF_BACKUPS='${settings.backup_count}' >> ${globals.backupIni}",
                 "wget ${settings.baseUrl}/backup.sh?_r=${fn.random} -O ${globals.backupScript}",
-                "chown jelastic -R ${globals.backup_path}"
+                "chown jelastic -R ${settings.backup_path}"
             ],
             "user": "root"
         },
@@ -62,7 +61,7 @@
                         "layer": "backup_${settings.nodeGroup}"
                     },
                     "dockerVolumes": [
-                        "${globals.backup_path}"
+                        "${settings.backup_path}"
                     ]
                 }
             }, {
@@ -81,9 +80,9 @@
         "addBackupVolume": [{
             "api": "env.file.AddMountPointById",
             "nodeId": "${settings.nodeId}",
-            "path": "${globals.backup_path}",
+            "path": "${settings.backup_path}",
             "protocol": "nfs",
-            "sourcePath": "${globals.backup_path}",
+            "sourcePath": "${settings.backup_path}",
             "sourceNodeId": "${this.backupNodeId}",
             "name": "Backup Volume",
             "readOnly": false
