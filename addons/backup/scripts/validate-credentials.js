@@ -9,7 +9,7 @@ if (service == 'db') {
 
 if (service == 's3') {
     cmd = 'rpm -qa | grep -qw s3cmd || yum install -y s3cmd; s3cmd ls --access_key=${settings.access_key} --secret_key=${settings.access_key} --host=${settings.s3_host} --no-check-hostname'
-    mark = 'Access denied'
+    mark = 'SignatureDoesNotMatch'
     warning = 'S3 Credentials: authentication check failed. Please specify correct host and credentials for S3 storage.'
     return Check(cmd, mark, warning)
 }
