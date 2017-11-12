@@ -96,7 +96,7 @@
                             "backup_path": "${globals.backup_path}",
                             "baseUrl": "${baseUrl}"
                         },
-                        "jps": "${baseUrl}/backup-logic.jps?_r=${fn.random}"
+                        "jps": "${baseUrl}/scripts/backup-logic.jps?_r=${fn.random}"
                     }
                 }]
             }
