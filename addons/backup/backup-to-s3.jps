@@ -64,20 +64,20 @@
                 "caption": "S3 Host",
                 "name": "s3_host",
                 "type": "string",
-                "default": "s3.amazonaws.com",
+                "default": "",
                 "required": true
             }, {
                 "caption": "Access Key",
                 "name": "access_key",
                 "type": "string",
-                "default": "AKIAJ4DUVBV5Z24YYAWQ",
+                "default": "",
                 "required": true
             }, {
                 "caption": "Secret Key",
                 "name": "secret_key",
                 "type": "string",
                 "inputType": "password",
-                "default": "2Kz5pw1hjGmcISnqHZmQ21omdmAE2nOVqzdcc6of",
+                "default": "",
                 "required": true
             }, {
                 "caption": "Bucket",
