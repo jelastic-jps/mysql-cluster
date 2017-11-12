@@ -7,7 +7,7 @@
         "backupScript": "/var/lib/jelastic/backup/backup.sh",
         "backupIni": "/var/lib/jelastic/backup/backup.ini",
         "s3cfg": "/var/lib/jelastic/backup/s3cfg",
-        "backup_user": "backup-user-${fn.random(5)}",
+        "backup_user": "backup_user_${fn.random(5)}",
         "backup_password": "${fn.password}"
     },
     "onInstall": "setup",
@@ -100,7 +100,7 @@
         "setupBackupUser": {
             "cmd[${settings.nodeId}]": [
                 "[ -x \"$(command -v mysql)\" ] && mysql --user=${settings.db_user} --password=${settings.db_password} -e \"GRANT LOCK TABLES, SELECT ON *.* TO '${globals.backup_user}'@'%' IDENTIFIED BY '${globals.backup_password}'; FLUSH PRIVILEGE;\"",
-                "[ -x \"$(command -v psql)\" ] && { export PGPASSWORD=${settings.db_password}; psql -U ${settings.db_user} -c \" CREATE USER ${globals.backup_user} SUPERUSER  password '${globals.backup_password}'; ALTER USER ${globals.backup_user} set default_transaction_read_only = on;\"; }"            
+                "[ -x \"$(command -v psql)\" ] && { export PGPASSWORD=${settings.db_password}; psql -U ${settings.db_user} -d postgres -c \" CREATE USER ${globals.backup_user} SUPERUSER  password '${globals.backup_password}'; ALTER USER ${globals.backup_user} set default_transaction_read_only = on;\"; }"            
             ]
         }
     },
