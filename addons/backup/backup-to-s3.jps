@@ -1,7 +1,7 @@
 {
     "jpsType": "update",
-    "id": "sql-backup-addon-to-s3",
-    "name": "Mysql Backup to S3",
+    "id": "sqldb-backup-addon",
+    "name": "Backup to S3",
     "description": {
         "text": "/text/description-s3.md",
         "short": "Backup for MySQL or MariaDB to S3"
