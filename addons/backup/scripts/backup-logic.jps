@@ -8,7 +8,8 @@
         "backupIni": "/var/lib/jelastic/backup/backup.ini",
         "s3cfg": "/var/lib/jelastic/backup/s3cfg",
         "backup_user": "backup_user_${fn.random(5)}",
-        "backup_password": "${fn.password}"
+        "backup_password": "${fn.password}",
+        "backup_log": "/var/log/backup.log"
     },
     "onInstall": "setup",
     "onUninstall": "cleanCron",
@@ -88,7 +89,12 @@
         "setupCron": [
             "cleanCron", {
                 "cmd[${settings.nodeId}]": [
-                    "crontab -l 2>/dev/null | { cat; echo \"$(echo '${settings.cron}' | cut -d'#' -f1) /bin/bash ${globals.backupScript} ${globals.backupIni} &>> /var/log/run.log\n\"; } | crontab - ;"
+                    "echo >> ${globals.backup_log}; chown jelastic ${globals.backup_log}"
+                ], 
+                "user": "root"
+            }, {
+                "cmd[${settings.nodeId}]": [
+                    "crontab -l 2>/dev/null | { cat; echo \"$(echo '${settings.cron}' | cut -d'#' -f1) /bin/bash ${globals.backupScript} ${globals.backupIni} &>> ${globals.backup_log}\n\"; } | crontab - ;"
                 ]
             }
         ],
