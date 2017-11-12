@@ -136,7 +136,7 @@
     },
     "success": {
         "text": "/text/success-s3.md",
-        "email": "/text/success-s3.md "
+        "email": "/text/success-s3.md"
     },
     "jpsVersion": "0.9"
 }
