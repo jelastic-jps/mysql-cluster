@@ -98,7 +98,10 @@
             ]
         },
         "setupBackupUser": {
-            "cmd[${settings.nodeId}]": "mysql --user=${settings.db_user} --password=${settings.db_password} -e \"GRANT LOCK TABLES, SELECT ON *.* TO '${globals.backup_user}'@'%' IDENTIFIED BY '${globals.backup_password}'; FLUSH PRIVILEGES;\""
+            "cmd[${settings.nodeId}]": [
+                "[ -x "$(command -v mysql)" ] && mysql --user=${settings.db_user} --password=${settings.db_password} -e \"GRANT LOCK TABLES, SELECT ON *.* TO '${globals.backup_user}'@'%' IDENTIFIED BY '${globals.backup_password}'; FLUSH PRIVILEGES;\"",
+                "[ -x "$(command -v psql)" ] && { export PGPASSWORD=${settings.db_password}; psql -U ${settings.db_user} -c \" CREATE USER ${globals.backup_user} SUPERUSER  password '${globals.backup_password}'; ALTER USER ${globals.backup_user} set default_transaction_read_only = on;\"; }"
+            ]
         }
     },
     "jpsVersion": "0.9"
