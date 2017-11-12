@@ -53,7 +53,7 @@
             "if (!nodes.backup_${settings.nodeGroup})": [{
                 "addNodes": {
                     "cloudlets": 8,
-                    "displayName": "Backup",
+                    "displayName": "Backup for '${settings.nodeGroup}' nodeGroup",
                     "nodeType": "docker",
                     "dockerName": "jelastic/storage",
                     "dockerTag": "latest",
