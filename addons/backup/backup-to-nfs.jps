@@ -1,7 +1,7 @@
 {
     "jpsType": "update",
-    "id": "sql-backup-addon-to-nfs",
-    "name": "Mysql Backup to Storage ",
+    "id": "sqldb-backup-addon",
+    "name": "Backup to Storage",
     "description": {
         "text": "/text/description-nfs.md",
         "short": "Backup for MySQL or MariaDB to Storage Container"
