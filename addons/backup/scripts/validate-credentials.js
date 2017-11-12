@@ -30,5 +30,5 @@ function Check(cmd, mark, warning){
 }
 
 function ExecCmd(cmd){
-    return jelastic.env.control.ExecCmdById('${env.envName}', session, nodeId, toJSON([{command: cmd}]), true, 'jelastic');
+    return jelastic.env.control.ExecCmdById('${env.envName}', session, nodeId, toJSON([{command: cmd}]), true, 'root');
 } 
