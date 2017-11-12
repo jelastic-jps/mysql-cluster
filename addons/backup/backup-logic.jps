@@ -50,16 +50,16 @@
             "user": "root"
         },
         "addStorage": {
-            "if (!nodes.backup)": [{
+            "if (!nodes.backup_${settings.targetGroup})": [{
                 "addNodes": {
                     "cloudlets": 8,
                     "displayName": "Backup",
                     "nodeType": "docker",
                     "dockerName": "jelastic/storage",
                     "dockerTag": "latest",
-                    "nodeGroup": "backup",
+                    "nodeGroup": "backup_${settings.targetGroup}",
                     "metadata": {
-                        "layer": "backup"
+                        "layer": "backup_${settings.targetGroup}"
                     },
                     "dockerVolumes": [
                         "${globals.backup_path}"
@@ -71,7 +71,7 @@
                     "if (resp.result != 0) return resp;",
                     "for (var i = 0; resp.nodes; i++) {",
                     "  var node = resp.nodes[i]",
-                    "  if (node.nodeGroup == 'backup' && node.ismaster) {",
+                    "  if (node.nodeGroup == 'backup_${settings.targetGroup}' && node.ismaster) {",
                     "    return { result: 0, onAfterReturn : {addBackupVolume: {backupNodeId: node.id}}};",
                     "  }",
                     "}"
