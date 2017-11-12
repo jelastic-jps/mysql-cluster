@@ -1,9 +1,9 @@
-//@req(service)
+//@req(service, nodeId)
 
 if (service == 'db') {
     cmd = 'mysql -u ${settings.db_user} -p${settings.db_password} -e "quit"'
     mark = 'Access denied'
-    warning = 'DB User and Password: authentication check failed. Please specify correct credentials for the database located in node${this.id}.'
+    warning = 'DB User and Password: authentication check failed. Please specify correct credentials for the database located in node' + nodeId + '.'
     return Check(cmd, mark, warning)
 } 
 
@@ -30,5 +30,5 @@ function Check(cmd, mark, warning){
 }
 
 function ExecCmd(cmd){
-    return jelastic.env.control.ExecCmdById('${env.envName}', session, '${this.id}', toJSON([{command: cmd}]), true, 'jelastic');
+    return jelastic.env.control.ExecCmdById('${env.envName}', session, nodeId, toJSON([{command: cmd}]), true, 'jelastic');
 } 
