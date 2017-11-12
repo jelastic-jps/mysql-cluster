@@ -1,8 +1,4 @@
 #!/bin/bash
-#  Script for backup databases
-#
-# ---------------------------------------------------------------------------------------------
-# Copyright (c) 2017 Hivext Technologies
 
 BACKUP_CONF=$1
 

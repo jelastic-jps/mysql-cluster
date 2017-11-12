@@ -7,8 +7,9 @@
         "backupScript": "/var/lib/jelastic/backup/backup.sh",
         "backupIni": "/var/lib/jelastic/backup/backup.ini",
         "s3cfg": "/var/lib/jelastic/backup/s3cfg",
-        "backup_user": "backup-user-${fn.random(5)}",
-        "backup_password": "${fn.password}"
+        "backup_user": "backup_user_${fn.random(5)}",
+        "backup_password": "${fn.password}",
+        "backup_log": "/var/log/backup.log"
     },
     "onInstall": "setup",
     "onUninstall": "cleanCron",
@@ -88,7 +89,12 @@
         "setupCron": [
             "cleanCron", {
                 "cmd[${settings.nodeId}]": [
-                    "crontab -l 2>/dev/null | { cat; echo \"$(echo '${settings.cron}' | cut -d'#' -f1) /bin/bash ${globals.backupScript} ${globals.backupIni} &>> /var/log/run.log\n\"; } | crontab - ;"
+                    "echo >> ${globals.backup_log}; chown jelastic ${globals.backup_log}"
+                ], 
+                "user": "root"
+            }, {
+                "cmd[${settings.nodeId}]": [
+                    "crontab -l 2>/dev/null | { cat; echo \"$(echo '${settings.cron}' | cut -d'#' -f1) /bin/bash ${globals.backupScript} ${globals.backupIni} &>> ${globals.backup_log}\n\"; } | crontab - ;"
                 ]
             }
         ],
@@ -98,7 +104,10 @@
             ]
         },
         "setupBackupUser": {
-            "cmd[${settings.nodeId}]": "mysql --user=${settings.db_user} --password=${settings.db_password} -e \"GRANT LOCK TABLES, SELECT ON *.* TO '${globals.backup_user}'@'%' IDENTIFIED BY '${globals.backup_password}'; FLUSH PRIVILEGES;\""
+            "cmd[${settings.nodeId}]": [
+                "[ -x \"$(command -v mysql)\" ] && mysql --user=${settings.db_user} --password=${settings.db_password} -e \"GRANT LOCK TABLES, SELECT ON *.* TO '${globals.backup_user}'@'%' IDENTIFIED BY '${globals.backup_password}'; FLUSH PRIVILEGE;\"",
+                "[ -x \"$(command -v psql)\" ] && { export PGPASSWORD=${settings.db_password}; psql -U ${settings.db_user} -d postgres -c \" CREATE USER ${globals.backup_user} SUPERUSER  password '${globals.backup_password}'; ALTER USER ${globals.backup_user} set default_transaction_read_only = on;\"; }"            
+            ]
         }
     },
     "jpsVersion": "0.9"
