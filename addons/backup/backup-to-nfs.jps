@@ -17,6 +17,9 @@
     },
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
     "logo": "/images/backup-to-nfs-70x70.png",
+    "globals": {
+        "backup_path" : "/data/backups" 
+    },
     "settings": {
         "main": {
             "fields": [{
@@ -90,6 +93,7 @@
                             "db_password": "${settings.db_password}",
                             "cron": "${settings.cron}",
                             "backup_count": "${settings.backup_count}",
+                            "backup_path": "${globals.backup_path}",
                             "baseUrl": "${baseUrl}"
                         },
                         "jps": "${baseUrl}/backup-logic.jps?_r=${fn.random}"
@@ -99,8 +103,8 @@
         }
     },
     "success": {
-        "text": "success! ",
-        "email": "success! "
+        "text": "/text/success-nfs.md",
+        "email": "/text/success-nfs.md"
     },
     "jpsVersion": "0.9"
 }
