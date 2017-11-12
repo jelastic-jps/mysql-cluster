@@ -10,9 +10,7 @@
         "backup_user": "backup-user-${fn.random(5)}",
         "backup_password": "${fn.password}"
     },
-    "onInstall": [
-        "setup"
-    ],
+    "onInstall": "setup",
     "onUninstall": "cleanCron",
     "actions": {
         "setup": [
