@@ -2,8 +2,10 @@
     "jpsType": "update",
     "id": "sql-backup-addon-to-s3",
     "name": "Mysql Backup to S3",
-    "description": "An easy way to backup your MySQL or MariaDB to S3 bucket",
-    "short": "Backup for MySQL or MariaDB to S3",
+    "description": {
+        "text": "/text/description-s3.md",
+        "short": "Backup for MySQL or MariaDB to S3"
+    },
     "targetNodes": {
         "nodeType": [
             "mysql",
@@ -14,6 +16,7 @@
         ]
     },
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
+    "logo": "/images/backup-to-s3-70x70.png",
     "settings": {
         "main": {
             "fields": [{
@@ -59,56 +62,77 @@
                 "default": "s3"
             }, {
                 "caption": "S3 Host",
-                "name": "host_base",
+                "name": "s3_host",
                 "type": "string",
-                "default": "",
+                "default": "s3.amazonaws.com",
                 "required": true
             }, {
                 "caption": "Access Key",
                 "name": "access_key",
                 "type": "string",
-                "default": "",
+                "default": "AKIAJ4DUVBV5Z24YYAWQ",
                 "required": true
             }, {
                 "caption": "Secret Key",
                 "name": "secret_key",
                 "type": "string",
                 "inputType": "password",
-                "default": "",
+                "default": "2Kz5pw1hjGmcISnqHZmQ21omdmAE2nOVqzdcc6of",
                 "required": true
             }, {
                 "caption": "Bucket",
                 "name": "bucket_name",
-                "type": "string",
+                "_type": "string",
                 "default": ""
             }]
         }
     },
-    "onInstall": {
-        "forEach(nodes.${targetNodes.nodeGroup})": {
-            "if (${@i.ismaster})": {
-                "install": {
-                    "settings": {
-                        "nodeId": "${@i.id}",
-                        "backup_mode": "${settings.backup_mode}",
-                        "host_base": "${settings.host_base}",
-                        "access_key": "${settings.access_key}",
-                        "secret_key": "${settings.secret_key}",
-                        "bucket_name": "${settings.bucket_name}",
-                        "db_user": "${settings.db_user}",
-                        "db_password": "${settings.db_password}",
-                        "cron": "${settings.cron}",
-                        "backup_count": "${settings.backup_count}",
-                        "baseUrl": "${baseUrl}"
-                    },
-                    "jps": "${baseUrl}/backup-logic.jps"
-                }
+    "onInstall": "installBackup",
+    "onAfterScaleOut[${targetNodes.nodeGroup}]": {
+        "if (nodes.${targetNodes.nodeGroup}.length - event.response.nodes.length == 1)": "installBackup"
+    },
+    "onAfterScaleIn[${targetNodes.nodeGroup}]": {
+        "if (nodes.${targetNodes.nodeGroup}.length == 1)": "installBackup"
+    },
+    "onUninstall": {
+        "script": "${baseUrl}/scripts/uninstall.js?_r=${fn.random}"
+    },
+    "actions": {
+        "installBackup": {
+            "forEach(nodes.${targetNodes.nodeGroup})": {
+                "if (!${@i.ismaster} || nodes.${targetNodes.nodeGroup}.length == 1)": [{
+                    "script": "${baseUrl}/scripts/validate-credentials.js?_r=${fn.random}",
+                    "service": "db",
+                    "nodeId": "${@i.id}"
+                }, {
+                    "script": "${baseUrl}/scripts/validate-credentials.js?_r=${fn.random}",
+                    "service": "s3",
+                    "nodeId": "${@i.id}"
+                }, {
+                    "install": {
+                        "settings": {
+                            "nodeGroup": "${targetNodes.nodeGroup}",
+                            "nodeId": "${@i.id}",
+                            "backup_mode": "${settings.backup_mode}",
+                            "s3_host": "${settings.s3_host}",
+                            "access_key": "${settings.access_key}",
+                            "secret_key": "${settings.secret_key}",
+                            "bucket_name": "${settings.bucket_name}",
+                            "db_user": "${settings.db_user}",
+                            "db_password": "${settings.db_password}",
+                            "cron": "${settings.cron}",
+                            "backup_count": "${settings.backup_count}",
+                            "baseUrl": "${baseUrl}"
+                        },
+                        "jps": "${baseUrl}/backup-logic.jps?_r=${fn.random}"
+                    }
+                }]
             }
         }
     },
     "success": {
-        "text": "success! ",
-        "email": "success! "
+        "text": "/text/success-s3.md",
+        "email": "/text/success-s3.md "
     },
     "jpsVersion": "0.9"
 }
