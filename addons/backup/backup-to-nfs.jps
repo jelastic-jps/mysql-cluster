@@ -8,11 +8,10 @@
     },
     "targetNodes": {
         "nodeType": [
-            "mysql",
-            "mysql5",
-            "mysql5-6",
-            "mariadb",
-            "mariadb10"
+            "mysql", "mysql5", "mysql5-6",
+            "mariadb", "mariadb10",
+            "Percona",
+            "postgres", "postgres8", "postgres9"
         ]
     },
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
