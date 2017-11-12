@@ -29,8 +29,8 @@
                 "echo [default] > ${globals.s3cfg}",
                 "echo access_key = '${settings.access_key}' >> ${globals.s3cfg}",
                 "echo secret_key = '${settings.secret_key}' >> ${globals.s3cfg}",
-                "echo host_base = '${settings.host_base}' >> ${globals.s3cfg}",
-                "echo host_bucket = '${settings.host_base}' >> ${globals.s3cfg}",
+                "echo host_base = '${settings.s3_host}' >> ${globals.s3cfg}",
+                "echo host_bucket = '${settings.s3_host}' >> ${globals.s3cfg}",
                 "echo S3_CONF='${globals.s3cfg}' >> ${globals.backupIni}"
             ],
             "user": "root"
