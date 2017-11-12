@@ -43,7 +43,7 @@
                 "echo DB_PASSWORD='${globals.backup_password}' >> ${globals.backupIni}",
                 "echo BACKUPDIR='${settings.backup_path}' >> ${globals.backupIni}",
                 "echo NUMBER_OF_BACKUPS='${settings.backup_count}' >> ${globals.backupIni}",
-                "wget ${settings.baseUrl}/backup.sh?_r=${fn.random} -O ${globals.backupScript}",
+                "wget ${settings.baseUrl}/scripts/backup.sh?_r=${fn.random} -O ${globals.backupScript}",
                 "chown jelastic -R ${settings.backup_path}"
             ],
             "user": "root"
