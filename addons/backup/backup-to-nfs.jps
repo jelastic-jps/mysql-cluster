@@ -1,9 +1,11 @@
 {
     "jpsType": "update",
-    "id": "sql-backup-addon-to-storage",
+    "id": "sql-backup-addon-to-nfs",
     "name": "Mysql Backup to Storage ",
-    "description": "An easy way to backup your MySQL or MariaDB to Storage Container",
-    "short": "Backup for MySQL or MariaDB to Storage Container",
+    "description": {
+        "text": "/text/description-nfs.md",
+        "short": "Backup for MySQL or MariaDB to Storage Container"
+    },
     "targetNodes": {
         "nodeType": [
             "mysql",
@@ -14,6 +16,10 @@
         ]
     },
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
+    "logo": "/images/backup-to-nfs-70x70.png",
+    "globals": {
+        "backup_path" : "/data/backups" 
+    },
     "settings": {
         "main": {
             "fields": [{
@@ -53,38 +59,52 @@
                 "default": 5
             }, {
                 "name": "backup_mode",
-                "caption": "Backup location",
+                "caption": "Backup Mode",
                 "type": "string",
                 "inputType": "hidden",
                 "default": "nfs"
             }]
         }
     },
-    "onInstall": {
-        "forEach(nodes.${targetNodes.nodeGroup})": {
-            "if (${@i.ismaster})": {
-                "install": {
-                    "settings": {
-                        "nodeId": "${@i.id}",
-                        "backup_mode": "${settings.backup_mode}",
-                        "host_base": "${settings.host_base}",
-                        "access_key": "${settings.access_key}",
-                        "secret_key": "${settings.secret_key}",
-                        "bucket_name": "${settings.bucket_name}",
-                        "db_user": "${settings.db_user}",
-                        "db_password": "${settings.db_password}",
-                        "cron": "${settings.cron}",
-                        "backup_count": "${settings.backup_count}",
-                        "baseUrl": "${baseUrl}"
-                    },
-                    "jps": "${baseUrl}/backup-logic.jps"
-                }
+    "onInstall": "installBackup",
+    "onAfterScaleOut[${targetNodes.nodeGroup}]": {
+        "if (nodes.${targetNodes.nodeGroup}.length - event.response.nodes.length == 1)": "installBackup"
+    },
+    "onAfterScaleIn[${targetNodes.nodeGroup}]": {
+        "if (nodes.${targetNodes.nodeGroup}.length == 1)": "installBackup"
+    },
+    "onUninstall": {
+        "script": "${baseUrl}/scripts/uninstall.js?_r=${fn.random}"
+    },
+    "actions": {
+        "installBackup": {
+            "forEach(nodes.${targetNodes.nodeGroup})": {
+                "if (!${@i.ismaster} || nodes.${targetNodes.nodeGroup}.length == 1)": [{
+                    "script": "${baseUrl}/scripts/validate-credentials.js?_r=${fn.random}",
+                    "service": "db",
+                    "nodeId": "${@i.id}"
+                }, {
+                    "install": {
+                        "settings": {
+                            "nodeGroup": "${targetNodes.nodeGroup}",
+                            "nodeId": "${@i.id}",
+                            "backup_mode": "${settings.backup_mode}",
+                            "db_user": "${settings.db_user}",
+                            "db_password": "${settings.db_password}",
+                            "cron": "${settings.cron}",
+                            "backup_count": "${settings.backup_count}",
+                            "backup_path": "${globals.backup_path}",
+                            "baseUrl": "${baseUrl}"
+                        },
+                        "jps": "${baseUrl}/scripts/backup-logic.jps?_r=${fn.random}"
+                    }
+                }]
             }
         }
     },
     "success": {
-        "text": "success! ",
-        "email": "success! "
+        "text": "/text/success-nfs.md",
+        "email": "/text/success-nfs.md"
     },
     "jpsVersion": "0.9"
 }
