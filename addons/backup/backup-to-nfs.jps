@@ -1,9 +1,9 @@
 {
     "jpsType": "update",
-    "id": "sql-backup-addon-to-storage",
+    "id": "sql-backup-addon-to-nfs",
     "name": "Mysql Backup to Storage ",
     "description": {
-        "text": "/text/description-storage.md",
+        "text": "/text/description-nfs.md",
         "short": "Backup for MySQL or MariaDB to Storage Container"
     },
     "targetNodes": {
@@ -16,7 +16,7 @@
         ]
     },
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
-    "logo": "/images/backup-to-storage-70x70.png",
+    "logo": "/images/backup-to-nfs-70x70.png",
     "settings": {
         "main": {
             "fields": [{
@@ -56,7 +56,7 @@
                 "default": 5
             }, {
                 "name": "backup_mode",
-                "caption": "Backup location",
+                "caption": "Backup Mode",
                 "type": "string",
                 "inputType": "hidden",
                 "default": "nfs"
