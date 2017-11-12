@@ -2,8 +2,10 @@
     "jpsType": "update",
     "id": "sql-backup-addon-to-storage",
     "name": "Mysql Backup to Storage ",
-    "description": "An easy way to backup your MySQL or MariaDB to Storage Container",
-    "short": "Backup for MySQL or MariaDB to Storage Container",
+    "description": {
+        "text": "/text/description-storage.md",
+        "short": "Backup for MySQL or MariaDB to Storage Container"
+    },
     "targetNodes": {
         "nodeType": [
             "mysql",
@@ -14,6 +16,7 @@
         ]
     },
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
+    "logo": "/images/backup-to-storage-70x70.png",
     "settings": {
         "main": {
             "fields": [{
@@ -60,25 +63,38 @@
             }]
         }
     },
-    "onInstall": {
-        "forEach(nodes.${targetNodes.nodeGroup})": {
-            "if (!${@i.ismaster} || nodes.${targetNodes.nodeGroup}.length == 1)": {
-                "install": {
-                    "settings": {
-                        "nodeId": "${@i.id}",
-                        "backup_mode": "${settings.backup_mode}",
-                        "host_base": "${settings.host_base}",
-                        "access_key": "${settings.access_key}",
-                        "secret_key": "${settings.secret_key}",
-                        "bucket_name": "${settings.bucket_name}",
-                        "db_user": "${settings.db_user}",
-                        "db_password": "${settings.db_password}",
-                        "cron": "${settings.cron}",
-                        "backup_count": "${settings.backup_count}",
-                        "baseUrl": "${baseUrl}"
-                    },
-                    "jps": "${baseUrl}/backup-logic.jps"
-                }
+    "onInstall": "installBackup",
+    "onAfterScaleOut[${targetNodes.nodeGroup}]": {
+        "if (nodes.${targetNodes.nodeGroup}.length - event.response.nodes.length == 1)": "installBackup"
+    },
+    "onAfterScaleIn[${targetNodes.nodeGroup}]": {
+        "if (nodes.${targetNodes.nodeGroup}.length == 1)": "installBackup"
+    },
+    "onUninstall": {
+        "script": "${baseUrl}/scripts/uninstall.js?_r=${fn.random}"
+    },
+    "actions": {
+        "installBackup": {
+            "forEach(nodes.${targetNodes.nodeGroup})": {
+                "if (!${@i.ismaster} || nodes.${targetNodes.nodeGroup}.length == 1)": [{
+                    "script": "${baseUrl}/scripts/validate-credentials.js?_r=${fn.random}",
+                    "service": "db",
+                    "nodeId": "${@i.id}"
+                }, {
+                    "install": {
+                        "settings": {
+                            "nodeGroup": "${targetNodes.nodeGroup}",
+                            "nodeId": "${@i.id}",
+                            "backup_mode": "${settings.backup_mode}",
+                            "db_user": "${settings.db_user}",
+                            "db_password": "${settings.db_password}",
+                            "cron": "${settings.cron}",
+                            "backup_count": "${settings.backup_count}",
+                            "baseUrl": "${baseUrl}"
+                        },
+                        "jps": "${baseUrl}/backup-logic.jps?_r=${fn.random}"
+                    }
+                }]
             }
         }
     },
