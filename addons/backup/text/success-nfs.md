@@ -1,1 +1,2 @@
-Your backup files will be placed at the folder ${globals.backup_path} on the backup storage container. Open Configs -> Mount / Exports.  
+Your backup files will be placed in the folder ${globals.backup_path} on the Backup Storage Container.
+Open Configs -> Mount / Exports.  
