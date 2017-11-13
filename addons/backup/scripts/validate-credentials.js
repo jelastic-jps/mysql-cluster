@@ -1,7 +1,7 @@
 //@req(service, nodeId)
 
 if (service == 'db') {
-    cmd = '[ -x "$(command -v mysql)" ] && { mysql -u ${settings.db_user} -p${settings.db_password} -e "quit"; } || { :; }'; 
+    cmd = '[ -x "$(command -v mysql)" ] && { mysql -u ${settings.db_user} -p${settings.db_password} -e "quit"; } || { :; }; '; 
     cmd += '[ -x "$(command -v psql)" ] && { export PGPASSWORD=${settings.db_password}; psql -U ${settings.db_user} -d postgres -c "\\q"; } || { :; }'
     mark = ['Access denied', 'authentication failed']
     warning = 'DB User and Password: authentication check failed. Please specify correct credentials for the database located in node' + nodeId + '.'
