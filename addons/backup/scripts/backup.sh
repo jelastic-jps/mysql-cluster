@@ -26,7 +26,7 @@ if [ -x "$(command -v psql)" ]; then
   DUMP=`which pg_dump`
   OPTS=""
   EXCLUDE=('information_schema' 'performance_schema')
-  PGPASSWORD=${DB_PASSWORD}
+  export PGPASSWORD=${DB_PASSWORD}
   DB_DUMP="${DUMP} --username=${DB_USER} ${OPTS}"
   GET_TABLES="`${SQL} -U ${DB_USER} -l -A -F: | sed -ne "/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }"`"
 
