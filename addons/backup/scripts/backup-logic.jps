@@ -58,10 +58,7 @@
                     "nodeGroup": "backup_${settings.nodeGroup}",
                     "metadata": {
                         "layer": "backup_${settings.nodeGroup}"
-                    },
-                    "dockerVolumes": [
-                        "${settings.backup_path}"
-                    ]
+                    }
                 }
             }, {
                 "script": [
