@@ -5,7 +5,7 @@ BACKUP_CONF=$1
 TMP_PATH='/tmp/backups'
 S3_BUCKET_NAME=${HOSTNAME}
 
-LOG_FILE="/tmp/db_backup.log"
+LOG_FILE="/var/log/backup.log"
 SOCKET='/var/lib/mysql/mysql.sock'
 
 
