@@ -102,7 +102,7 @@
         },
         "setupBackupUser": {
             "cmd[${settings.nodeId}]": [
-                "if [ -x \"$(command -v mysql)\" ]; then mysql --user=${settings.db_user} --password=${settings.db_password} -e \"GRANT LOCK TABLES, SELECT ON *.* TO '${globals.backup_user}'@'%' IDENTIFIED BY '${globals.backup_password}'; FLUSH PRIVILEGE;\"",
+                "if [ -x \"$(command -v mysql)\" ]; then mysql --user=${settings.db_user} --password=${settings.db_password} -e \"GRANT LOCK TABLES, SELECT ON *.* TO '${globals.backup_user}'@'%' IDENTIFIED BY '${globals.backup_password}'; FLUSH PRIVILEGES;\"",
                 " elif [ -x \"$(command -v psql)\" ]; then export PGPASSWORD=${settings.db_password}; psql -U ${settings.db_user} -d postgres -c \" CREATE USER ${globals.backup_user} SUPERUSER  password '${globals.backup_password}'; ALTER USER ${globals.backup_user} set default_transaction_read_only = on;\"; fi"            
             ]
         }
