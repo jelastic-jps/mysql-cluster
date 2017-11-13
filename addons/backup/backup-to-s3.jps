@@ -89,6 +89,11 @@
             }]
         }
     },
+    "buttons": {
+        "caption": "Configure",
+        "settings": "main",
+        "action": "installBackup"
+    },
     "onInstall": "installBackup",
     "onAfterScaleOut[${targetNodes.nodeGroup}]": {
         "if (nodes.${targetNodes.nodeGroup}.length - event.response.nodes.length == 1)": "installBackup"
