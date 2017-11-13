@@ -133,7 +133,7 @@ remove_old_backups() {
 check_mount() {
 	local mount_point=$1
 	if ${MOUNT} | ${GREP} ${mount_point} > /dev/null; then
-		echo "yay"
+		echo "mount ${mount_point} is fine"
 	else
     		log "ERROR: ${mount_point} Mount point not found";
 	fi
