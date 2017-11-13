@@ -1,8 +1,8 @@
 //@req(service, nodeId)
 
 if (service == 'db') {
-    cmd = '[ -x "$(command -v mysql)" ] && { mysql -u ${settings.db_user} -p${settings.db_password} -e "quit"; } || { :; }; '
-    cmd += '[ -x "$(command -v psql)" ] && { export PGPASSWORD=${settings.db_password}; psql -U ${settings.db_user} -d postgres -c "\\q"; } || { :; }'
+    cmd = 'if [ -x "$(command -v mysql)" ]; then  mysql -u ${settings.db_user} -p${settings.db_password} -e "quit"; elif '
+    cmd += '[ -x "$(command -v psql)" ]; then export PGPASSWORD=${settings.db_password}; psql -U ${settings.db_user} -d postgres -c "\\q"; fi'
     mark = ['Access denied', 'authentication failed']
     warning = 'DB User and Password: authentication check failed. Please specify correct credentials for the database located in node' + nodeId + '.'
     return Check(cmd, mark, warning)
@@ -19,15 +19,18 @@ return {result: 99, error: 'Service + [' + service + '] not found'}
 
 function Check(cmd, mark, warning){
     resp = ExecCmd(cmd)
-    for (var i = 0; i < mark.length; i++) {
-        if (resp.responses[0].errOut.indexOf(mark[i]) > -1) {
-            return {
-                result: 'warning',
-                message: warning
+    if (resp.result != 0) {
+        for (var i = 0; i < mark.length; i++) {
+            if (resp.responses[0].errOut.indexOf(mark[i]) > -1) {
+                return {
+                    result: 'warning',
+                    message: warning
+                }
             }
         }
+        return resp
     }
-    return resp
+    return {result: 0}
 }
 
 function ExecCmd(cmd){
