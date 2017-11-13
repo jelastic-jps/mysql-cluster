@@ -5,7 +5,7 @@ BACKUP_CONF=$1
 TMP_PATH='/tmp/backups'
 S3_BUCKET_NAME=${HOSTNAME}
 
-LOG_FILE="/tmp/db_backup.log"
+LOG_FILE="/var/log/backup.log"
 SOCKET='/var/lib/mysql/mysql.sock'
 
 
@@ -26,7 +26,7 @@ if [ -x "$(command -v psql)" ]; then
   DUMP=`which pg_dump`
   OPTS=""
   EXCLUDE=('information_schema' 'performance_schema')
-  PGPASSWORD=${DB_PASSWORD}
+  export PGPASSWORD=${DB_PASSWORD}
   DB_DUMP="${DUMP} --username=${DB_USER} ${OPTS}"
   GET_TABLES="`${SQL} -U ${DB_USER} -l -A -F: | sed -ne "/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }"`"
 
@@ -133,7 +133,7 @@ remove_old_backups() {
 check_mount() {
 	local mount_point=$1
 	if ${MOUNT} | ${GREP} ${mount_point} > /dev/null; then
-		echo "yay"
+		echo "mount ${mount_point} is fine"
 	else
     		log "ERROR: ${mount_point} Mount point not found";
 	fi
