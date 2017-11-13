@@ -7,7 +7,7 @@
         "backupScript": "/var/lib/jelastic/backup/backup.sh",
         "backupIni": "/var/lib/jelastic/backup/backup.ini",
         "s3cfg": "/var/lib/jelastic/backup/s3cfg",
-        "backup_user": "backup_user_${fn.random(5)}",
+        "backup_user": "backup_user${fn.random}",
         "backup_password": "${fn.password}",
         "backup_log": "/var/log/backup.log"
     },
