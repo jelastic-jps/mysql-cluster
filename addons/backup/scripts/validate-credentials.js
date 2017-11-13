@@ -19,18 +19,15 @@ return {result: 99, error: 'Service + [' + service + '] not found'}
 
 function Check(cmd, mark, warning){
     resp = ExecCmd(cmd)
-    if (resp.result != 0) {
-        for (var i = 0; i < mark.length; i++) {
-            if (resp.responses[0].errOut.indexOf(mark[i]) > -1) {
-                return {
-                    result: 'warning',
-                    message: warning
-                }
+    for (var i = 0; i < mark.length; i++) {
+        if (resp.responses[0].errOut.indexOf(mark[i]) > -1) {
+            return {
+                result: 'warning',
+                message: warning
             }
         }
-        return resp
     }
-    return {result: 0}
+    return resp
 }
 
 function ExecCmd(cmd){
