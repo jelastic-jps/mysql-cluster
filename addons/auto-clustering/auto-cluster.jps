@@ -61,12 +61,16 @@
                 }
             }
         }, {
-            "forEach(nodes.sqldb)": {
-                "if (${@i.id} != ${nodes.sqldb.first.id})": {
-                    "cmd [${@i.id}]": [
-                        "mysql -u${globals.db_user} -p${globals.db_pass} -e \"STOP SLAVE; RESET SLAVE\" ",
-                        "mysqlreplicate --master=${globals.db_user}:${globals.db_pass}@node${nodes.sqldb.first.id}:3306 --slave=${globals.db_user}:${globals.db_pass}@${@i.intIP}:3306 --rpl-user=${globals.repl_user}:${globals.repl_pass}"
-                    ]
+            "forEach(a:nodes.sqldb)": {
+                "if (${@a.ismaster})": {
+                    "forEach(nodes.sqldb)": {
+                        "if (!${@i.ismaster})": {
+                            "cmd [${@i.id}]": [
+                                "mysql -u${globals.db_user} -p${globals.db_pass} -e \"STOP SLAVE; RESET SLAVE\" ",
+                                "mysqlreplicate --master=${globals.db_user}:${globals.db_pass}@node${@a.id}:3306 --slave=${globals.db_user}:${globals.db_pass}@${@i.intIP}:3306 --rpl-user=${globals.repl_user}:${globals.repl_pass}"
+                            ]
+                        }    
+                    }
                 }
             }
         }, {
