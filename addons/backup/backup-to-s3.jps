@@ -106,29 +106,47 @@
     },
     "actions": {
         "installBackup": {
+            "installBackupJps": {
+                "backup_mode": "${settings.backup_mode}",
+                "s3_host": "${settings.s3_host}",
+                "access_key": "${settings.access_key}",
+                "secret_key": "${settings.secret_key}",
+                "bucket_name": "${settings.bucket_name}",
+                "db_user": "${settings.db_user}",
+                "db_password": "${settings.db_password}",
+                "cron": "${settings.cron}",
+                "backup_count": "${settings.backup_count}"
+            }
+        },
+        "installBackupJps": {
             "forEach(nodes.${targetNodes.nodeGroup})": {
                 "if (!${@i.ismaster} || nodes.${targetNodes.nodeGroup}.length == 1)": [{
                     "script": "${baseUrl}/scripts/validate-credentials.js?_r=${fn.random}",
                     "service": "db",
-                    "nodeId": "${@i.id}"
+                    "nodeId": "${@i.id}",
+                    "db_user": "${this.db_user}",
+                    "db_password": "${this.db_password}"
                 }, {
                     "script": "${baseUrl}/scripts/validate-credentials.js?_r=${fn.random}",
                     "service": "s3",
-                    "nodeId": "${@i.id}"
+                    "nodeId": "${@i.id}",
+                    "s3_host": "${this.s3_host}",
+                    "access_key": "${this.access_key}",
+                    "secret_key": "${this.secret_key}"
                 }, {
                     "install": {
                         "settings": {
                             "nodeGroup": "${targetNodes.nodeGroup}",
                             "nodeId": "${@i.id}",
-                            "backup_mode": "${settings.backup_mode}",
-                            "s3_host": "${settings.s3_host}",
-                            "access_key": "${settings.access_key}",
-                            "secret_key": "${settings.secret_key}",
-                            "bucket_name": "${settings.bucket_name}",
-                            "db_user": "${settings.db_user}",
-                            "db_password": "${settings.db_password}",
-                            "cron": "${settings.cron}",
-                            "backup_count": "${settings.backup_count}",
+                            "backup_mode": "${this.backup_mode}",
+                            "s3_host": "${this.s3_host}",
+                            "access_key": "${this.access_key}",
+                            "secret_key": "${this.secret_key}",
+                            "bucket_name": "${this.bucket_name}",
+                            "db_user": "${this.db_user}",
+                            "db_password": "${this.db_password}",
+                            "cron": "${this.cron}",
+                            "backup_count": "${this.backup_count}",
                             "backup_path": "${globals.backup_path}",
                             "baseUrl": "${baseUrl}"
                         },
