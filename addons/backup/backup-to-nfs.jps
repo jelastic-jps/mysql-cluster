@@ -17,7 +17,7 @@
     "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
     "logo": "/images/backup-to-nfs.png",
     "globals": {
-        "backup_path" : "/data/backups" 
+        "backup_path": "/data/backups"
     },
     "settings": {
         "main": {
@@ -68,8 +68,8 @@
     "buttons": {
         "caption": "Configure",
         "settings": "main",
-        "action": "installBackup"
-    },    
+        "action": "installBackupJps"
+    },
     "onInstall": "installBackup",
     "onAfterScaleOut[${targetNodes.nodeGroup}]": {
         "if (nodes.${targetNodes.nodeGroup}.length - event.response.nodes.length == 1)": "installBackup"
@@ -82,21 +82,32 @@
     },
     "actions": {
         "installBackup": {
+            "installBackupJps": {
+                "backup_mode": "${settings.backup_mode}",
+                "db_user": "${settings.db_user}",
+                "db_password": "${settings.db_password}",
+                "cron": "${settings.cron}",
+                "backup_count": "${settings.backup_count}"
+            }
+        },
+        "installBackupJps": {
             "forEach(nodes.${targetNodes.nodeGroup})": {
                 "if (!${@i.ismaster} || nodes.${targetNodes.nodeGroup}.length == 1)": [{
                     "script": "${baseUrl}/scripts/validate-credentials.js?_r=${fn.random}",
                     "service": "db",
-                    "nodeId": "${@i.id}"
+                    "nodeId": "${@i.id}",
+                    "db_user": "${this.db_user}",
+                    "db_password": "${this.db_password}"
                 }, {
                     "install": {
                         "settings": {
                             "nodeGroup": "${targetNodes.nodeGroup}",
                             "nodeId": "${@i.id}",
-                            "backup_mode": "${settings.backup_mode}",
-                            "db_user": "${settings.db_user}",
-                            "db_password": "${settings.db_password}",
-                            "cron": "${settings.cron}",
-                            "backup_count": "${settings.backup_count}",
+                            "backup_mode": "${this.backup_mode}",
+                            "db_user": "${this.db_user}",
+                            "db_password": "${this.db_password}",
+                            "cron": "${this.cron}",
+                            "backup_count": "${this.backup_count}",
                             "backup_path": "${globals.backup_path}",
                             "baseUrl": "${baseUrl}"
                         },
