@@ -38,7 +38,7 @@
                 "if (${@i.id} != ${@n.id})": {
                     "cmd[${@i.id}]": [
                         "wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh",
-                        "bash ~/setupReplication.sh node${@n.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
+                        "bash ~/setupReplication.sh node${@n.id}-${env.domain} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
                     ],
                     "user": "root"
                 }
