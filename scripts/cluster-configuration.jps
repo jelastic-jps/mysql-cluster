@@ -8,6 +8,7 @@
         "DB_PASS": "${settings.db_pass}",
         "REPLICATION_USER": "repl-${fn.random}",
         "REPLICATION_PASS": "${fn.password(20)}",
+        "CUSTOM_CONF": "${settings.custom_conf}",
         "resOutput": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://node${@i.id}-${env.domain}' target='_blank'>${env.protocol}://node${@i.id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>"
 
     },
@@ -46,6 +47,13 @@
                 "setupSlave": {
                     "filter": "${@i.id}"
                 }
+            }
+        }
+    }, {
+        "forEach(nodes.sqldb)": {
+            "if (!/settings.custom_conf/.test(\"${globals.CUSTOM_CONF}\"))": {
+                "cmd[${@i.id}]": "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log",
+                "user": "root"
             }
         }
     }, {
