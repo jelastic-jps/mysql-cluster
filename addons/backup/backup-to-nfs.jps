@@ -65,11 +65,19 @@
             }]
         }
     },
-    "buttons": {
-        "caption": "Configure",
+    "buttons": [{
+        "caption": "Backup Now",
+        "loadingText": "Making backup...",
+        "action": "backupNow",
+        "confirmText": "Make a backup now?",
+        "successText": "The backup process has been completed successfully."
+    }, {
         "settings": "main",
-        "action": "installBackupJps"
-    },
+        "caption": "Configure",
+        "loadingText": "Updating...",
+        "action": "installBackupJps",
+        "successText": "The backup add-on has been updated successfully."
+    }],
     "onInstall": "installBackup",
     "onAfterScaleOut[${targetNodes.nodeGroup}]": {
         "if (nodes.${targetNodes.nodeGroup}.length - event.response.nodes.length == 1)": "installBackup"
@@ -81,6 +89,13 @@
         "script": "${baseUrl}/scripts/uninstall.js?_r=${fn.random}"
     },
     "actions": {
+        "backupNow": {
+            "forEach(nodes.${targetNodes.nodeGroup})": {
+                "if (nodes.${targetNodes.nodeGroup}.length == 1 || ${@} == (nodes.${targetNodes.nodeGroup}[0].ismaster ? 1 : 0))": {
+                    "cmd[${@i.id}]": "cd /var/lib/jelastic/backup; /bin/bash ./backup.sh ./backup.ini &>> /var/log/backup.log"
+                }
+            }
+        },
         "installBackup": {
             "installBackupJps": {
                 "backup_mode": "${settings.backup_mode}",
@@ -92,7 +107,7 @@
         },
         "installBackupJps": {
             "forEach(nodes.${targetNodes.nodeGroup})": {
-                "if (!${@i.ismaster} || nodes.${targetNodes.nodeGroup}.length == 1)": [{
+                "if (nodes.${targetNodes.nodeGroup}.length == 1 || ${@} == (nodes.${targetNodes.nodeGroup}[0].ismaster ? 1 : 0))": [{
                     "script": "${baseUrl}/scripts/validate-credentials.js?_r=${fn.random}",
                     "service": "db",
                     "nodeId": "${@i.id}",
