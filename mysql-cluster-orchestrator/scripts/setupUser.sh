@@ -25,5 +25,7 @@ resp=$(mysql -u$user -p$pswd mysql --execute="SHOW COLUMNS FROM user")
 	echo $resp
 	rm -f /var/lib/mysql/auto.cnf
 	service mysql restart
+} || { 
+	echo "[Info] User $user has the required access to the database." 
 }
 
