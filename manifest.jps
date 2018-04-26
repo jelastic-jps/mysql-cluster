@@ -1,59 +1,53 @@
-{
-    "jpsType": "install",
-    "jpsVersion": "0.99",
-    "name": "MySQL Auto-Cluster",
-    "categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
-    "description": "/texts/description.md?_r=1",
-    "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
-    "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
-    "id": "mysql-cluster",
-    "settings": {
-        "fields": [{
-            "caption": "Cluster Mode",
-            "type": "radio-fieldset",
-            "name": "mode",
-            "default": "slave",
-            "values": {
-                "slave": "Master - Slave x N",
-                "mm": "Master - Master"
-            },
-            "showIf": {
-                "slave": [{
-                    "inputType": "hidden",
-                    "type": "string",
-                    "name": "nodes",
-                    "default": 2
-                }, {
-                    "type": "string",
-                    "inputType": "hidden",
-                    "name": "scheme",
-                    "default": "slave"
-                }],
-                "mm": [{
-                    "type": "string",
-                    "inputType": "hidden",
-                    "name": "nodes",
-                    "default": 2
-                }, {
-                    "type": "string",
-                    "inputType": "hidden",
-                    "name": "scheme",
-                    "default": "master"
-                }]
-            }
-        }]
-    },
-    "nodes": {
-        "nodeType": "mysql5",
-        "nodeGroup": "sqldb",
-        "count": "${settings.nodes}",
-        "cloudlets": 8,
-        "env": {
-            "ON_ENV_INSTALL": "${baseUrl}/addons/auto-clustering/auto-cluster.jps",
-            "SCHEME": "${settings.scheme}"
-        }
-    },
-    "success": {
-        "text": "Your should receive a bunch of emails ;). There are credentials and endpoints."
-    }
-}
+---
+type: install
+version: 1.2
+name: MySQL Auto-Cluster
+description: /texts/description.md?_r=1
+logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
+id: mysql-cluster
+categories:
+- apps/clustered-dbs
+- apps/popular
+- apps/clusters
+
+settings:
+  fields:
+  - caption: Cluster Mode
+    type: radio-fieldset
+    name: mode
+    default: slave
+    values:
+      slave: Master - Slave x N
+      mm: Master - Master
+    showIf:
+      slave:
+      - inputType: hidden
+        type: string
+        name: nodes
+        default: 2
+      - type: string
+        inputType: hidden
+        name: scheme
+        default: slave
+      mm:
+      - type: string
+        inputType: hidden
+        name: nodes
+        default: 2
+      - type: string
+        inputType: hidden
+        name: scheme
+        default: master
+
+nodes:
+  nodeType: mysql5
+  nodeGroup: sqldb
+  count: ${settings.nodes}
+  cloudlets: 8
+  env:
+    ON_ENV_INSTALL: ${baseUrl}/addons/auto-clustering/auto-cluster.jps
+    SCHEME: ${settings.scheme}
+    
+success:
+  text: Your should receive a bunch of emails ;). There are credentials and endpoints.
