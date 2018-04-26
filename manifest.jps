@@ -5,7 +5,7 @@
     "categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
     "description": "/texts/description.md?_r=1",
     "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
-    "baseUrl": "https://raw.githubusercontent.com/sych74/mysql-cluster-1/master",
+    "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
     "settings": {
         "fields": [{
             "caption": "Cluster Mode",
@@ -14,9 +14,7 @@
             "default": "slave",
             "values": {
                 "slave": "Master - Slave x N",
-                "mm": "Master - Master",
-                "mgrs": "MGR - Signle Primary Cluster",
-                "mgrmm": "MGR - Multi Primary Cluster"
+                "mm": "Master - Master"
             },
             "showIf": {
                 "slave": [{
@@ -40,28 +38,6 @@
                     "inputType": "hidden",
                     "name": "scheme",
                     "default": "master"
-                }],
-                "mgrs": [{
-                    "type": "string",
-                    "inputType": "hidden",
-                    "name": "nodes",
-                    "default": 3
-                }, {
-                    "type": "string",
-                    "inputType": "hidden",
-                    "name": "scheme",
-                    "default": "single"
-                }],
-                "mgrmm": [{
-                    "type": "string",
-                    "inputType": "hidden",
-                    "name": "nodes",
-                    "default": 3
-                }, {
-                    "type": "string",
-                    "inputType": "hidden",
-                    "name": "scheme",
-                    "default": "multi"
                 }]
             }
         }]
@@ -73,8 +49,7 @@
         "cloudlets": 8,
         "env": {
             "ON_ENV_INSTALL": "${baseUrl}/addons/auto-clustering/auto-cluster.jps",
-            "SCHEME": "${settings.scheme}",
-            "JELASTIC_PORTS": "33061"
+            "SCHEME": "${settings.scheme}"
         }
     },
     "success": {
