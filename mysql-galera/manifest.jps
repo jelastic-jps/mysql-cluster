@@ -4,7 +4,7 @@
     "description": "Mysql Galera Auto Clustering",
     "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://node${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://node${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
     "globals": {
-        "PATH": "https://raw.githubusercontent.com/sych74/mysql-cluster-1/master",
+        "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
         "DB_USER": "test",
         "DB_PASS": "abcABC123",
         "CLUSTER_NAME": "Test",
