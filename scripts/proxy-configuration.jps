@@ -1,0 +1,124 @@
+{
+    "jpsType": "update",
+    "name": "ProxySQL Load Balancer",
+    "description": "ProxySQL Load Balancer Entry Point",
+    "success": "../texts/proxy-entrypoint.md",    
+    "nodeGroupAlias": {
+        "${targetNodes.nodeGroup}": "sqldb"
+    },    
+    "globals": {
+        "PATH": "${settings.path}",
+        "DB_USER": "${settings.db_user}",
+        "DB_PASS": "${settings.db_pass}",
+        "SCHEME": "${settings.scheme}",
+        "MONITOR_USER": "monitor-${fn.random}",
+        "MONITOR_PASS": "${fn.password(10)}",
+        "ORCH_PASS": "${fn.password(10)}"
+    },
+    "onAfterScaleOut[sqldb]": {
+        "forEach(event.response.nodes)": [{
+            "addMonitorUser": {
+                "filter": "${@i.id}"
+            }
+        }, {
+            "addSlave": {
+                "id": "${@i.id}"
+            }
+        }]
+    },
+    "onBeforeScaleIn[sqldb]": {
+        "forEach(event.response.nodes)": {
+            "removeSlave": {
+                "id": "${@i.id}"
+            }
+        }
+    },
+    "onInstall": [{
+        "log": "Orchestrator configuration"
+    }, {
+        "cmd [proxy]": [
+            "mysql -h 127.0.0.1 -P3360 -uroot -e \"DROP DATABASE IF EXISTS orchestrator;\" ",
+            "mysql -h 127.0.0.1 -P3360 -uroot -e \"CREATE DATABASE IF NOT EXISTS orchestrator;\" ",
+            "mysql -h 127.0.0.1 -P3360 -uroot -e \"GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';\" ",
+            "wget ${globals.PATH}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log",
+            "sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json",
+            "sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json",
+            "systemctl restart orchestrator"
+        ]
+    }, {
+        "log": "ProxySQL configuration"
+    }, {
+        "cmd [proxy]": [
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 10, 1000);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;\" ",
+            "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;\" "
+        ]
+    }, {
+        "forEach(nodes.sqldb)": {
+            "addMonitorUser": {
+                "filter": "${@i.id}"
+            }
+        }
+    }, {
+        "if ('${globals.SCHEME}'.toLowerCase() == 'master') ": {
+            "forEach(k:nodes.sqldb)": {
+                "cmd [proxy]": [
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@k.id}', 3306);\" ",
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@k.id}', 3306);\" ",
+                    "/usr/local/orchestrator/orchestrator -c discover -i node${@k.id} cli"
+                ]
+            }
+        }
+    }, {
+        "if ('${globals.SCHEME}'.toLowerCase() != 'master') ": {
+            "forEach(l:nodes.sqldb)": [{
+                "if (${@l.ismaster})": {
+                    "cmd [proxy]": [
+                        "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@l.id}', 3306);\" ",
+                        "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@l.id}', 3306);\" ",
+                        "/usr/local/orchestrator/orchestrator -c discover -i node${@l.id} cli"
+                    ]
+                }
+            }, {
+                "if (!${@l.ismaster})": {
+                    "addSlave": {
+                        "id": "${@l.id}"
+                    }
+                }
+            }]
+        }
+    }],
+    "actions": {
+        "addMonitorUser": {
+            "cmd[${this.filter}]": [
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';\" ",
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';\" ",
+                "mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e \"FLUSH PRIVILEGES;\" "
+            ]
+        },
+        "addSlave": {
+            "cmd[proxy]": [
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES (11, 'node${this.id}', 3306, 20);\" ",
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" "
+            ]
+        },
+        "removeSlave": {
+            "cmd[proxy]": [
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';\" ",
+                "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" ",
+                "mysql -h 127.0.0.1 -P3360 -uadmin -p${globals.ORCH_PASS} -e \"DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';\" "
+            ]
+        }
+    }
+}

@@ -1,8 +1,0 @@
-[mysqld]
-log-bin = mysql-bin
-log-slave-updates
-replicate-wild-ignore-table = performance_schema.%
-replicate-wild-ignore-table = information_schema.%
-replicate-wild-ignore-table = mysql.%
-binlog_format = mixed
-read_only = 0

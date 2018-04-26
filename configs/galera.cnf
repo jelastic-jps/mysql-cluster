@@ -1,0 +1,25 @@
+[mysqld]
+
+server_id =
+
+binlog_format = ROW
+default-storage-engine = innodb
+innodb_autoinc_lock_mode = 2
+
+bind-address =
+report_host = 
+
+# Galera Provider Configuration
+wsrep_on = ON
+wsrep_provider = /usr/lib64/galera-3/libgalera_smm.so
+
+# Galera Cluster Configuration
+wsrep_cluster_name = 
+wsrep_cluster_address = gcomm://
+
+# Galera Synchronization Configuration
+wsrep_sst_method=rsync
+
+# Galera Node Configuration
+wsrep_node_address =
+wsrep_node_name =

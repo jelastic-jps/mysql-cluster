@@ -1,2 +1,0 @@
-[mysqld]
-read_only = 1

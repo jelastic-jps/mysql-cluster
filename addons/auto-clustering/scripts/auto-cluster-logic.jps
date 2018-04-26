@@ -1,0 +1,106 @@
+{
+    "jpsType": "update",
+    "id": "mysql-auto-cluster-logic",
+    "name": "Scalable MySQL Auto Cluster",
+    "globals": {
+        "baseUrl": "${settings.path}",
+        "scripts": "${settings.path}/scripts"
+    },
+    "nodeGroupAlias": {
+        "${targetNodes.nodeGroup}": "sqldb"
+    },    
+    "onInstall": {
+        "if (nodes.proxy)": [
+            "cleanCluster",
+            "setupCluster"
+        ],
+        "if (!nodes.proxy)": {
+            "if (nodes.sqldb.length > 1)": "setupCluster"
+        }
+    },
+    "onAfterClone": {
+        "install": {
+            "jps": "${settings.logic_jps}",
+            "envName": "${event.response.env.envName}",
+            "settings": {
+                "logic_jps": "${settings.logic_jps}",
+                "db_user": "${settings.db_user}",
+                "db_pass": "${settings.db_pass}",
+                "repl_user": "${settings.repl_user}",
+                "repl_pass": "${settings.repl_pass}"
+            }
+        }
+    },
+    "onAfterScaleOut[sqldb]": {
+        "if (!nodes.proxy)": "setupCluster"
+    },
+    "actions": {
+        "cleanCluster": {
+            "forEach(a:nodes.sqldb)": {
+                "if (${@a.ismaster})": {
+                    "forEach(i:nodes.sqldb)": {
+                        "if (!${@i.ismaster})": {
+                            "cmd[${@i.id}]": [
+                                "mysql -u${settings.db_user} -p${settings.db_pass} -e \"STOP SLAVE; RESET SLAVE\" ",
+                                "mysqlreplicate --master=${settings.db_user}:${settings.db_pass}@node${@a.id}:3306 --slave=${settings.db_user}:${settings.db_pass}@${@i.intIP}:3306 --rpl-user=${settings.repl_user}:${settings.repl_pass}"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "install-jps": {
+            "install": {
+                "jps": "${this.jps}",
+                "nodeGroup": "sqldb",
+                "settings": {
+                    "db_user": "${settings.db_user}",
+                    "db_pass": "${settings.db_pass}",
+                    "scheme": "${settings.scheme}",
+                    "path": "${globals.baseUrl}"
+                }
+            }
+        },
+        "setupCluster": [{
+            "if (!nodes.proxy)": {
+                "addNodes": {
+                    "cloudlets": 8,
+                    "displayName": "ProxySQL",
+                    "nodeType": "docker",
+                    "nodeGroup": "proxy",
+                    "dockerName": "devbeta/proxysql",
+                    "dockerTag": "latest",
+                    "metadata": {
+                        "layer": "proxy"
+                    }
+                }
+            }
+        }, {
+            "if (nodes.sqldb.length == 2)": [{
+                "install-jps": {
+                    "jps": "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
+                }
+            }, {
+                "install-jps": {
+                    "jps": "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
+                }
+            }],
+            "if (nodes.sqldb.length > 2)": [{
+                "if ('${settings.scheme}' == 'galera')": {
+                    "install-jps": {
+                        "jps": "${globals.scripts}/galera-configuration.jps?_r=${fn.random}"
+                    }
+                },
+                "if ('${settings.scheme}' != 'galera')": {
+                    "install-jps": {
+                        "jps": "${globals.scripts}/mgr-configuration.jps?_r=${fn.random}"
+                    }
+                }
+            }, {
+                "install-jps": {
+                    "jps": "${globals.scripts}/proxy-mgr-configuration.jps?_r=${fn.random}"
+                }
+            }]
+        }]
+    }
+}

@@ -1,0 +1,120 @@
+{
+    "jpsType": "install",
+    "name": "Mysql Galera Cluster",
+    "description": "Mysql Galera Auto Clustering",
+    "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://node${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://node${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
+    "globals": {
+        "PATH": "https://raw.githubusercontent.com/sych74/mysql-cluster-1/master",
+        "DB_USER": "test",
+        "DB_PASS": "abcABC123",
+        "CLUSTER_NAME": "Test",
+        "CUSTOM_CONF": "${settings.custom_conf}"
+    },
+    "nodes": [{
+        "image": "devbeta/galera-mysql",
+        "count": 3,
+        "cloudlets": 8,
+        "nodeGroup": "sqldb",
+        "displayName": "Database"
+    }],
+    "onAfterScaleOut[nodeGroup:sqldb]": {
+        "forEach(event.response.nodes)": [{
+            "if (!/settings.custom_conf/.test(\"${globals.CUSTOM_CONF}\"))": {
+                "cmd[${@i.id}]": "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log",
+                "user": "root"
+            }
+        }, {
+            "setupUser": {
+                "filter": "${@i.id}"
+            },
+            "setNodeDisplayName[${@i.id}]": "Galera"
+        }, {
+            "cmd[${@i.id}]": [
+                "wget ${globals.PATH}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log"
+            ],
+            "user": "root"
+        }, {
+            "addNodes": {
+                "filter": "${@i.id}"
+            }
+        }, {
+            "setupInstance": {
+                "filter": "${@i.id}",
+                "ip": "${@i.address}"
+            }
+        }, {
+            "cmd[${@i.id}]": "service mysql restart"
+        }]
+    },
+    "onInstall": [{
+        "forEach(nodes.sqldb)": [{
+            "if (!/settings.custom_conf/.test(\"${globals.CUSTOM_CONF}\"))": {
+                "cmd[${@i.id}]": "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log",
+                "user": "root"
+            }
+        }, {
+            "setupUser": {
+                "filter": "${@i.id}"
+            },
+            "setNodeDisplayName[${@i.id}]": "Galera"
+        }, {
+            "cmd[${@i.id}]": [
+                "wget ${globals.PATH}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log"
+            ],
+            "user": "root"
+        }, {
+            "addNodes": {
+                "filter": "${@i.id}"
+            }
+        }, {
+            "setupInstance": {
+                "filter": "${@i.id}",
+                "ip": "${@i.address}"
+            }
+        }, {
+            "if (${@i.ismaster})": {
+                "cmd[${@i.id}]": "service mysql stop; /usr/bin/mysqld_safe --wsrep-new-cluster &>> /var/log/run.log"
+            }
+        }, {
+            "if (!${@i.ismaster})": {
+                "cmd[${@i.id}]": "service mysql restart"
+            }
+        }]
+    }],
+    "actions": {
+        "setupUser": {
+            "cmd[${this.filter}]": [
+                "wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log",
+                "bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
+            ],
+            "user": "root"
+        },
+        "addNodes": {
+            "forEach(n:nodes.sqldb)": {
+                "cmd[${this.filter}]": [
+                    "sed -i \"/^wsrep_cluster_address/ s/$/${@n.address},/\" /etc/mysql/conf.d/galera.cnf"
+                ],
+                "user": "root"
+            }
+        },
+        "setupInstance": [{
+            "cmd[${this.filter}]": [
+                "sed -i \"s/server_id.*/server_id = ${this.filter}/\" /etc/mysql/conf.d/galera.cnf",
+                "sed -i \"s/bind-address.*/bind-address = node${this.filter}/\" /etc/mysql/conf.d/galera.cnf",
+                "sed -i \"s/report_host.*/report_host = node${this.filter}/\" /etc/mysql/conf.d/galera.cnf",
+                "sed -i \"s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/\" /etc/mysql/conf.d/galera.cnf",
+                "sed -i \"s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/\" /etc/mysql/conf.d/galera.cnf",
+                "sed -i \"s/wsrep_node_name.*/wsrep_node_name = node${this.filter}/\" /etc/mysql/conf.d/galera.cnf",
+                "sed -i \"/^wsrep_cluster_address/ s/.$//\" /etc/mysql/conf.d/galera.cnf"
+            ],
+            "user": "root"
+        }],
+        "setupUser": {
+            "cmd[${this.filter}]": [
+                "wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log",
+                "bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
+            ],
+            "user": "root"
+        }
+    }
+}

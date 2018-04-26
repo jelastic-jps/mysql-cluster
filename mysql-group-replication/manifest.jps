@@ -2,10 +2,10 @@
     "jpsType": "install",
     "jpsVersion": "1.1",
     "application": {
-        "name": "Scalable MySQL Cluster with Load Balancing",
+        "name": "Scalable MySQL Group Replication Cluster with Load Balancing",
         "categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
         "description": {
-            "text": "Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator GUI for convenient cluster management and provides even load distribution, slaves healthcheck and autodiscovery of newly added DB nodes",
+            "text": "Ready-to-work scalable Group Replication Cluster and ProxySQL load balancer in front of it.",
             "short": "Scalable MySQL cluster with ProxySQL for even load distribution"
         },
         "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
@@ -13,7 +13,7 @@
             "topology": {
                 "nodes": [{
                     "cloudlets": 8,
-                    "count": 2,
+                    "count": 3,
                     "nodeGroup": "sqldb",
                     "nodeType": "mysql"
                 }, {
@@ -30,21 +30,21 @@
         },
         "onInstall": [{
             "installJps": {
-                "jps": "${globals.path}/scripts/multimaster-configuration.jps",
-                "settings": {
-                    "path": "${globals.path}",
-                    "db_user": "${globals.db_user}",
-                    "db_pass": "${globals.db_pass}"
-                }
-            }
-        }, {
-            "installJps": {
-                "jps": "${globals.path}/scripts/proxy-configuration.jps",
+                "jps": "${globals.path}/scripts/mgr-configuration.jps?_r=${fn.random}",
                 "settings": {
                     "path": "${globals.path}",
                     "db_user": "${globals.db_user}",
                     "db_pass": "${globals.db_pass}",
-                    "scheme" : "MASTER"
+                    "scheme": "multi"
+                }
+            }
+        }, {
+            "installJps": {
+                "jps": "${globals.path}/scripts/proxy-mgr-configuration.jps?_r=${fn.random}",
+                "settings": {
+                    "path": "${globals.path}",
+                    "db_user": "${globals.db_user}",
+                    "db_pass": "${globals.db_pass}"
                 }
             }
         }]
