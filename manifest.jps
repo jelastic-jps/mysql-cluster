@@ -1,55 +1,83 @@
 {
-	"jpsType": "install",
-	"jpsVersion": "0.99",
-	"application": {
-		"name": "MySQL DB Auto Clustering",
-        	"categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
-		"description": "Pre-configured and ready-to-work MySQL Cluster with master slave asynchronous replication. By default, the cluster consists of one master and one slave container. The number of slaves can be increased stating more containers below.",
-		"logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
-		"settings": {
-			"fields": [{
-					"type": "spinner",
-					"name": "count",
-					"caption": "Containers",
-					"min": 1,
-					"max": 10,
-					"default": 2,
-					"increment": 1
-				}
-			]
-		},
-		"env": {
-			"topology": {
-				"ssl": true,
-				"nodes": [{
-						"cloudlets": 8,
-						"count": "${settings.count}",
-						"nodeGroup": "sqldb",
-						"image": "jelastic/mysql:5.7.14",
-						"displayName": "Database"
-					}
-				]
-			},
-			"onAfterScaleOut": {
-				"forEach(event.response.nodes)": {
-					"setNodeDisplayName [${@i.id}]": "Database"
-				}
-			}
-		},
-		"globals": {
-			"path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
-			"db_user": "jelastic-${fn.random}",
-			"db_pass": "${fn.password(20)}"
-		},
-		"onInstall": {
-			"installJps": {
-				"jps": "${globals.path}/scripts/cluster-configuration.jps",
-				"settings": {
-					"db_user": "${globals.db_user}",
-					"db_pass": "${globals.db_pass}"
-				}
-			}
-		},
-		"success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://docker${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.db_user}</b></td></tr><tr><td>Password:</td><td><b>${globals.db_pass}</b></td></tr></table>"
-	}
+    "jpsType": "install",
+    "jpsVersion": "0.99",
+    "name": "MySQL Auto-Cluster",
+    "categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
+    "description": "/texts/description.md?_r=1",
+    "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
+    "baseUrl": "https://raw.githubusercontent.com/sych74/mysql-cluster-1/master",
+    "settings": {
+        "fields": [{
+            "caption": "Cluster Mode",
+            "type": "radio-fieldset",
+            "name": "mode",
+            "default": "slave",
+            "values": {
+                "slave": "Master - Slave x N",
+                "mm": "Master - Master",
+                "mgrs": "MGR - Signle Primary Cluster",
+                "mgrmm": "MGR - Multi Primary Cluster"
+            },
+            "showIf": {
+                "slave": [{
+                    "inputType": "hidden",
+                    "type": "string",
+                    "name": "nodes",
+                    "default": 2
+                }, {
+                    "type": "string",
+                    "inputType": "hidden",
+                    "name": "scheme",
+                    "default": "slave"
+                }],
+                "mm": [{
+                    "type": "string",
+                    "inputType": "hidden",
+                    "name": "nodes",
+                    "default": 2
+                }, {
+                    "type": "string",
+                    "inputType": "hidden",
+                    "name": "scheme",
+                    "default": "master"
+                }],
+                "mgrs": [{
+                    "type": "string",
+                    "inputType": "hidden",
+                    "name": "nodes",
+                    "default": 3
+                }, {
+                    "type": "string",
+                    "inputType": "hidden",
+                    "name": "scheme",
+                    "default": "single"
+                }],
+                "mgrmm": [{
+                    "type": "string",
+                    "inputType": "hidden",
+                    "name": "nodes",
+                    "default": 3
+                }, {
+                    "type": "string",
+                    "inputType": "hidden",
+                    "name": "scheme",
+                    "default": "multi"
+                }]
+            }
+        }]
+    },
+    "nodes": {
+        "nodeType": "mysql5",
+        "nodeGroup": "sqldb",
+        "count": "${settings.nodes}",
+        "cloudlets": 8,
+        "env": {
+            "ON_ENV_INSTALL": "${baseUrl}/addons/auto-clustering/auto-cluster.jps",
+            "SCHEME": "${settings.scheme}",
+            "JELASTIC_PORTS": "33061"
+        }
+    },
+    "success": {
+        "text": "Your should receive a bunch of emails ;). There are credentials and endpoints."
+    }
 }
