@@ -76,6 +76,7 @@
                 "cmd [proxy]": [
                     "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@k.id}', 3306);\" ",
                     "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@k.id}', 3306);\" ",
+                    "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" ",
                     "/usr/local/orchestrator/orchestrator -c discover -i node${@k.id} cli"
                 ]
             }
@@ -87,6 +88,7 @@
                     "cmd [proxy]": [
                         "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@l.id}', 3306);\" ",
                         "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@l.id}', 3306);\" ",
+                        "mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\" ",
                         "/usr/local/orchestrator/orchestrator -c discover -i node${@l.id} cli"
                     ]
                 }
