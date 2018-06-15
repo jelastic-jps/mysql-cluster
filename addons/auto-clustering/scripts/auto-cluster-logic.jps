@@ -32,7 +32,7 @@
         }
     },
     "onAfterScaleOut[sqldb]": {
-        "if (!nodes.proxy)": "setupCluster"
+        "if (!nodes.proxy && nodes.sqldb.length > 1)": "setupCluster"
     },
     "actions": {
         "cleanCluster": {
