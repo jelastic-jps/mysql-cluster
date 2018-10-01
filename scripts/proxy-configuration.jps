@@ -71,15 +71,15 @@ onInstall:
   - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
       forEach(l:nodes.sqldb):
         - if (${@l.ismaster}):
-          cmd [proxy]: |-
-            mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@l.id}', 3306);"
-            mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@l.id}', 3306);"
-            mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-            /usr/local/orchestrator/orchestrator -c discover -i node${@l.id} cli
-          user: root
+            cmd [proxy]: |-
+              mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@l.id}', 3306);"
+              mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@l.id}', 3306);"
+              mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+              /usr/local/orchestrator/orchestrator -c discover -i node${@l.id} cli
+            user: root
         - if (!${@l.ismaster}):
-          addSlave:
-            id: "${@l.id}"
+            addSlave:
+              id: "${@l.id}"
 
 actions:
   addMonitorUser:
