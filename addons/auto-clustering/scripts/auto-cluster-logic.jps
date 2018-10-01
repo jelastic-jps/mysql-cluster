@@ -68,8 +68,8 @@
                     "displayName": "ProxySQL",
                     "nodeType": "docker",
                     "nodeGroup": "proxy",
-                    "dockerName": "jelastic/proxysql",
-                    "dockerTag": "latest",
+                    "dockerName": "devbeta/proxysql",
+                    "dockerTag": "1.4.9",
                     "metadata": {
                         "layer": "proxy"
                     }
