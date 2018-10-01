@@ -2,110 +2,88 @@
     "jpsType": "update",
     "name": "Mysql Galera Cluster",
     "description": "Mysql Galera Auto Clustering",
-    "success": {
-        "text": "../texts/phpmyadmin-credentials.md"
-    },
-    "nodeGroupAlias": {
-        "${targetNodes.nodeGroup}": "sqldb"
-    },    
     "globals": {
-        "PATH": "${settings.path}",
-        "DB_USER": "${settings.db_user}",
-        "DB_PASS": "${settings.db_pass}",
-        "CLUSTER_NAME": "jelastic-${fn.random(5)}",
+        "PATH": "https://raw.githubusercontent.com/sych74/mysql-cluster-1/master",
+        "DB_USER": "test4",
+        "DB_PASS": "abcABC123",
+        "CLUSTER_NAME": "cluster-aaaa",
+        "GALERA_CONF": "/etc/mysql/conf.d/galera.cnf",
         "CUSTOM_CONF": "${settings.custom_conf}"
     },
-    "onAfterScaleOut[sqldb]": {
-        "forEach(event.response.nodes)": [{
-            "setupUser": {
-                "filter": "${@i.id}"
-            }
-        }, {
-            "setNodeDisplayName[${@i.id}]": "Galera",
-            "if (!/settings.custom_conf/.test(\"${globals.CUSTOM_CONF}\"))": {
-                "cmd[${@i.id}]": "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log",
-                "user": "root"
-            }
-        }, {
-            "cmd[${@i.id}]": [
-                "wget ${globals.PATH}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log"
-            ],
-            "user": "root"
-        }, {
-            "setupSeeds": {
-                "filter": "${@i.id}"
-            }
-        }, {
-            "setupInstance": {
-                "filter": "${@i.id}"
-            }
-        }, {
-            "startGalera": {
-                "filter": "${@i.id}"
-            }
-        }]
-    },
     "onInstall": [{
-        "forEach(nodes.sqldb)": [{
-            "if (!/settings.custom_conf/.test(\"${globals.CUSTOM_CONF}\"))": {
-                "cmd[${@i.id}]": "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log",
-                "user": "root"
+            "forEach(nodes.sqldb)": {
+                "initialSetup": {
+                    "id": "${@i.id}"
+                }
             }
-        }, {
-            "cmd[${@i.id}]": [
-                "wget ${globals.PATH}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log"
-            ],
-            "user": "root"
-        }, {
-            "addNodes": {
-                "filter": "${@i.id}"
-            }
-        }, {
-            "setupInstance": {
-                "filter": "${@i.id}",
-                "ip": "${@i.address}"
-            }
-        }, {
-            "setupUser": {
-                "filter": "${@i.id}"
-            },
-            "setNodeDisplayName[${@i.id}]": "Galera"
-        }]
-    }],
-    "actions": {
-        "setupUser": {
-            "cmd[${this.filter}]": [
-                "wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log",
-                "bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
-            ],
-            "user": "root"
         },
-        "addNodes": {
+        "setupSeeds", {
+            "forEach(i:nodes.sqldb)": {
+                "setupInstance": {
+                    "id": "${@i.id}",
+                    "ip": "${@i.address}"
+                }
+            }
+        }, {
+            "forEach(k:nodes.sqldb)": {
+                "if (${@k.ismaster})": {
+                    "cmd[${@k.id}]": "/etc/init.d/mysql stop; sleep 5; /usr/bin/mysqld_bootstrap",
+                    "user": "root"
+                }
+            }
+        }, {
             "forEach(n:nodes.sqldb)": {
-                "cmd[${this.filter}]": [
-                    "sed -i \"/^wsrep_cluster_address/ s/$/${@n.address},/\" /etc/mysql/conf.d/galera.cnf"
-                ],
+                "if (!${@n.ismaster})": {
+                    "cmd[${@n.id}]": "/etc/init.d/mysql restart",
+                    "user": "root"
+                }
+            }
+        }
+    ],
+    "actions": {
+        "initialSetup": [{
+            "setupUser": {
+                "id": "${this.id}"
+            }
+        }, {
+            "setNodeDisplayName[${this.id}]": "Galera",
+            "if (!/settings.custom_conf/.test(\"${globals.CUSTOM_CONF}\"))": {
+                "cmd[${this.id}]": "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log",
                 "user": "root"
             }
-        },
-        "setupInstance": [{
-            "cmd[${this.filter}]": [
-                "sed -i \"s/server_id.*/server_id = ${this.filter}/\" /etc/mysql/conf.d/galera.cnf",
-                "sed -i \"s/bind-address.*/bind-address = node${this.filter}/\" /etc/mysql/conf.d/galera.cnf",
-                "sed -i \"s/report_host.*/report_host = node${this.filter}/\" /etc/mysql/conf.d/galera.cnf",
-                "sed -i \"s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/\" /etc/mysql/conf.d/galera.cnf",
-                "sed -i \"s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/\" /etc/mysql/conf.d/galera.cnf",
-                "sed -i \"s/wsrep_node_name.*/wsrep_node_name = node${this.filter}/\" /etc/mysql/conf.d/galera.cnf",
-                "sed -i \"/^wsrep_cluster_address/ s/.$//\" /etc/mysql/conf.d/galera.cnf"
-            ],
+        }, {
+            "cmd[${this.id}]": "wget ${globals.PATH}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log",
             "user": "root"
         }],
         "setupUser": {
-            "cmd[${this.filter}]": [
+            "cmd[${this.id}]": [
                 "wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log",
                 "bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
             ],
             "user": "root"
+        },
+        "setupSeeds": {
+            "script": [
+                "var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);",
+                "if (resp.result != 0) return resp;",
+                "var nodes = [], nodeGroup = 'sqldb';",
+                "for (var i = 0, n = resp.nodes; i < n.length; i++)",
+                "  n[i].nodeGroup == nodeGroup ? nodes.push(n[i].address) : 0",
+                "resp = {result:0, onAfterReturn: {}};",
+                "resp.onAfterReturn['cmd['+ nodeGroup +']'] = 'sed -i \"s|wsrep_cluster_address.*|wsrep_cluster_address = gcomm://'+ nodes.join(',') +'|g \" ${globals.GALERA_CONF}';",
+                "resp.onAfterReturn['user'] = 'root';",
+                "return resp;"
+            ]
+        },
+        "setupInstance": {
+            "cmd[${this.id}]": [
+                "sed -i \"s/server_id.*/server_id = ${this.id}/\" ${globals.GALERA_CONF}",
+                "sed -i \"s/bind-address.*/bind-address = node${this.id}/\" ${globals.GALERA_CONF}",
+                "sed -i \"s/report_host.*/report_host = node${this.id}/\" ${globals.GALERA_CONF}",
+                "sed -i \"s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/\" ${globals.GALERA_CONF}",
+                "sed -i \"s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/\" ${globals.GALERA_CONF}",
+                "sed -i \"s/wsrep_node_name.*/wsrep_node_name = node${this.id}/\" ${globals.GALERA_CONF}"
+            ]
         }
     }
 }

@@ -1,143 +1,110 @@
-{
-    "type": "update",
-    "version": "0.99",
-    "name": "MySQL Auto-Cluster",
-    "description": "DB Auto Clustering: 1 x Master + N x Slave",
-    "nodeGroupAlias": {
-        "${targetNodes.nodeGroup}": "sqldb"
-    },    
-    "globals": {
-        "PATH": "${settings.path}",
-        "DB_USER": "${settings.db_user}",
-        "DB_PASS": "${settings.db_pass}",
-        "SCHEME": "${settings.scheme}",
-        "REPLICATION_USER": "repl-${fn.random}",
-        "REPLICATION_PASS": "${fn.password(20)}",
-        "CUSTOM_CONF": "${settings.custom_conf}"
-    },
-    "success": {
-        "text": "../texts/phpmyadmin-credentials.md"
-    },
-    "onAfterScaleOut[sqldb]": {
-        "forEach(i:nodes.sqldb)": {
-            "if (${@i.ismaster})": [{
-                "forEach(n:event.response.nodes)": {
-                    "addSlave": {
-                        "id": "${@n.id}",
-                        "masterId": "${@i.id}"
-                    }
-                }
-            }, {
-                "return": {
-                    "result": "success"
-                }
-            }]
-        }
-    },
-    "onInstall": [{
-        "if (!/settings.custom_conf/.test(\"${globals.CUSTOM_CONF}\"))": {
-            "forEach(i:nodes.sqldb)": {
-                "cmd[${@i.id}]": "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log",
-                "user": "root"
-            }
-        }
-    }, {
-        "if ('${globals.SCHEME}'.toLowerCase() == 'master') ": [{
-            "log": "--> Setup Master Node"
-        }, {
-            "forEach(k:nodes.sqldb)": [{
-                "setupUser": {
-                    "id": "${@k.id}"
-                },
-                "setNodeDisplayName[${@k.id}]": "Master"
-            }, {
-                "cmd[${@k.id}]": [
-                    "wget ${globals.PATH}/scripts/serverConfiguration.sh -O ~/serverConfiguration.sh",
-                    "bash ~/serverConfiguration.sh ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} $((${@} + 1)) &>> /var/log/run.log"
-                ],
-                "user": "root"
-            }]
-        }, {
-            "forEach(l:nodes.sqldb)": {
-                "forEach(n:nodes.sqldb)": {
-                    "if (${@l.id} != ${@n.id})": {
-                        "cmd[${@l.id}]": [
-                            "wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh",
-                            "bash ~/setupReplication.sh node${@n.id}-${env.domain} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
-                        ],
-                        "user": "root"
-                    }
-                }
-            }
-        }]
-    }, {
-        "if ('${globals.SCHEME}'.toLowerCase() != 'master') ": [{
-            "log": "--> Setup Slave Node"
-        }, {
-            "forEach(i:nodes.sqldb)": [{
-                "if (${@i.ismaster})": [{
-                    "setupMaster": {
-                        "id": "${@i.id}"
-                    }
-                }, {
-                    "forEach(n:nodes.sqldb)": {
-                        "if (!${@n.ismaster})": {
-                            "addSlave": {
-                                "id": "${@n.id}",
-                                "masterId": "${@i.id}"
-                            }
-                        }
-                    }
-                }, {
-                    "return": {
-                        "result": "success"
-                    }
-                }]
-            }]
-        }]
-    }],
-    "actions": {
-        "setupReplication": {
-            "cmd[${this.id}]": [
-                "wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log",
-                "bash ~/setupReplication.sh node${this.masterId} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
-            ],
-            "user": "root"
-        },
-        "addSlave": [{
-            "setupSlave": {
-                "id": "${this.id}"
-            }
-        }, {
-            "setupUser": {
-                "id": "${this.id}"
-            }
-        }, {
-            "setupReplication": {
-                "id": "${this.id}",
-                "masterId": "${this.masterId}"
-            }
-        }],
-        "setupUser": {
-            "cmd[${this.id}]": [
-                "wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log",
-                "bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
-            ],
-            "user": "root"
-        },
-        "setupMaster": [{
-            "cmd[${this.id}]": "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log",
-            "setNodeDisplayName[${this.id}]": "Master",
-            "user": "root"
-        }, {
-            "setupUser": {
-                "id": "${this.id}"
-            }
-        }],
-        "setupSlave": {
-            "cmd[${this.id}]": "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log",
-            "setNodeDisplayName[${this.id}]": "Slave",
-            "user": "root"
-        }
-    }
-}
+---
+type: update
+version: '0.99'
+name: MySQL Auto-Cluster
+description: 'DB Auto Clustering: 1 x Master + N x Slave'
+nodeGroupAlias:
+  "${targetNodes.nodeGroup}": sqldb
+
+globals:
+  PATH: "${settings.path}"
+  DB_USER: "${settings.db_user}"
+  DB_PASS: "${settings.db_pass}"
+  SCHEME: "${settings.scheme}"
+  REPLICATION_USER: repl-${fn.random}
+  REPLICATION_PASS: "${fn.password(20)}"
+  CUSTOM_CONF: "${settings.custom_conf}"
+
+success:
+  text: "../texts/phpmyadmin-credentials.md"
+
+onAfterScaleOut[sqldb]:
+  forEach(i:nodes.sqldb):
+    if (${@i.ismaster}):
+      forEach(n:event.response.nodes):
+        addSlave:
+          id: "${@n.id}"
+          masterId: "${@i.id}"
+
+onAfterScaleIn[sqldb]:
+  if ( nodes.sqldb.length - event.params.count < 2 ): stopEvent
+
+onInstall:
+  - if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
+      forEach(i:nodes.sqldb):
+        cmd[${@i.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
+        user: root
+
+  - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
+    - log: "--> Setup Master Node"
+    - forEach(k:nodes.sqldb):
+        - cmd[${@k.id}]: |-
+            wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+            sed -i "s/auto-increment-increment.*/auto-increment-increment = $((${@} + 1))/" /etc/mysql/conf.d/increment.cnf
+          user: root
+        - setupServerID:
+            id: "${@k.id}"
+        - setupMaster:
+            id: "${@k.id}"
+    - forEach(l:nodes.sqldb):
+        forEach(n:nodes.sqldb):
+          if (${@l.id} != ${@n.id}):
+            setupReplication:
+              id: "${@l.id}"
+              masterId: "${@n.id}"
+
+  - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
+    - log: "--> Setup Slave Node"
+    - forEach(i:nodes.sqldb):
+        if (${@i.ismaster}):
+          - setupMaster:
+              id: "${@i.id}"
+          - forEach(n:nodes.sqldb):
+              if (!${@n.ismaster}):
+                addSlave:
+                  id: "${@n.id}"
+                  masterId: "${@i.id}"
+  - return:
+      result: success
+actions:
+
+  setupReplication:
+      cmd[${this.id}]: |-
+        yum install https://downloads.mysql.com/archives/get/file/mysql-connector-python-8.0.11-1.el7.x86_64.rpm -y &>> /var/log/run.log
+        yum install https://downloads.mysql.com/archives/get/file/mysql-utilities-1.6.5-1.el7.noarch.rpm -y &>> /var/log/run.log
+        ln -s /usr/lib/python2.7/site-packages/mysql/utilities /usr/lib64/python2.7/site-packages/mysql/utilities
+        wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
+        bash ~/setupReplication.sh node${this.masterId} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
+      user: root
+
+  addSlave:
+    - setupSlave:
+        id: "${this.id}"
+    - setupUser:
+        id: "${this.id}"
+    - setupReplication:
+        id: "${this.id}"
+        masterId: "${this.masterId}"
+
+  setupServerID:
+    cmd[${this.id}]: sed -i "s/server_id.*/server_id = ${this.id}/" /etc/my.cnf
+    user: root
+
+  setupUser:
+    cmd[${this.id}]: |-
+      wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
+      bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
+      mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "CREATE USER '${globals.REPLICATION_USER}'@'%' IDENTIFIED BY '${globals.REPLICATION_PASS}';"
+      mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "GRANT REPLICATION SLAVE ON *.* TO '${globals.REPLICATION_USER}'@'%';"
+    user: root
+
+  setupMaster:
+    - cmd[${this.id}]: wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
+    - setupUser:
+        id: "${this.id}"
+    - setNodeDisplayName[${this.id}]: Master
+
+  setupSlave:
+    - cmd[${this.id}]: wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
+    - setNodeDisplayName[${this.id}]: Slave
+            

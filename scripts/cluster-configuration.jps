@@ -1,7 +1,8 @@
 {
-    "jpsType": "update",
-    "name": "Scale Database Cluster",
-    "description": "DB Auto Clustering: 1 x Master + N x Slave",
+    "type": "update",
+    "version": "0.99",
+    "name": "MySQL Auto-Cluster",
+    "description": "[@Deprecated: see /scripts/ms-mm-configuration.jps] MySQL Auto Clustering: 1 x Master + N x Slave",
     "globals": {
         "PATH": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
         "DB_USER": "${settings.db_user}",
@@ -9,47 +10,26 @@
         "REPLICATION_USER": "repl-${fn.random}",
         "REPLICATION_PASS": "${fn.password(20)}",
         "CUSTOM_CONF": "${settings.custom_conf}",
-        "resOutput": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='https://node${@i.id}-${env.domain}' target='_blank'>https://node${@i.id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>"
+        "resOutput": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://node${@i.id}-${env.domain}' target='_blank'>${env.protocol}://node${@i.id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>"
     },
-    "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='https://node${nodes.sqldb[0].id}-${env.domain}' target='_blank'>https://node${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
-    "onAfterScaleOut[nodeGroup:sqldb]": [{
-        "forEach(event.response.nodes)": {
-            "setupSlave": {
-                "filter": "${@i.id}"
-            }
-        }
-    }, {
-        "forEach(event.response.nodes)": {
-            "setupUser": {
-                "filter": "${@i.id}"
-            }
-        }
-    }, {
-        "forEach(event.response.nodes)": {
-            "setupReplication": {
-                "filter": "${@i.id}"
-            }
-        }
-    }],
-    "onInstall": [{
-        "forEach(nodes.sqldb)": {
-            "if (${@i.ismaster})": {
-                "cmd[${@i.id}]": [
-                    "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log"
-                ],
-                "setNodeDisplayName[${@i.id}]": "Master",
-                "user": "root"
-            }
-        }
-    }, {
-        "forEach(nodes.sqldb)": {
-            "if (!${@i.ismaster})": {
-                "setupSlave": {
-                    "filter": "${@i.id}"
+    "success": "<table style='font-size:14px'><tr><td>PHP MyAdmin:</td><td><a href='${env.protocol}://node${nodes.sqldb[0].id}-${env.domain}' target='_blank'>${env.protocol}://node${nodes.sqldb[0].id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>",
+    "onAfterScaleOut[sqldb]": {
+        "forEach(i:nodes.sqldb)": {
+            "if (${@i.ismaster})": [{
+                "forEach(n:event.response.nodes)": {
+                    "addSlave": {
+                        "id": "${@n.id}",
+                        "masterId": "${@i.id}"
+                    }
                 }
-            }
+            }, {
+                "return": {
+                    "result": "success"
+                }
+            }]
         }
-    }, {
+    },
+    "onInstall": [{
         "forEach(nodes.sqldb)": {
             "if (!/settings.custom_conf/.test(\"${globals.CUSTOM_CONF}\"))": {
                 "cmd[${@i.id}]": "cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log",
@@ -57,41 +37,77 @@
             }
         }
     }, {
-        "forEach(nodes.sqldb)": {
-            "setupUser": {
-                "filter": "${@i.id}"
-            }
-        }
-    }, {
-        "forEach(nodes.sqldb)": {
-            "setupReplication": {
-                "filter": "${@i.id}"
-            }
-        }
+        "forEach(i:nodes.sqldb)": [{
+            "if (${@i.ismaster})": [{
+                "setupMaster": {
+                    "id": "${@i.id}"
+                }
+            }, {
+                "forEach(n:nodes.sqldb)": {
+                    "if (!${@n.ismaster})": {
+                        "addSlave": {
+                            "id": "${@n.id}",
+                            "masterId": "${@i.id}"
+                        }
+                    }
+                }
+            }, {
+                "return": {
+                    "result": "success",
+                    "email": "<table style='font-size:14px'><tr><td>PHP MyAdmin at Master Node:</td><td><a href='https://node${@i.id}-${env.domain}' target='_blank'>https://node${@i.id}-${env.domain}</a></td></tr><tr><td>Login:</td><td><b>${globals.DB_USER}</b></td></tr><tr><td>Password:</td><td><b>${globals.DB_PASS}</b></td></tr></table>"
+                }
+            }]
+        }]
     }],
     "actions": {
         "setupReplication": {
-            "forEach(nodes.sqldb)": {
-                "if (${@i.ismaster})": {
-                    "cmd [${this.filter}]": [
-                        "wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log",
-                        "bash ~/setupReplication.sh node${@i.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
-                    ],
-                    "user": "root"
-                }
-            }
-        },
-        "setupUser": {
-            "cmd[${this.filter}]": [
-                "wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log",
-                "bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
+            "script": [
+                "var version = jelastic.system.service.GetVersion().version.split('-').shift(), host = '';",
+                "if (compareVersions(version, '5.2') == -1) host = '-${env.domain}';",
+                "return {result: 0, onAfterReturn: {replicaCmd: {id: ${this.id}, masterId: ${this.masterId}, host: host}}}",
+                "function compareVersions(a, b) {a = a.split('.'), b = b.split('.'); for (var i = 0, l = Math.max(a.length, b.length); i < l; i++) {x = parseInt(a[i], 10) || 0; y = parseInt(b[i], 10) || 0; if (x != y) return x > y ? 1 : -1 }; return 0;}"
             ]
         },
-        "setupSlave": {
-            "cmd[${this.filter}]": [
-                "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log"
+        "replicaCmd": {
+            "cmd[${this.id}]": [
+                "wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log",
+                "bash ~/setupReplication.sh node${this.masterId}${this.host} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log"
             ],
-            "setNodeDisplayName[${this.filter}]": "Slave",
+            "user": "root"
+        },
+        "addSlave": [{
+            "setupSlave": {
+                "id": "${this.id}"
+            }
+        }, {
+            "setupUser": {
+                "id": "${this.id}"
+            }
+        }, {
+            "setupReplication": {
+                "id": "${this.id}",
+                "masterId": "${this.masterId}"
+            }
+        }],
+        "setupUser": {
+            "cmd[${this.id}]": [
+                "wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log",
+                "bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log"
+            ],
+            "user": "root"
+        },
+        "setupMaster": [{
+            "cmd[${this.id}]": "wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log",
+            "setNodeDisplayName[${this.id}]": "Master",
+            "user": "root"
+        }, {
+            "setupUser": {
+                "id": "${this.id}"
+            }
+        }],
+        "setupSlave": {
+            "cmd[${this.id}]": "wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log",
+            "setNodeDisplayName[${this.id}]": "Slave",
             "user": "root"
         }
     }
