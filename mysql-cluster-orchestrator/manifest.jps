@@ -1,54 +1,52 @@
----
-type: install
-version: 1.2
-name: MySQL Auto-Cluster
-description: /texts/description.md?_r=1
-logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
-startPage: ${nodes.sqldb.url}
-id: mysql-cluster
-categories:
-- apps/clustered-dbs
-- apps/popular
-- apps/clusters
-
-settings:
-  fields:
-  - caption: Cluster Mode
-    type: radio-fieldset
-    name: mode
-    default: slave
-    values:
-      slave: Master - Slave x N
-      mm: Master - Master
-    showIf:
-      slave:
-      - inputType: hidden
-        type: string
-        name: nodes
-        default: 2
-      - type: string
-        inputType: hidden
-        name: scheme
-        default: slave
-      mm:
-      - type: string
-        inputType: hidden
-        name: nodes
-        default: 2
-      - type: string
-        inputType: hidden
-        name: scheme
-        default: master
-
-nodes:
-  nodeType: mysql5
-  nodeGroup: sqldb
-  count: ${settings.nodes}
-  cloudlets: 8
-  env:
-    ON_ENV_INSTALL: ${baseUrl}/addons/auto-clustering/auto-cluster.jps
-    SCHEME: ${settings.scheme}
-    
-success:
-  text: Your should receive a bunch of emails ;). There are credentials and endpoints.
+{
+    "jpsType": "install",
+    "jpsVersion": "1.1",
+    "application": {
+        "name": "Scalable MySQL Cluster with Load Balancing",
+        "categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
+        "description": {
+            "text": "Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator GUI for convenient cluster management and provides even load distribution, slaves healthcheck and autodiscovery of newly added DB nodes",
+            "short": "Scalable MySQL cluster with ProxySQL for even load distribution"
+        },
+        "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
+        "env": {
+            "topology": {
+                "nodes": [{
+                    "cloudlets": 8,
+                    "count": 2,
+                    "nodeGroup": "sqldb",
+                    "nodeType": "mysql"
+                }, {
+                    "cloudlets": 8,
+                    "nodeGroup": "proxy",
+                    "image": "devbeta/proxysql"
+                }]
+            }
+        },
+        "globals": {
+            "path": "https://raw.githubusercontent.com/sych74/mysql-cluster-1/master",
+            "db_user": "jelastic-${fn.random}",
+            "db_pass": "${fn.password(20)}"
+        },
+        "onInstall": [{
+            "installJps": {
+                "jps": "${globals.path}/scripts/multimaster-configuration.jps",
+                "settings": {
+                    "path": "${globals.path}",
+                    "db_user": "${globals.db_user}",
+                    "db_pass": "${globals.db_pass}"
+                }
+            }
+        }, {
+            "installJps": {
+                "jps": "${globals.path}/scripts/proxy-configuration.jps",
+                "settings": {
+                    "path": "${globals.path}",
+                    "db_user": "${globals.db_user}",
+                    "db_pass": "${globals.db_pass}",
+                    "scheme" : "MASTER"
+                }
+            }
+        }]
+    }
+}

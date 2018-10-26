@@ -1,6 +1,6 @@
 ---
 jpsType: update
-name: Mysql Group Replication
+name: Mysql Group Replication Cluster
 description: Mysql Group Replication Auto Clustering
 success:
   text: "../texts/phpmyadmin-credentials.md"
@@ -33,11 +33,9 @@ onAfterScaleIn[sqldb]:
   setupSeeds
 
 onInstall:
-- script: "${globals.PATH}/scripts/firewallRules.js"
-  params:
-    ports: '33061'
-    name: MGR
-    nodeGroup: sqldb
+- script[sqldb]: "${globals.PATH}/scripts/firewallRules.js"
+  ports: '33061'
+  name: MGR
 
 - forEach(nodes.sqldb):
     initialSetup:
@@ -82,13 +80,14 @@ actions:
     script: |
       var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
       if (resp.result != 0) return resp;
-      var nodes = [], nodeGroup = 'sqldb';
+      var nodes = [];
       for (var i = 0, n = resp.nodes; i < n.length; i++)
         n[i].nodeGroup == nodeGroup ? nodes.push('node' + n[i].id + ':33061') : 0
       resp = {result:0, onAfterReturn: {}};
-      resp.onAfterReturn['cmd['+ nodeGroup +']'] = 'sed -i "s/loose-group_replication_group_seeds.*/loose-group_replication_group_seeds = '+ nodes.join(',') +'/" ${globals.MGR_CONF}';
+      resp.onAfterReturn['cmd['+ nodeGroup +']'] = 'sed -i "s/loose-group_replication_group_seeds.*/loose-group_replication_group_seeds = '+ nodes.join(',') +'/" /etc/mysql/conf.d/mgr.cnf';
       resp.onAfterReturn['user'] = 'root';
       return resp;
+    nodeGroup: sqldb
 
   setupInstance:
   - if ('${globals.MGR_MODE}'.toLowerCase() == 'multi'):

@@ -11,14 +11,11 @@ report_host =
 
 # Galera Provider Configuration
 wsrep_on = ON
-wsrep_provider = /usr/lib64/galera-3/libgalera_smm.so
+wsrep_provider = /usr/lib64/galera/libgalera_smm.so
 
 # Galera Cluster Configuration
 wsrep_cluster_name = 
 wsrep_cluster_address = gcomm://
-
-# Galera Synchronization Configuration
-wsrep_sst_method=rsync
 
 # Galera Node Configuration
 wsrep_node_address =

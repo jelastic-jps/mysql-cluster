@@ -1,44 +1,47 @@
 {
-    "jpsType": "update",
-    "id": "mysql-auto-cluster",
-    "name": "MySQL Auto-Cluster with ProxySQL Load Balancer",
-    "description": {
-        "text": "Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator GUI for convenient cluster management and provides even load distribution, slaves healthcheck and autodiscovery of newly added DB nodes",
-        "short": "Scalable MySQL cluster with ProxySQL for even load distribution"
-    },
-    "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
-    "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
-    "globals": {
-        "logic_jps": "${baseUrl}/addons/auto-clustering/scripts/auto-cluster-logic.jps?_r=${fn.random}"
-    },
-    "nodeGroupAlias": {
-        "${targetNodes.nodeGroup}": "sqldb"
-    },
-    "onInstall": {
-        "script": [
-            "resp = jelastic.env.control.GetContainerEnvVars('${env.envName}', session, ${nodes.sqldb.first.id})",
-            "if (resp.result != 0) return resp",
-            "if ((resp.object.AUTO_CLUSTER + '').toLowerCase() == 'false') return {result:0}",
-            "return {result:0, onAfterReturn: {setupReplica: {scheme:resp.object.SCHEME || 'slave'}}}"
-        ]
-    },
-    "actions": {
-        "setupReplica": {
-            "install": {
-                "jps": "${globals.logic_jps}",
-                "envName": "${env.envName}",
-                "nodeGroup": "sqldb",
-                "settings": {
-                    "path": "${baseUrl}",
-                    "scheme": "${this.scheme}",
-                    "logic_jps": "${globals.logic_jps}",
-                    "path": "${baseUrl}",
-                    "db_user": "jelastic-${fn.random}",
-                    "db_pass": "${fn.password(20)}",
-                    "repl_user": "repl-${fn.random}",
-                    "repl_pass": "${fn.password(20)}"
-                }
-            }
+  "jpsType": "update",
+  "id": "mysql-auto-cluster",
+  "name": "MySQL Auto-Cluster with ProxySQL Load Balancer",
+  "description": {
+    "text": "Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator GUI for convenient cluster management and provides even load distribution, slaves healthcheck and autodiscovery of newly added DB nodes",
+    "short": "Scalable MySQL cluster with ProxySQL for even load distribution"
+  },
+  "baseUrl": "https://raw.githubusercontent.com/sych74/mysql-cluster-1/master",
+  "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
+  "globals": {
+    "logic_jps": "${baseUrl}/addons/auto-clustering/scripts/auto-cluster-logic.jps?_r=${fn.random}"
+  },
+  "nodeGroupAlias": {
+    "${targetNodes.nodeGroup}": "sqldb"
+  },
+  "onInstall": {
+    "script": [
+      "var scheme = '${settings.scheme:}';",
+      "if (!scheme) {",
+      "   resp = jelastic.env.control.GetContainerEnvVars('${env.envName}', session, ${nodes.sqldb.first.id})",
+      "   if (resp.result != 0) return resp;",
+      "   if (String(resp.object.AUTO_CLUSTER).toLowerCase() == 'false') return {result:0};",
+      "   scheme = resp.object.SCHEME;",
+      "}",
+      "return {result:0, onAfterReturn: {setupReplica: {scheme:scheme || 'slave'}}}"
+    ]
+  },
+  "actions": {
+    "setupReplica": {
+      "install": {
+        "jps": "${globals.logic_jps}",
+        "envName": "${env.envName}",
+        "nodeGroup": "sqldb",
+        "settings": {
+          "path": "${baseUrl}",
+          "scheme": "${this.scheme}",
+          "logic_jps": "${globals.logic_jps}",
+          "db_user": "jelastic-${fn.random}",
+          "db_pass": "${fn.password(20)}",
+          "repl_user": "repl-${fn.random}",
+          "repl_pass": "${fn.password(20)}"
         }
+      }
     }
+  }
 }

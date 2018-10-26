@@ -1,33 +1,27 @@
 [![MySQL Cluster](images/mysql.png)](../../../mysql-cluster)
-## MySQL Cluster
+# MySQL Auto-Сlustering with Embedded Load Balancing and Replication Types Selection
 
-The JPS package deploys scalable MySQL Cluster that consists of one master database and the required number of slave db containers with asynchronous replication.
+MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates with the following topology:
 
-### Highlights
+![Mysql cluster topology](images/mysql-cluster-topology.png)
 
-The current implementation of MySQL Cluster is built using the **devbeta/mysql57:5.7.14-latest** Docker image.
+The package includes [*ProxySQL Load Balancer*](http://www.proxysql.com) and [*Cluster Orchestrator*](https://github.com/github/orchestrator) to manage MySQL replication topology and gain high availability. And there is a choice between different MySQL replication types:
 
-By default, you get two **MySQL 5.7** database containers - the master and the slave. The number of databases can be increased and all the newly added nodes will be automatically configured as slaves to the initial master MySQL.
+## Simple MySQL Replication
 
-Within the package, each database container receives the default [vertical scaling](https://docs.jelastic.com/automatic-vertical-scaling) limit up to **8 dynamic** cloudlets (or 1 GiB of RAM and 3.2 GHz of CPU) that are provided based on the load.
+* ***master-slave*** - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon master failure. Slaves can be read without impact on master.
+* ***master-master*** - operates with two master nodes simultaneously, while other instances are configured as slaves.
 
+## MySQL Group Replication (MGR)
 
-![Mysql cluster topology](https://github.com/jelastic-jps/mysql-cluster/blob/master/images/mysql-cluster-top.png)
+[MySQL group replication](https://dev.mysql.com/doc/refman/5.7/en/group-replication.html) provides benefits of the elastic, highly-available and fault-tolerant topology, which do come with some (relatively low) performance costs compared to the *simple replication*.
 
+* ***single-primary group*** - a group of replicated servers with an automatic primary election, i.e. only one node accepts the data updates at a time
+* ***multi-primary group*** - solution allows all servers to accept the updates (all nodes are primaries with the read-write permissions)
 
-### Specifics
-Layer              |   Docker image    | Number of CTs <br/> by default | Cloudlets per CT <br/> (reserved/dynamic) | Options
------------------ | --------------| :-----------------------------------------: | :-------------------------------------------------------: | :-----:
-DB                  |    devbeta/mysql57:5.7.14-latest    |       2                                             |           1 / 8                                                       | -
+## Deployment to the Cloud
 
-* DB - Database 
-* CT - Container
-
-You can adjust the exact number of slaves within the Containers field during the package installation stage. Here, one container is the master and the rest of containers are the slaves.
-
-![Mysql cluster containers](https://github.com/jelastic-jps/mysql-cluster/blob/master/images/mysql-cluster-containers.png)
-
-Moreover, you can also scale containers after installation in the topology wizard with the corresponding master-slave data replication automatically enabled.
+Click the **Deploy** button below, specify your email address within the widget, choose one of the [Jelastic Public Cloud Providers](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/wordpress-cluster/master/manifest.jps&keys=app.jelastic.eapps.com;app.cloud.hostnet.nl;app.jelastichosting.nl;app.appengine.flow.ch;app.jelasticlw.com.br;app.mircloud.host;app.jcs.opusinteractive.io;app.paas.quarinet.eu) and press **Install**.
 
 ## Deployment
 
@@ -35,6 +29,20 @@ In order to get this solution instantly deployed, click the **Deploy to Jelastic
 
 [![Deploy](https://github.com/jelastic-jps/git-push-deploy/raw/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/manifest.jps)
 
-To deploy this package to Jelastic Private Cloud, import [this JPS manifest](../../raw/master/manifest.jps) within your dashboard ([detailed instruction](https://docs.jelastic.com/environment-export-import#import)).
+**Note:** If you are already registered at Jelastic, you can deploy this cluster from Marketplace.
 
-More information about Jelastic JPS package and about installation widget for your website can be found in the [Jelastic JPS Application Package](https://github.com/jelastic-jps/jpswiki/wiki/Jelastic-JPS-Application-Package) reference.
+
+## Installation Process
+
+In the opened confirmation window at Jelastic dashboard, choose MySQL replication type with appropriate cluster topology, type the *Environment* name, optionally, customize its [Display Name](https://docs.jelastic.com/environment-aliases). Then, select the preferable [region](https://docs.jelastic.com/environment-regions) (if several are available) and click on **Install**.
+
+
+
+After successful installation, you’ll receive a number of default emails based on your environment topology with access credentials.
+
+## MySQL Managed Hosting Business
+
+To start offering this solution to your customers please follow to [Auto-Scalable Clusters for Managed Cloud Business](https://jelastic.com/apaas/)
+
+
+

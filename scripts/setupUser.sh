@@ -16,9 +16,9 @@ resp=$(mysql -u$user -p$pswd mysql --execute="SHOW COLUMNS FROM user")
 	
 	if (( $(awk 'BEGIN {print ("'$version'" >= "'5.7'")}') )); then
 # 		cmd="UPDATE user SET authentication_string=PASSWORD('$pswd') WHERE user='$user';";
-		cmd="FLUSH PRIVILEGES; ALTER USER '$user'@'%' IDENTIFIED WITH mysql_native_password BY '$pswd'; ALTER USER '$user'@'localhost' IDENTIFIED WITH mysql_native_password BY '$pswd';FLUSH PRIVILEGES;";
+		cmd="FLUSH PRIVILEGES; ALTER USER '$user'@'%' IDENTIFIED WITH mysql_native_password BY '$pswd'; ALTER USER '$user'@'localhost' IDENTIFIED WITH mysql_native_password BY '$pswd'; GRANT ALL ON *.* TO '$user'@'%';GRANT ALL ON *.* TO '$user'@'localhost'; FLUSH PRIVILEGES;";
 	else
-		cmd="UPDATE user SET password=PASSWORD('$pswd') WHERE user='$user';";
+		cmd="UPDATE user SET password=PASSWORD('$pswd') WHERE user='$user'; GRANT ALL ON *.* TO '$user'@'%';GRANT ALL ON *.* TO '$user'@'localhost'; FLUSH PRIVILEGES;";
 	fi
 
 	mysql mysql --execute="$cmd"

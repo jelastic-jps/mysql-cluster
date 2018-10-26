@@ -1,7 +1,7 @@
 ---
 jpsType: update
-name: Mysql Group Replication Cluster
-description: Mysql Group Replication Cluster
+name: MariaDB Galera Cluster
+description: MariaDB Galera Cluster
 success: "../texts/proxy-entrypoint.md"
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
@@ -24,7 +24,6 @@ onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
       addNode:
         id: "${@i.id}"
-  - cmd[proxy]: 'mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;" '
 
 onBeforeScaleIn[sqldb]:
   - forEach(event.response.nodes):
@@ -55,37 +54,34 @@ onInstall:
         id: "${@i.id}"
         
   - cmd[proxy]: |-
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "insert into mysql_group_replication_hostgroups 
-        (writer_hostgroup,backup_writer_hostgroup,reader_hostgroup, offline_hostgroup,active,max_writers,writer_is_also_reader,max_transactions_behind)
-        values (2,4,3,1,1,10,1,100);"
+      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_replication_hostgroups VALUES (2,3,'Group setup');"
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';"
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "UPDATE global_variables SET variable_value='${nodes.sqldb.version}' WHERE variable_name='mysql-server_version';"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
-      wget ${globals.PATH}/scripts/proxysql_mgr_checker.sh -O /var/lib/proxysql/proxysql_mgr_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_mgr_checker.sh
-      wget ${globals.PATH}/scripts/proxysql_error_checker.sh -O /var/lib/proxysql/proxysql_error_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_error_checker.sh
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO scheduler (filename,interval_ms) VALUES ('/var/lib/proxysql/proxysql_mgr_checker.sh', 10000);"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO scheduler (filename,interval_ms) VALUES ('/var/lib/proxysql/proxysql_error_checker.sh', 100000);"
+      wget ${globals.PATH}/scripts/proxysql_galera_checker.sh -O /var/lib/proxysql/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
+      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO scheduler(id,interval_ms,filename,arg1,arg2,arg3,arg4) VALUES
+        (1,'2000','/var/lib/proxysql/proxysql_galera_checker.sh','127.0.0.1','6032','2', '/var/lib/proxysql/proxysql_galera_checker.log');"
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD SCHEDULER TO RUNTIME; SAVE SCHEDULER TO DISK;"
-
+      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
+      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
+ 
 actions:
   addMonitorUser:
     cmd[${this.filter}]: |-
       mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';"
       mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
-      mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "GRANT SELECT on sys.* to '${globals.MONITOR_USER}'@'%';"
       mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "FLUSH PRIVILEGES;"
 
   addNode:
     cmd[proxy]: |-
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id,hostname, port) VALUES (2, 'node${this.id}', 3306);"
+      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       /usr/local/orchestrator/orchestrator -c discover -i node${this.id} cli &>> /var/log/run.log
     user: root
 
   removeNode:
     cmd[proxy]: |-
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
+      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       mysql -h 127.0.0.1 -P3360 -uadmin -p${globals.ORCH_PASS} -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}';"

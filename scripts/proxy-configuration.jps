@@ -1,6 +1,6 @@
 ---
 jpsType: update
-name: ProxySQL Load Balancer
+name: Database Cluster
 description: ProxySQL Load Balancer Entry Point
 success: "../texts/proxy-entrypoint.md"
 nodeGroupAlias: 
@@ -14,8 +14,16 @@ globals:
   MONITOR_PASS: "${fn.password(10)}"
   ORCH_PASS: "${fn.password(10)}"
 
+onBeforeRemoveNode[proxy]:
+  stopEvent
+
+onBeforeAddNode[proxy]:
+  stopEvent
+
 onAfterScaleOut[sqldb]:
   forEach(event.response.nodes):
+  - addMonitorUser:
+      filter: "${@i.id}"
   - addSlave:
       id: "${@i.id}"
 
@@ -60,26 +68,29 @@ onInstall:
         filter: "${@i.id}"
 
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
-      forEach(k:nodes.sqldb):
-        cmd [proxy]: |-
-          mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@k.id}', 3306);"
-          mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@k.id}', 3306);"
-          mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-          /usr/local/orchestrator/orchestrator -c discover -i node${@k.id} cli
-        user: root
+      - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
+        - addMaster:
+            id: "${nodes.sqldb.master.id}"
+        - addMaster:
+            id: "${nodes.sqldb[1].id}"
+
+      - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
+        - addMaster:
+            id: "${nodes.sqldb.master.id}"
+        - addMaster:
+            id: "${nodes.sqldb.first.id}"
+
+      - forEach(k:nodes.sqldb):
+          addSlave:
+            id: "${@k.id}"
 
   - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
       forEach(l:nodes.sqldb):
         - if (${@l.ismaster}):
-            cmd [proxy]: |-
-              mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${@l.id}', 3306);"
-              mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (11, 'node${@l.id}', 3306);"
-              mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-              /usr/local/orchestrator/orchestrator -c discover -i node${@l.id} cli
-            user: root
-        - if (!${@l.ismaster}):
-            addSlave:
+            addMaster:
               id: "${@l.id}"
+        - addSlave:
+            id: "${@l.id}"
 
 actions:
   addMonitorUser:
@@ -87,6 +98,14 @@ actions:
       mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';"
       mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
       mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "FLUSH PRIVILEGES;"
+
+  addMaster:
+    cmd [proxy]: |-
+      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${this.id}', 3306);"
+      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+      /usr/local/orchestrator/orchestrator -c discover -i node${this.id} cli
+    user: root
+  
 
   addSlave:
     cmd[proxy]: |-
