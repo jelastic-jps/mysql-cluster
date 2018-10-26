@@ -1,14 +1,14 @@
 ---
 jpsType: install
 jpsVersion: '1.5'
-name: MySQL/MariaDB Auto-Cluster
+name: Database Cluster
 categories:
   - apps/clustered-dbs
   - apps/popular
   - apps/clusters
 description: "/texts/description.md?_r=1"
-logo: https://raw.githubusercontent.com/sych74/mysql-cluster-1/master/images/icon.png?_r=1
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster-1/master
+logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/icon.png?_r=1
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
 
 settings:
   fields:
