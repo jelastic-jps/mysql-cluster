@@ -1,7 +1,7 @@
 ---
 jpsType: update
 id: mysql-auto-cluster-logic
-name: Scalable MySQL/MariaDB Auto Cluster
+name: Database Cluster
 skipNodeEmails: true
 globals:
   baseUrl: "${settings.path}"
