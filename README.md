@@ -1,6 +1,7 @@
 <p align="center"> 
 <img style="padding: 0 15px; float: left;" src="images/logo.png" width="70">
 </p>
+
 ## MariaDB/MySQL Auto-Сlustering with Embedded Load Balancing and Replication Types Selection
 
 MariaDB/MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates.
