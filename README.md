@@ -1,31 +1,48 @@
-[![MySQL Cluster](images/mysql.png)](../../../mysql-cluster)
-# MySQL Auto-Сlustering with Embedded Load Balancing and Replication Types Selection
+<p align="center"> 
+<img style="padding: 0 15px; float: left;" src="images/logo.png" width="70">
+</p>
 
-MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates with the following topology:
+## MariaDB/MySQL Auto-Сlustering with Embedded Load Balancing and Replication Types Selection
 
-![Mysql cluster topology](images/mysql-cluster-topology.png)
+MariaDB/MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates.
 
-The package includes [*ProxySQL Load Balancer*](http://www.proxysql.com) and [*Cluster Orchestrator*](https://github.com/github/orchestrator) to manage MySQL replication topology and gain high availability. And there is a choice between different MySQL replication types:
+<p align="left"> 
+<img src="images/mysql-maria-scheme.png" width="500">
+</p>
 
-## Simple MySQL Replication
+The package includes Highly Available [*ProxySQL Load Balancer*](http://www.proxysql.com) and [*Cluster Orchestrator*](https://github.com/github/orchestrator) to manage MariaDB/MySQL replication topology. And there is a choice between different MariaDB/MySQL replication types:
 
-* ***master-slave*** - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon master failure. Slaves can be read without impact on master.
-* ***master-master*** - operates with two master nodes simultaneously, while other instances are configured as slaves.
+## Simple MariaDB/MySQL Replication
 
-## MySQL Group Replication (MGR)
+* *master-slave* - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon master failure. Slaves can be read without impact on master.
+* *master-master* - operates with two master nodes simultaneously, while other instances are configured as slaves.
 
-[MySQL group replication](https://dev.mysql.com/doc/refman/5.7/en/group-replication.html) provides benefits of the elastic, highly-available and fault-tolerant topology, which do come with some (relatively low) performance costs compared to the *simple replication*.
+## MariaDB/MySQL Group Replication (MGR)
 
-* ***single-primary group*** - a group of replicated servers with an automatic primary election, i.e. only one node accepts the data updates at a time
-* ***multi-primary group*** - solution allows all servers to accept the updates (all nodes are primaries with the read-write permissions)
+[MySQL group replication](https://dev.mysql.com/doc/refman/5.7/en/group-replication.html) provides benefits of the elastic, highly-available and fault-tolerant topology.
+
+* *single-primary group* - a group of replicated servers with an automatic primary election, i.e. only one node accepts the data updates at a time
+* *multi-primary group* - solution allows all servers to accept the updates (all nodes are primaries with the read-write permissions)
+
+## MariaDB Galera Cluster
+
+[MariaDB Galera Cluster](https://mariadb.com/kb/en/library/what-is-mariadb-galera-cluster/) is a type of multi-master synchronous replication which is performed at a transaction commit time, by broadcasting transaction write set to all cluster nodes for applying with the following benefits:
+
+* No slave lag
+* No lost transactions
+* Both read and write scalability
+* Smaller client latencies
 
 ## Deployment to the Cloud
 
-Click the **Deploy** button below, specify your email address within the widget, choose one of the [Jelastic Public Cloud Providers](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/wordpress-cluster/master/manifest.jps&keys=app.jelastic.eapps.com;app.cloud.hostnet.nl;app.jelastichosting.nl;app.appengine.flow.ch;app.jelasticlw.com.br;app.mircloud.host;app.jcs.opusinteractive.io;app.paas.quarinet.eu) and press **Install**.
+To get started, log in to Jelastic dashboard, import the required manifest using the link from GitHub:
+[https://github.com/jelastic-jps/mysql-cluster/blob/master/manifest.jps](https://github.com/jelastic-jps/mysql-cluster/blob/master/manifest.jps)
 
-## Deployment
+<p align="left">
+<img src="images/import-maria-mysql.png" width="500">
+</p>
 
-In order to get this solution instantly deployed, click the **Deploy to Jelastic** button, specify your email address within the widget, choose one of the [Jelastic Public Cloud providers](https://jelastic.cloud) and press **Install**.
+Or you can click the **Deploy to Jelastic** button, specify your email address within the widget, choose one of the [Jelastic Public Cloud](https://jelastic.cloud/) providers and press **Install**.
 
 [![Deploy](https://github.com/jelastic-jps/git-push-deploy/raw/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/manifest.jps)
 
@@ -34,13 +51,15 @@ In order to get this solution instantly deployed, click the **Deploy to Jelastic
 
 ## Installation Process
 
-In the opened confirmation window at Jelastic dashboard, choose MySQL replication type with appropriate cluster topology, type the *Environment* name, optionally, customize its [Display Name](https://docs.jelastic.com/environment-aliases). Then, select the preferable [region](https://docs.jelastic.com/environment-regions) (if several are available) and click on **Install**.
+In the opened confirmation window at Jelastic dashboard, choose MariaDB/MySQL replication type with appropriate cluster topology, state the *Environment* name, optionally, customize its [Display Name](https://docs.jelastic.com/environment-aliases). Then, select the preferable [region](https://docs.jelastic.com/environment-regions) (if several are available) and click on **Install**.
 
-
+<p align="left">
+<img src="images/install.png" width="500">
+</p>
 
 After successful installation, you’ll receive a number of default emails based on your environment topology with access credentials.
 
-## MySQL Managed Hosting Business
+## MariaDB/MySQL Managed Hosting Business
 
 To start offering this solution to your customers please follow to [Auto-Scalable Clusters for Managed Cloud Business](https://jelastic.com/apaas/)
 
