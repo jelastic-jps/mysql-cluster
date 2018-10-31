@@ -2,12 +2,17 @@
 jpsType: install
 jpsVersion: '1.5'
 name: MySQL-MariaDB Cluster
+
 categories:
   - apps/clustered-dbs
   - apps/popular
   - apps/clusters
-description: "/texts/description.md?_r=1"
-logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/icon.png?_r=1
+  
+description: 
+  text: "/texts/description.md?_r=1"
+  short: A set of MySQL/MariaDB cluster topologies
+  
+logo: /images/icon.png?_r=1
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
 
 settings:
