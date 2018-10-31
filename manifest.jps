@@ -1,6 +1,6 @@
 ---
 jpsType: install
-jpsVersion: '1.5'
+jpsVersion: '1.5.2'
 name: MySQL-MariaDB Cluster
 
 categories:
