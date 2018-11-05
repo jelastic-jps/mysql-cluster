@@ -74,10 +74,12 @@ onInstall:
             masterId: "${nodes.sqldb.master.id}"
           
     - forEach(n:nodes.sqldb):
-        if ('${@n.id}' != '${nodes.sqldb.master.id}'):
-          if ('${@n.id}' != '${nodes.sqldb[1].id}'):
-            addDistSlave:
-              id: "${@n.id}" 
+         - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb[1].id}'):
+              addDistSlave:
+                id: "${@n.id}" 
+         - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb.first.id}'):
+              addDistSlave:
+                id: "${@n.id}" 
 
   - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
     - log: "--> Setup Slave Node"
@@ -113,6 +115,8 @@ actions:
     user: root
 
   setupMaster:
+    - addCustomConfig:
+        id: "${this.id}"
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
@@ -127,6 +131,8 @@ actions:
     - setNodeDisplayName[${this.id}]: Slave
   
   addSlave:
+    - addCustomConfig:
+        id: "${this.id}"
     - setupSlave:
         id: "${this.id}"
     - setupUser:
@@ -155,4 +161,7 @@ actions:
             addSlave:
               id: "${this.id}"
               masterId: "${nodes.sqldb.first.id}"
-              
+
+  addCustomConfig:
+    if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
+      cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
