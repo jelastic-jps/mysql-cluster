@@ -74,10 +74,12 @@ onInstall:
             masterId: "${nodes.sqldb.master.id}"
           
     - forEach(n:nodes.sqldb):
-        if ('${@n.id}' != '${nodes.sqldb.master.id}'):
-          if ('${@n.id}' != '${nodes.sqldb[1].id}'):
-            addDistSlave:
-              id: "${@n.id}" 
+         - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb[1].id}'):
+              addDistSlave:
+                id: "${@n.id}" 
+         - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb.first.id}'):
+              addDistSlave:
+                id: "${@n.id}" 
 
   - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
     - log: "--> Setup Slave Node"
