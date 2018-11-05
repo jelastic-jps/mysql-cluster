@@ -31,6 +31,11 @@ onBeforeScaleIn[sqldb]:
   forEach(event.response.nodes):
     removeSlave:
       id: "${@i.id}"
+      
+onAfterScaleIn[sqldb]:
+  forEach(event.response.nodes):
+    cmd[proxy]: mysql -h 127.0.0.1 -P3360 -uadmin -p${globals.ORCH_PASS} -e "DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';"
+
 
 onInstall:
   - log: Orchestrator configuration
@@ -106,7 +111,6 @@ actions:
       /usr/local/orchestrator/orchestrator -c discover -i node${this.id} cli
     user: root
   
-
   addSlave:
     cmd[proxy]: |-
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) 
