@@ -37,4 +37,3 @@ The instructions below can help you with the further managing your database clus
 - [Access environment via SSH](https://docs.jelastic.com/ssh-access)
 - [DNS Hostnames for Direct Connection](https://jelastic.com/blog/dns-hostnames-for-direct-container-connection-at-jelastic-paas/)
 
-Need help? Contact our 24/7 [support team](mailto:support@jelastic.com)
