@@ -1,40 +1,32 @@
-Congratulations! Your Database Cluster has been successfully deployed to the [Demo Cloud](http://app.demo.jelastic.com/).
 
 ### Entry Point for Connecting to Database Cluster
+**Hostname:** proxy.${env.domain}:3306
 
-<pre>
-<b>Hostname:</b> proxy.${env.domain}:3306
+**Username:** ${globals.DB_USER}
 
-<b>Username:</b> ${globals.DB_USER}
+**Password:** ${globals.DB_PASS}
 
-<b>Password:</b> ${globals.DB_PASS}
-</pre>
-
+___
 
 ### PHP MyAdmin at Master Node
 
-<pre>
- <b>Admin panel URL:</b> [https://node${nodes.sqldb.master.id}-${env.domain}](https://node${nodes.sqldb.master.id}-${env.domain})
+**Admin panel URL:** https://node${nodes.sqldb.master.id}-${env.domain}
 
-        <b>Username:</b> ${globals.DB_USER}
+**Username:** ${globals.DB_USER}
 
-        <b>Password:</b> ${globals.DB_PASS}
-</pre>
+**Password:** ${globals.DB_PASS}
 
-The provided credentials can be used to access all database nodes in the cluster.
-
+___
 
 ### Cluster Orchestrator Panel
 
-<pre>
-<b> Admin panel URL:</b> [http://proxy.${envdomain}](http://proxy.${env.domain})
+**Admin panel URL:** http://proxy.${env.domain}
 
-	<b>Username:</b> admin
+**Username:** admin
 
-	<b>Password:</b> ${globals.ORCH_PASS}
-</pre> 
+**Password:** ${globals.ORCH_PASS}
 
-
+___
 
 The instructions below can help you with the further managing your database cluster:
 
@@ -46,6 +38,3 @@ The instructions below can help you with the further managing your database clus
 - [DNS Hostnames for Direct Connection](https://jelastic.com/blog/dns-hostnames-for-direct-container-connection-at-jelastic-paas/)
 
 Need help? Contact our 24/7 [support team](mailto:support@jelastic.com)
-
-Best regards,
-Your Demo team
