@@ -13,7 +13,7 @@ description:
   short: A set of MySQL/MariaDB cluster topologies
   
 logo: /images/icon.png?_r=1
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/sych74/master
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/master
 
 settings:
   fields:
