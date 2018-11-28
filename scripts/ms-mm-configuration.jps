@@ -35,25 +35,25 @@ onInstall:
     - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
           - cmd[${nodes.sqldb.master.id}]: |-
               wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-increment.*/auto-increment-increment = $((${@} + 1))/" /etc/mysql/conf.d/increment.cnf
+              sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
           - setupMaster:
               id: "${nodes.sqldb.master.id}"
 
           - cmd[${nodes.sqldb[1].id}]: |-
               wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-increment.*/auto-increment-increment = $((${@} + 1))/" /etc/mysql/conf.d/increment.cnf
+              sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
           - setupMaster:
               id: "${nodes.sqldb[1].id}"
 
     - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
           - cmd[${nodes.sqldb.master.id}]: |-
               wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-increment.*/auto-increment-increment = $((${@} + 1))/" /etc/mysql/conf.d/increment.cnf
+              sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
           - setupMaster:
               id: "${nodes.sqldb.master.id}"
           - cmd[${nodes.sqldb.first.id}]: |-
               wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-increment.*/auto-increment-increment = $((${@} + 1))/" /etc/mysql/conf.d/increment.cnf
+              sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
           - setupMaster:
               id: "${nodes.sqldb.first.id}"
 
