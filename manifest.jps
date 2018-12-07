@@ -91,4 +91,4 @@ nodes:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
 success:
-  text: You should receive a bunch of emails ;). There are credentials and endpoints.
+text: You should receive a bunch of emails ;). There are credentials and endpoints.
