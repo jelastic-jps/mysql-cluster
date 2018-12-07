@@ -13,7 +13,7 @@ description:
   short: A set of MySQL/MariaDB cluster topologies
   
 logo: /images/icon.png?_r=1
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/master
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
 
 settings:
   fields:
@@ -86,10 +86,9 @@ nodes:
   count: "${settings.nodes}"
   cluster:
     scheme: "${settings.scheme}"
-    jps: "https://raw.githubusercontent.com/sych74/mysql-cluster/master/addons/auto-clustering/auto-cluster.jps"
   cloudlets: 8
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
 success:
-  text: You should receive a bunch of emails ;). There are credentials and endpoints.
+text: You should receive a bunch of emails ;). There are credentials and endpoints.
