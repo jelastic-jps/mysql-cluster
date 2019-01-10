@@ -1,30 +1,25 @@
 
-### Entry Point for Connecting to Database Cluster
-**Hostname:** proxy.${env.domain}:3306
+### Entry Point for Connecting to Database Cluster  
 
-**Username:** ${globals.DB_USER}
-
-**Password:** ${globals.DB_PASS}
+**Hostname:** proxy.${env.domain}:3306  
+**Username:** ${globals.DB_USER}  
+**Password:** ${globals.DB_PASS}  
 
 ___
 
 ### PHP MyAdmin at Master Node
 
-**Admin panel URL:** https://node${nodes.sqldb.master.id}-${env.domain}
-
-**Username:** ${globals.DB_USER}
-
-**Password:** ${globals.DB_PASS}
+**Admin Panel:** [https://node${nodes.sqldb.master.id}-${env.domain}](https://node${nodes.sqldb.master.id}-${env.domain})  
+**Username:** ${globals.DB_USER}  
+**Password:** ${globals.DB_PASS}  
 
 ___
 
 ### Cluster Orchestrator Panel
 
-**Admin panel URL:** http://proxy.${env.domain}
-
-**Username:** admin
-
-**Password:** ${globals.ORCH_PASS}
+**Admin panel URL:** [http://proxy.${env.domain}](http://proxy.${env.domain})  
+**Username:** admin  
+**Password:** ${globals.ORCH_PASS}  
 
 ___
 
