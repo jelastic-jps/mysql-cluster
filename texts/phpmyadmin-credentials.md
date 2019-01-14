@@ -1,6 +1,6 @@
 ### PHP MyAdmin at Master Node
 
-**Admin Panel**: [https://node${nodes.sqldb.master.id}-${env.domain}](https://node${nodes.sqldb.master.id}-${env.domain})  
+**Admin Panel**: [https://node${nodes.sqldb.master.id}-${env.domain}](https://node${nodes.sqldb.master.id}-${env.domain}/)  
 **Username**: ${globals.DB_USER}  
 **Password**: ${globals.DB_PASS} 
 
