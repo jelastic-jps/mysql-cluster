@@ -9,7 +9,7 @@ ___
 
 ### PHP MyAdmin at Master Node
 
-**Admin Panel:** [https://node${nodes.sqldb.master.id}-${env.domain}](https://node${nodes.sqldb.master.id}-${env.domain})  
+**Admin Panel:** [https://node${nodes.sqldb.master.id}-${env.domain}](https://node${nodes.sqldb.master.id}-${env.domain}/)  
 **Username:** ${globals.DB_USER}  
 **Password:** ${globals.DB_PASS}  
 
@@ -17,7 +17,7 @@ ___
 
 ### Cluster Orchestrator Panel
 
-**Admin panel URL:** [http://proxy.${env.domain}](http://proxy.${env.domain})  
+**Admin panel URL:** [http://proxy.${env.domain}](http://proxy.${env.domain}/)  
 **Username:** admin  
 **Password:** ${globals.ORCH_PASS}  
 
