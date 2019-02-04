@@ -8,7 +8,7 @@ description:
     GUI for convenient cluster management and provides even load distribution, slaves
     healthcheck and autodiscovery of newly added DB nodes
   short: Scalable MySQL cluster with ProxySQL for even load distribution
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/master
 logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png
 globals:
   logic_jps: ${baseUrl}/addons/auto-clustering/scripts/auto-cluster-logic.jps?_r=${fn.random}
