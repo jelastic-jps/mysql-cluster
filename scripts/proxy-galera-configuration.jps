@@ -27,6 +27,7 @@ onBeforeScaleIn[sqldb]:
 onAfterMigrate:
   install: ${globals.PATH}/scripts/proxy-galera-configuration.jps?_r=${fn.random}
   envName: ${event.response.env.envName}
+  nodeGroup: sqldb
   settings:
     db_user: "${globals.DB_USER}"
     db_pass: "${globals.DB_PASS}"
@@ -34,6 +35,7 @@ onAfterMigrate:
 onAfterClone:
   install: ${globals.PATH}/scripts/proxy-galera-configuration.jps?_r=${fn.random}
   envName: ${event.response.env.envName}
+  nodeGroup: sqldb
   settings:
     db_user: "${globals.DB_USER}"
     db_pass: "${globals.DB_PASS}"
