@@ -22,6 +22,12 @@ settings:
       inputType: password
       default: ''
       required: 'true'
+    - name: local_master_host
+      caption: Remote Database host
+      type: string
+      inputType: string
+      default: ''
+      required: 'true'
     - name: local_db_user
       caption: Local Database User
       type: string
@@ -56,7 +62,7 @@ actions:
         - ${globals.LOCAL_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $1'} > /tmp/log_file_local
         - ${globals.LOCAL_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $2'} > /tmp/log_pos_local
         - ${globals.REMOTE_DB_CONNECT} -e "STOP SLAVE; CHANGE MASTER TO
-            MASTER_HOST='${settings.local_db_host}', 
+            MASTER_HOST='${settings.local_master_host}', 
             MASTER_USER='${settings.remote_db_user}',
             MASTER_PASSWORD='${settings.remote_db_pass}', 
             MASTER_LOG_FILE='$(cat /tmp/log_file_local)', MASTER_LOG_POS='$(cat /tmp/log_pos_local)'; START SLAVE"
