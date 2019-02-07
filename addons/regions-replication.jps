@@ -56,11 +56,12 @@ onInstall:
             MASTER_USER='${settings.remote_db_user}',
             MASTER_PASSWORD='${settings.remote_db_pass}', 
             MASTER_LOG_FILE='$(cat /tmp/log_file)', 
-            MASTER_LOG_POS='$(cat /tmp/log_pos)'; START SLAVE"
+            MASTER_LOG_POS=$(cat /tmp/log_pos); START SLAVE"
         - ${globals.LOCAL_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $1'} > /tmp/log_file_local
         - ${globals.LOCAL_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $2'} > /tmp/log_pos_local
         - ${globals.REMOTE_DB_CONNECT} -e "STOP SLAVE; CHANGE MASTER TO
             MASTER_HOST='${settings.local_db_host}', 
             MASTER_USER='${settings.remote_db_user}',
             MASTER_PASSWORD='${settings.remote_db_pass}', 
-            MASTER_LOG_FILE='$(cat /tmp/log_file_local)', MASTER_LOG_POS='$(cat /tmp/log_pos_local)'; START SLAVE"
+            MASTER_LOG_FILE='$(cat /tmp/log_file_local)', 
+            MASTER_LOG_POS=$(cat /tmp/log_pos_local); START SLAVE"
