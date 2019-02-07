@@ -34,7 +34,6 @@ onAfterScaleIn[sqldb]:
   
 onAfterMigrate:
   install: ${globals.PATH}/scripts/galera-configuration.jps?_r=${fn.random}
-  envName: ${event.response.env.envName}
   nodeGroup: sqldb
   settings:
     db_user: "jelastic-${fn.random}"
