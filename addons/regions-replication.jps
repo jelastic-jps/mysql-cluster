@@ -45,9 +45,10 @@ settings:
 globals:
   REMOTE_DB_CONNECT: 'mysql -u${settings.remote_db_user} -p${settings.remote_db_pass} -h ${settings.remote_db_host}'
   LOCAL_DB_CONNECT: 'mysql -u${settings.local_db_user} -p${settings.local_db_pass}'
+  targetNodeID: ${settings.targetNodeID}
 
 onInstall:
-   cmd[${this.id}]:
+   cmd[${globals.targetNodeID}]:
         - ${globals.REMOTE_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $1'} > /tmp/log_file
         - ${globals.REMOTE_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $2'} > /tmp/log_pos
         - ${globals.LOCAL_DB_CONNECT} -e "STOP SLAVE; CHANGE MASTER TO 
