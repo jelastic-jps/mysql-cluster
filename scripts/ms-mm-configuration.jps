@@ -16,9 +16,6 @@ globals:
   CUSTOM_CONF: "${settings.custom_conf}"
   STACK: ""
 
-success:
-  text: "../texts/phpmyadmin-credentials.md"
-
 onAfterScaleOut[sqldb]:
   forEach(n:event.response.nodes):
     - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
