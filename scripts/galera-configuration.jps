@@ -116,7 +116,7 @@ actions:
   
   setupInstance:
     cmd[${this.id}]: |-
-      sed -i "s/server_id.*/server_id = ${this.id}/" ${globals.GALERA_CONF}
+      sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}"  | head -n1)/" ${globals.GALERA_CONF}
       sed -i "s/bind-address.*/bind-address = node${this.id}/" ${globals.GALERA_CONF}
       sed -i "s/report_host.*/report_host = node${this.id}/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
