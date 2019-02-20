@@ -1,3 +1,4 @@
 [mysqld]
 auto-increment-increment = 2
 auto-increment-offset = 
+slave-skip-errors = 1062
