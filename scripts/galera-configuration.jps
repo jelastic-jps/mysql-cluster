@@ -53,8 +53,10 @@ onInstall:
         id: "${@i.id}"
   - cmd[${nodes.sqldb.master.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
     user: root
-  - cmd[!${nodes.sqldb.master.id}]: "jem service restart"
-
+  - forEach(n:nodes.sqldb):
+      if (!${@n.ismaster}):
+        cmd[${@n.id}]: "jem service restart"
+        
 actions:
   initialSetup:
     - setupUser:
