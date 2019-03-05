@@ -45,18 +45,6 @@ onAfterClone:
     db_pass: "${fn.password(20)}"
 
 onInstall:
-  - script[sqldb]: "${globals.PATH}/scripts/firewallRules.js"
-    ports: '4567'
-    name: Galera-4567
-
-  - script[sqldb]: "${globals.PATH}/scripts/firewallRules.js"
-    ports: '4568'
-    name: Galera-4568
-
-  - script[sqldb]: "${globals.PATH}/scripts/firewallRules.js"
-    ports: '4444'
-    name: Galera-4444
-
   - resetCluster
 
   - forEach(nodes.sqldb):
