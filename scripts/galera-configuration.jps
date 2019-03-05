@@ -22,7 +22,6 @@ onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
     - setupInstance:
         id: "${@i.id}"
-        ip: "${@i.address}"
     - cmd[${@i.id}]: "/etc/init.d/mysql restart"
       user: root
 
@@ -46,30 +45,17 @@ onAfterClone:
 
 onInstall:
   - resetCluster
-
-  - forEach(nodes.sqldb):
-      initialSetup:
-        id: "${@i.id}"
-
+  - initialSetup:
+      id: "sqldb"
   - setupSeeds
-
   - forEach(i:nodes.sqldb):
       setupInstance:
         id: "${@i.id}"
-        ip: "${@i.address}"
-
-  - forEach(k:nodes.sqldb):
-      if (${@k.ismaster}):
-        cmd[${@k.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
-        user: root
-
-  - forEach(n:nodes.sqldb):
-      if (!${@n.ismaster}):
-        cmd[${@n.id}]: "/etc/init.d/mysql restart"
-        user: root
+  - cmd[${nodes.sqldb.master.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
+    user: root
+  - cmd[!${nodes.sqldb.master.id}]: "jem service restart"
 
 actions:
-  
   initialSetup:
     - setupUser:
         id: "${this.id}"
