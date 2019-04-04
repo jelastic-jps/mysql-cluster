@@ -1,4 +1,3 @@
----
 jpsType: update
 name: Database Cluster
 description: ProxySQL Load Balancer Entry Point
