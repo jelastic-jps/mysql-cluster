@@ -27,7 +27,7 @@ onInstall:
     scheme = scheme || resp.object.SCHEME || "slave";
     db_user = db_user || resp.object.DB_USER || "jelastic-${fn.random}";
     db_pass = db_pass || resp.object.DB_PASS || "${fn.password(20)}";
-    is_proxysql = is_proxysql || resp.object.IS_PROXYSQL || "false";
+    is_proxysql = is_proxysql || resp.object.IS_PROXYSQL || "true";
     return {result:0, onAfterReturn:{setupReplica:{scheme:scheme, db_user:db_user, db_pass:db_pass, is_proxysql:is_proxysql}}}
 actions:
   setupReplica:
