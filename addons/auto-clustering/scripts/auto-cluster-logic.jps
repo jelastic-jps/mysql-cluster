@@ -91,12 +91,12 @@ actions:
 
     
   setupCluster:
-    - if (!nodes.proxy && ${settings.is_proxysql} == 'true'): addProxyNodes
+    - if (!nodes.proxy && '${settings.is_proxysql}' == 'true'): addProxyNodes
 
     - if (nodes.sqldb.length == 2):
         - install-jps:
             jps: "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
-        - if (${settings.is_proxysql} == 'true'):    
+        - if ('${settings.is_proxysql}' == 'true'):    
           - install-jps:
               jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
     
@@ -106,28 +106,28 @@ actions:
         - if ('${settings.scheme}'.toLowerCase() == 'master'):
           - install-jps:
               jps: "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
-          - if (${settings.is_proxysql} == 'true'):    
+          - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
         
         - if ('${settings.scheme}'.toLowerCase() == 'slave'):
           - install-jps:
               jps: "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
-          - if (${settings.is_proxysql} == 'true'):    
+          - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
 
         - if ('${settings.scheme}'.toLowerCase() == 'single'):
           - install-jps:
               jps: "${globals.scripts}/mgr-configuration.jps?_r=${fn.random}"
-          - if (${settings.is_proxysql} == 'true'):    
+          - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-mgr-configuration.jps?_r=${fn.random}"
 
         - if ('${settings.scheme}'.toLowerCase() == 'multi'):
           - install-jps:
               jps: "${globals.scripts}/mgr-configuration.jps?_r=${fn.random}"
-          - if (${settings.is_proxysql} == 'true'):    
+          - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-mgr-configuration.jps?_r=${fn.random}"
 
@@ -135,14 +135,14 @@ actions:
         - if ('${settings.scheme}'.toLowerCase() == 'galera'):  
           - install-jps:
               jps: "${globals.scripts}/galera-configuration.jps?_r=${fn.random}"
-          - if (${settings.is_proxysql} == 'true'):    
+          - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-galera-configuration.jps?_r=${fn.random}"
       
         - if ('${settings.scheme}'.toLowerCase() != 'galera'):  
           - install-jps:
               jps: "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
-          - if (${settings.is_proxysql} == 'true'):    
+          - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
   
