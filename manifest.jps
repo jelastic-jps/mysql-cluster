@@ -51,6 +51,11 @@ settings:
               - value: galera
                 caption: Galera Cluster
 
+    - type: toggle
+      name: is_proxysql
+      caption: Add ProxySQL
+      value: false
+
     - caption: None
       inputType: hidden
       type: list
@@ -79,10 +84,6 @@ settings:
             galera:    
               - value: 3
               
-    - type: checkbox
-      name: is_proxysql
-      caption: Add ProxySQL for SQL Load Balancing
-      value: false
 
 nodes:
   nodeType: "${settings.nodeType}"
@@ -97,4 +98,4 @@ nodes:
     SCHEME: "${settings.scheme}"
     IS_PROXYSQL: "${settings.is_proxysql}"
 success:
-  text: You should receive a bunch of emails ;). There are credentials and endpoints.
+text: You should receive a bunch of emails ;). There are credentials and endpoints.
