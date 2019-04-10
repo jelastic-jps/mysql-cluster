@@ -80,9 +80,9 @@ settings:
               - value: 3
               
     - type: checkbox
-      name: isProxySQL
-      caption: Install ProxySQL for SQL Load Balancing
-      value: true
+      name: is_proxysql
+      caption: Add ProxySQL for SQL Load Balancing
+      value: false
 
 nodes:
   nodeType: "${settings.nodeType}"
@@ -95,6 +95,6 @@ nodes:
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
-    isProxySQL: "${settings.isProxySQL}"
+    IS_PROXYSQL: "${settings.is_proxysql}"
 success:
 text: You should receive a bunch of emails ;). There are credentials and endpoints.
