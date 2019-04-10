@@ -2,6 +2,10 @@
 jpsType: update
 name: Mysql Group Replication Cluster
 description: Mysql Group Replication Auto Clustering
+
+success:
+  text: "../texts/phpmyadmin-credentials.md"
+
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
