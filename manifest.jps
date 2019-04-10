@@ -98,4 +98,4 @@ nodes:
     SCHEME: "${settings.scheme}"
     IS_PROXYSQL: "${settings.is_proxysql}"
 success:
-text: You should receive a bunch of emails ;). There are credentials and endpoints.
+  text: You should receive a bunch of emails ;). There are credentials and endpoints.
