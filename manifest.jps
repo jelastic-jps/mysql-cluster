@@ -23,7 +23,7 @@ settings:
       required: true
       values:        
         - value: mysql
-          caption: MySQL
+          caption: MySQL CE
         - value: mariadb-dockerized
           caption: MariaDB
       
