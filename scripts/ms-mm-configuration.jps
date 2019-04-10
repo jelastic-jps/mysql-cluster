@@ -3,6 +3,10 @@ type: update
 version: '0.99'
 name: Database Cluster
 description: 'DB Auto Clustering: 1 x Master + N x Slave'
+
+success:
+  text: "../texts/phpmyadmin-credentials.md"
+
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
