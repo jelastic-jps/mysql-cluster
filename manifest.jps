@@ -54,7 +54,7 @@ settings:
     - type: toggle
       name: is_proxysql
       caption: Add ProxySQL
-      value: false
+      value: true
 
     - caption: None
       inputType: hidden
