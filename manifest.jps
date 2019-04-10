@@ -57,7 +57,7 @@ settings:
       name: nodeType
       dependsOn:                 
         stack:
-            mysql-dockerized:
+            mysql:
               - value: mysql
             mariadb-dockerized:    
               - value: mariadb-dockerized
