@@ -51,9 +51,9 @@ settings:
               - value: galera
                 caption: Galera Cluster
 
-    - type: toggle
+    - type: checkbox
       name: is_proxysql
-      caption: Add ProxySQL
+      caption: Add ProxySQL for SQL Load Balancing
       value: true
 
     - caption: None
