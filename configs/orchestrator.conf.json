@@ -1,6 +1,6 @@
 {
-    "Debug": true,
-    "EnableSyslog": true,
+    "Debug": false,
+    "EnableSyslog": false,
     "ListenAddress": ":80",
     "MySQLTopologyUser": "orc_client_user",
     "MySQLTopologyPassword": "orc_client_password",
