@@ -1,4 +1,3 @@
----
 jpsType: update
 name: Database Cluster
 description: ProxySQL Load Balancer Entry Point
@@ -13,6 +12,8 @@ globals:
   MONITOR_USER: monitor-${fn.random}
   MONITOR_PASS: "${fn.password(10)}"
   ORCH_PASS: "${fn.password(10)}"
+  MAX_REPL_LAG: 20
+  
 
 onBeforeRemoveNode[proxy]:
   stopEvent
@@ -73,6 +74,9 @@ onInstall:
         filter: "${@i.id}"
 
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
+      - setGlobals:
+          MAX_REPL_LAG: 0
+
       - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
         - addMaster:
             id: "${nodes.sqldb.master.id}"
@@ -114,7 +118,7 @@ actions:
   addSlave:
     cmd[proxy]: |-
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) 
-        VALUES (11, 'node${this.id}', 3306, 20);"
+        VALUES (11, 'node${this.id}', 3306, '${globals.MAX_REPL_LAG}');"
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
 
   removeSlave:

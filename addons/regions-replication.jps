@@ -1,0 +1,67 @@
+jpsType: update
+homepage: http://jelastic.com
+description: Setup master-master replication
+name: Master-master Database replication between regions
+settings:
+  fields:
+    - name: remote_db_host
+      caption: Remote Database host
+      type: string
+      inputType: string
+      default: ''
+      required: 'true'
+    - name: remote_db_user
+      caption: Remote Database User
+      type: string
+      inputType: password
+      default: ''
+      required: 'true'
+    - name: remote_db_pass
+      caption: Remote Database Password
+      type: string
+      inputType: password
+      default: ''
+      required: 'true'
+    - name: local_db_host
+      caption: Remote Database host
+      type: string
+      inputType: string
+      default: ''
+      required: 'true'
+    - name: local_db_user
+      caption: Local Database User
+      type: string
+      inputType: password
+      default: ''
+      required: 'true'
+    - name: local_db_pass
+      caption: Local Database Password
+      type: string
+      inputType: password
+      default: ''
+      required: 'true'
+
+
+globals:
+  REMOTE_DB_CONNECT: 'mysql -u${settings.remote_db_user} -p${settings.remote_db_pass} -h ${settings.remote_db_host}'
+  LOCAL_DB_CONNECT: 'mysql -u${settings.local_db_user} -p${settings.local_db_pass}'
+  targetNodeID: ${settings.targetNodeID}
+
+onInstall:
+   cmd[${globals.targetNodeID}]:
+        - ${globals.REMOTE_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $1'} > /tmp/log_file
+        - ${globals.REMOTE_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $2'} > /tmp/log_pos
+        - ${globals.LOCAL_DB_CONNECT} -e "STOP SLAVE; CHANGE MASTER TO 
+            MASTER_HOST='${settings.remote_db_host}', 
+            MASTER_USER='${settings.remote_db_user}',
+            MASTER_PASSWORD='${settings.remote_db_pass}', 
+            MASTER_LOG_FILE='$(cat /tmp/log_file)', 
+            MASTER_LOG_POS=$(cat /tmp/log_pos); START SLAVE"
+        - ${globals.LOCAL_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $1'} > /tmp/log_file_local
+        - ${globals.LOCAL_DB_CONNECT} -e "show master status" -s | tail -n 1 | awk {'print $2'} > /tmp/log_pos_local
+        - ${globals.REMOTE_DB_CONNECT} -e "STOP SLAVE; CHANGE MASTER TO
+            MASTER_HOST='${settings.local_db_host}', 
+            MASTER_USER='${settings.remote_db_user}',
+            MASTER_PASSWORD='${settings.remote_db_pass}', 
+            MASTER_LOG_FILE='$(cat /tmp/log_file_local)', 
+            MASTER_LOG_POS=$(cat /tmp/log_pos_local); START SLAVE"

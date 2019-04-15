@@ -1,4 +1,3 @@
----
 jpsType: update
 id: mysql-auto-cluster-logic
 name: Database Cluster
@@ -8,7 +7,6 @@ globals:
   scripts: "${settings.path}/scripts"
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
-
 
 onBeforeResetNodePassword[sqldb]:
   - cmd[${events.response.nodeid}]: 
@@ -22,6 +20,7 @@ onAfterResetNodePassword[sqldb]:
     user: root
 
 onInstall:
+
   if (nodes.proxy):
     - cleanCluster
     - setupCluster
@@ -92,13 +91,14 @@ actions:
 
     
   setupCluster:
-    - if (!nodes.proxy): addProxyNodes
+    - if (!nodes.proxy && '${settings.is_proxysql}' == 'true'): addProxyNodes
 
     - if (nodes.sqldb.length == 2):
         - install-jps:
             jps: "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
-        - install-jps:
-            jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
+        - if ('${settings.is_proxysql}' == 'true'):    
+          - install-jps:
+              jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
     
     - if (nodes.sqldb.length > 2):
       - if (/mysql/.test("${nodes.sqldb.nodeType}")):
@@ -106,37 +106,43 @@ actions:
         - if ('${settings.scheme}'.toLowerCase() == 'master'):
           - install-jps:
               jps: "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
-          - install-jps:
-              jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
         
         - if ('${settings.scheme}'.toLowerCase() == 'slave'):
           - install-jps:
               jps: "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
-          - install-jps:
-              jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
 
         - if ('${settings.scheme}'.toLowerCase() == 'single'):
           - install-jps:
               jps: "${globals.scripts}/mgr-configuration.jps?_r=${fn.random}"
-          - install-jps:
-              jps: "${globals.scripts}/proxy-mgr-configuration.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-mgr-configuration.jps?_r=${fn.random}"
 
         - if ('${settings.scheme}'.toLowerCase() == 'multi'):
           - install-jps:
               jps: "${globals.scripts}/mgr-configuration.jps?_r=${fn.random}"
-          - install-jps:
-              jps: "${globals.scripts}/proxy-mgr-configuration.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-mgr-configuration.jps?_r=${fn.random}"
 
       - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
         - if ('${settings.scheme}'.toLowerCase() == 'galera'):  
           - install-jps:
               jps: "${globals.scripts}/galera-configuration.jps?_r=${fn.random}"
-          - install-jps:
-              jps: "${globals.scripts}/proxy-galera-configuration.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-galera-configuration.jps?_r=${fn.random}"
       
         - if ('${settings.scheme}'.toLowerCase() != 'galera'):  
           - install-jps:
               jps: "${globals.scripts}/ms-mm-configuration.jps?_r=${fn.random}"
-          - install-jps:
-              jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-configuration.jps?_r=${fn.random}"
   

@@ -1,4 +1,3 @@
----
 jpsType: install
 jpsVersion: '1.5.2'
 name: MySQL-MariaDB Cluster
@@ -24,9 +23,9 @@ settings:
       required: true
       values:        
         - value: mysql
-          caption: MySQL + ProxySQL
+          caption: MySQL CE
         - value: mariadb-dockerized
-          caption: MariaDB + ProxySQL
+          caption: MariaDB
       
     - caption: Topology
       type: list
@@ -51,6 +50,11 @@ settings:
                 caption: Master-Master with extra slaves
               - value: galera
                 caption: Galera Cluster
+
+    - type: checkbox
+      name: is_proxysql
+      caption: Add ProxySQL for SQL Load Balancing
+      value: true
 
     - caption: None
       inputType: hidden
@@ -79,6 +83,7 @@ settings:
               - value: 3
             galera:    
               - value: 3
+              
 
 nodes:
   nodeType: "${settings.nodeType}"
@@ -90,5 +95,6 @@ nodes:
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
+    IS_PROXYSQL: "${settings.is_proxysql}"
 success:
-text: You should receive a bunch of emails ;). There are credentials and endpoints.
+  text: You should receive a bunch of emails ;). There are credentials and endpoints.

@@ -1,4 +1,3 @@
----
 jpsType: update
 name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
@@ -10,10 +9,10 @@ nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
 globals:
-  PATH: "${settings.path}"
+  PATH: "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master"
   DB_USER: "${settings.db_user}"
   DB_PASS: "${settings.db_pass}"
-  CLUSTER_NAME: galera-test
+  CLUSTER_NAME: galera-cluster
   GALERA_CONF: "/etc/mysql/conf.d/galera.cnf"
   CUSTOM_CONF: "${settings.custom_conf}"
   
@@ -26,12 +25,26 @@ onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
     - setupInstance:
         id: "${@i.id}"
-        ip: "${@i.address}"
     - cmd[${@i.id}]: "/etc/init.d/mysql restart"
       user: root
 
 onAfterScaleIn[sqldb]:
   setupSeeds
+  
+onAfterMigrate:
+  install: ${globals.PATH}/scripts/galera-configuration.jps?_r=${fn.random}
+  nodeGroup: sqldb
+  settings:
+    db_user: "jelastic-${fn.random}"
+    db_pass: "${fn.password(20)}"
+    
+onAfterClone:
+  install: ${globals.PATH}/scripts/galera-configuration.jps?_r=${fn.random}
+  envName: ${event.response.env.envName}
+  nodeGroup: sqldb
+  settings:
+    db_user: "jelastic-${fn.random}"
+    db_pass: "${fn.password(20)}"
 
 onInstall:
   - script[sqldb]: "${globals.PATH}/scripts/firewallRules.js"
@@ -46,29 +59,20 @@ onInstall:
     ports: '4444'
     name: Galera-4444
 
-  - forEach(nodes.sqldb):
-      initialSetup:
-        id: "${@i.id}"
-
+  - resetCluster
+  - initialSetup:
+      id: "sqldb"
   - setupSeeds
-
   - forEach(i:nodes.sqldb):
       setupInstance:
         id: "${@i.id}"
-        ip: "${@i.address}"
-
-  - forEach(k:nodes.sqldb):
-      if (${@k.ismaster}):
-        cmd[${@k.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
-        user: root
-
+  - cmd[${nodes.sqldb.master.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
+    user: root
   - forEach(n:nodes.sqldb):
       if (!${@n.ismaster}):
-        cmd[${@n.id}]: "/etc/init.d/mysql restart"
-        user: root
-
+        cmd[${@n.id}]: "jem service restart"
+        
 actions:
-  
   initialSetup:
     - setupUser:
         id: "${this.id}"
@@ -93,7 +97,7 @@ actions:
     - if (resp.result != 0) return resp;
     - var nodes = [];
     - for (var i = 0, n = resp.nodes; i < n.length; i++)
-    - "  n[i].nodeGroup == nodeGroup ? nodes.push(n[i].address) : 0"
+    - "  n[i].nodeGroup == nodeGroup ? nodes.push('node' + n[i].id) : 0"
     - 'resp = {result:0, onAfterReturn: {}};'
     - resp.onAfterReturn['cmd['+ nodeGroup +']'] = 'sed -i "s|wsrep_cluster_address.*|wsrep_cluster_address
       = gcomm://'+ nodes.join(',') +'|g " ${globals.GALERA_CONF}';
@@ -103,14 +107,17 @@ actions:
   
   setupInstance:
     cmd[${this.id}]: |-
-      sed -i "s/server_id.*/server_id = ${this.id}/" ${globals.GALERA_CONF}
+      sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}"  | head -n1)/" ${globals.GALERA_CONF}
       sed -i "s/bind-address.*/bind-address = node${this.id}/" ${globals.GALERA_CONF}
       sed -i "s/report_host.*/report_host = node${this.id}/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_node_name.*/wsrep_node_name = node${this.id}/" ${globals.GALERA_CONF}
     
   resetCluster:
-      forEach(n:nodes.sqldb):
-        cmd[${@n.id}]: "rm -f ${globals.GALERA_CONF}; /etc/init.d/mysql restart"
-        user: root
+    - cmd[sqldb]: |-
+        [ -f ${globals.GALERA_CONF} ] && rm -f ${globals.GALERA_CONF}
+        [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
+        [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
+        [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
+        /etc/init.d/mysql stop; pkill -9 mysql; /etc/init.d/mysql start
+      user: root

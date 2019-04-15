@@ -1,4 +1,3 @@
----
 jpsType: update
 id: mysql-auto-cluster
 name: Database Cluster
@@ -16,7 +15,11 @@ nodeGroupAlias:
   ${targetNodes.nodeGroup}: sqldb
 onInstall:
   script: |
-    var scheme = "${settings.scheme:}", db_user = "${settings.db_user:}", db_pass = "${settings.db_pass:}", auto_cluster = "${settings.auto_cluster:}";
+    var scheme = "${settings.scheme:}",
+        db_user = "${settings.db_user:}",
+        db_pass = "${settings.db_pass:}",
+        is_proxysql = "${settings.is_proxysql:}",
+        auto_cluster = "${settings.auto_cluster:}";
     var resp = jelastic.env.control.GetContainerEnvVars("${env.envName}", session, ${nodes.sqldb.master.id});
     if (resp.result != 0) return resp;
     if (String(auto_cluster || resp.object.AUTO_CLUSTER).toLowerCase() == "false") return {result:0};
@@ -24,7 +27,8 @@ onInstall:
     scheme = scheme || resp.object.SCHEME || "slave";
     db_user = db_user || resp.object.DB_USER || "jelastic-${fn.random}";
     db_pass = db_pass || resp.object.DB_PASS || "${fn.password(20)}";
-    return {result:0, onAfterReturn:{setupReplica:{scheme:scheme, db_user:db_user, db_pass:db_pass}}}
+    is_proxysql = is_proxysql || resp.object.IS_PROXYSQL || "true";
+    return {result:0, onAfterReturn:{setupReplica:{scheme:scheme, db_user:db_user, db_pass:db_pass, is_proxysql:is_proxysql}}}
 actions:
   setupReplica:
     install:
@@ -39,3 +43,4 @@ actions:
         db_pass: ${this.db_pass}
         repl_user: repl-${fn.random}
         repl_pass: ${fn.password(20)}
+        is_proxysql: ${this.is_proxysql}

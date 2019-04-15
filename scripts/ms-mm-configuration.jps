@@ -3,6 +3,10 @@ type: update
 version: '0.99'
 name: Database Cluster
 description: 'DB Auto Clustering: 1 x Master + N x Slave'
+
+success:
+  text: "../texts/phpmyadmin-credentials.md"
+
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
@@ -15,9 +19,6 @@ globals:
   REPLICATION_PASS: "${fn.password(20)}"
   CUSTOM_CONF: "${settings.custom_conf}"
   STACK: ""
-
-success:
-  text: "../texts/phpmyadmin-credentials.md"
 
 onAfterScaleOut[sqldb]:
   forEach(n:event.response.nodes):

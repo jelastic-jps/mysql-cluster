@@ -18,5 +18,4 @@ wsrep_cluster_name =
 wsrep_cluster_address = gcomm://
 
 # Galera Node Configuration
-wsrep_node_address =
 wsrep_node_name =
