@@ -1,6 +1,6 @@
 jpsType: install
 jpsVersion: '1.5.2'
-name: MySQL-MariaDB Cluster
+name: MySQL / MariaDB Cluster
 
 categories:
   - apps/clustered-dbs
@@ -83,7 +83,6 @@ settings:
               - value: 3
             galera:    
               - value: 3
-              
 
 nodes:
   nodeType: "${settings.nodeType}"
@@ -96,5 +95,4 @@ nodes:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
     IS_PROXYSQL: "${settings.is_proxysql}"
-success:
-  text: You should receive a bunch of emails ;). There are credentials and endpoints.
+success: You should receive a bunch of emails ;). There are credentials and endpoints.
