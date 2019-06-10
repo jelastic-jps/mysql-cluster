@@ -1,52 +1,98 @@
-{
-    "jpsType": "install",
-    "jpsVersion": "1.1",
-    "application": {
-        "name": "Scalable MySQL Cluster with Load Balancing",
-        "categories": ["apps/clustered-dbs", "apps/popular", "apps/clusters"],
-        "description": {
-            "text": "Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator GUI for convenient cluster management and provides even load distribution, slaves healthcheck and autodiscovery of newly added DB nodes",
-            "short": "Scalable MySQL cluster with ProxySQL for even load distribution"
-        },
-        "logo": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png",
-        "env": {
-            "topology": {
-                "nodes": [{
-                    "cloudlets": 8,
-                    "count": 2,
-                    "nodeGroup": "sqldb",
-                    "nodeType": "mysql"
-                }, {
-                    "cloudlets": 8,
-                    "nodeGroup": "proxy",
-                    "image": "devbeta/proxysql"
-                }]
-            }
-        },
-        "globals": {
-            "path": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master",
-            "db_user": "jelastic-${fn.random}",
-            "db_pass": "${fn.password(20)}"
-        },
-        "onInstall": [{
-            "installJps": {
-                "jps": "${globals.path}/scripts/multimaster-configuration.jps",
-                "settings": {
-                    "path": "${globals.path}",
-                    "db_user": "${globals.db_user}",
-                    "db_pass": "${globals.db_pass}"
-                }
-            }
-        }, {
-            "installJps": {
-                "jps": "${globals.path}/scripts/proxy-configuration.jps",
-                "settings": {
-                    "path": "${globals.path}",
-                    "db_user": "${globals.db_user}",
-                    "db_pass": "${globals.db_pass}",
-                    "scheme" : "MASTER"
-                }
-            }
-        }]
-    }
-}
+jpsType: install
+jpsVersion: '1.5.2'
+name: MySQL / MariaDB Cluster
+
+categories:
+  - apps/clustered-dbs
+  - apps/popular
+  - apps/clusters
+  
+description: 
+  text: "/texts/description.md?_r=1"
+  short: A set of MySQL/MariaDB cluster topologies
+  
+logo: /images/icon.png?_r=1
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
+
+settings:
+  fields:
+    - caption: Stack
+      type: list
+      name: stack
+      default: mysql
+      required: true
+      values:        
+        - value: mysql
+          caption: MySQL CE
+        - value: mariadb-dockerized
+          caption: MariaDB
+      
+    - caption: Topology
+      type: list
+      name: scheme
+      required: true      
+      dependsOn:                 
+        stack:
+            mysql:
+              - value: slave
+                caption: Master-Slave with extra slaves
+              - value: master
+                caption: Master-Master with extra slaves
+              - value: single
+                caption: Single Group Replication
+              - value: multi
+                caption: Multi Group Replication              
+
+            mariadb-dockerized:    
+              - value: slave
+                caption: Master-Slave with extra slaves
+              - value: master
+                caption: Master-Master with extra slaves
+              - value: galera
+                caption: Galera Cluster
+
+    - type: checkbox
+      name: is_proxysql
+      caption: Add ProxySQL for SQL Load Balancing
+      value: true
+
+    - caption: None
+      inputType: hidden
+      type: list
+      name: nodeType
+      dependsOn:                 
+        stack:
+            mysql:
+              - value: mysql
+            mariadb-dockerized:    
+              - value: mariadb-dockerized
+
+    - caption: None
+      inputType: hidden
+      type: list
+      name: nodes
+      dependsOn:                 
+        scheme:
+            slave:
+              - value: 2
+            master:    
+              - value: 2
+            single:
+              - value: 3
+            multi:    
+              - value: 3
+            galera:    
+              - value: 3
+
+nodes:
+  nodeType: "${settings.nodeType}"
+  nodeGroup: sqldb
+  count: "${settings.nodes}"
+  cluster:
+    scheme: "${settings.scheme}"
+  cloudlets: 8
+  env:
+    ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
+    SCHEME: "${settings.scheme}"
+    IS_PROXYSQL: "${settings.is_proxysql}"
+success: You should receive a bunch of emails ;). There are credentials and endpoints.
