@@ -90,6 +90,7 @@ nodes:
   count: "${settings.nodes}"
   cluster:
     scheme: "${settings.scheme}"
+    jps: "https://raw.githubusercontent.com/unigeocloud/mysql-cluster/master/addons/auto-clustering/auto-cluster.jps"
   cloudlets: 8
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
