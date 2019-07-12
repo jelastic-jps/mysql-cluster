@@ -70,6 +70,17 @@ settings:
     - caption: None
       inputType: hidden
       type: list
+      name: tag
+      dependsOn:                 
+        stack:
+            mysql:
+              - value: 8.0.16
+            mariadb-dockerized:    
+              - value: 10.3.16
+
+    - caption: None
+      inputType: hidden
+      type: list
       name: nodes
       dependsOn:                 
         scheme:
@@ -88,6 +99,7 @@ nodes:
   nodeType: "${settings.nodeType}"
   nodeGroup: sqldb
   count: "${settings.nodes}"
+  tag: "${settings.tag}"
   cluster:
     scheme: "${settings.scheme}"
     jps: "https://raw.githubusercontent.com/unigeocloud/mysql-cluster/master/addons/auto-clustering/auto-cluster.jps"
