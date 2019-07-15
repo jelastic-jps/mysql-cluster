@@ -18,7 +18,7 @@ onInstall:
     var scheme = "${settings.scheme:}",
         db_user = "${settings.db_user:}",
         db_pass = "${settings.db_pass:}",
-        is_proxysql = "${settings.is_proxysql:false}",
+        is_proxysql = "${settings.is_proxysql:}",
         auto_cluster = "${settings.auto_cluster:}";
     var resp = jelastic.env.control.GetContainerEnvVars("${env.envName}", session, ${nodes.sqldb.master.id});
     if (resp.result != 0) return resp;
