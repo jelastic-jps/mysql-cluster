@@ -6,7 +6,7 @@ nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
 globals:
-  PATH: "https://raw.githubusercontent.com/sych74/mysql-cluster/master"
+  PATH: "${settings.path}"
   DB_USER: "${settings.db_user}"
   DB_PASS: "${settings.db_pass}"
   MONITOR_USER: monitor-${fn.random}
