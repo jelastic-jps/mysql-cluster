@@ -99,6 +99,7 @@ settings:
 nodes:
   nodeType: "${settings.nodeType}"
   nodeGroup: sqldb
+  skipNodeEmails: true
   count: "${settings.nodes}"
   tag: "${settings.tag}"
   cluster:
