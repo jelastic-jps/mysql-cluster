@@ -1,0 +1,114 @@
+jpsType: update
+id: mariadb-galera-cluster
+name: MariaDB Galera Cluster
+description: MariaDB Galera Auto Clustering
+
+success:
+  text: "../texts/phpmyadmin-credentials.md"
+
+nodeGroupAlias:
+  "${targetNodes.nodeGroup}": sqldb
+
+globals:
+  PATH: "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master"
+  DB_USER: "${settings.db_user}"
+  DB_PASS: "${settings.db_pass}"
+  CLUSTER_NAME: galera-cluster
+  GALERA_CONF: "/etc/mysql/conf.d/galera.cnf"
+  CUSTOM_CONF: "${settings.custom_conf}"
+    
+onAfterScaleOut[sqldb]:
+  - forEach(event.response.nodes):
+      initialSetup:
+        id: "${@i.id}"
+  - setupSeeds
+  - forEach(event.response.nodes):
+    - setupInstance:
+        id: "${@i.id}"
+    - cmd[${@i.id}]: "/etc/init.d/mysql restart"
+      user: root
+
+onAfterScaleIn[sqldb]:
+  setupSeeds
+  
+onAfterMigrate:
+  install: ${globals.PATH}/scripts/galera.jps?_r=${fn.random}
+  nodeGroup: sqldb
+  settings:
+    db_user: "jelastic-${fn.random}"
+    db_pass: "${fn.password(20)}"
+    
+onAfterClone:
+  install: ${globals.PATH}/scripts/galera.jps?_r=${fn.random}
+  envName: ${event.response.env.envName}
+  nodeGroup: sqldb
+  settings:
+    db_user: "jelastic-${fn.random}"
+    db_pass: "${fn.password(20)}"
+    
+onBeforeStop:
+  - forEach(i:nodes.sqldb):
+      env.control.StopNode [${@i.id}]
+
+onInstall:
+  - resetCluster
+  - initialSetup:
+      id: "sqldb"
+  - setupSeeds
+  - setupInstance:
+      id: "sqldb"
+  - cmd[${nodes.sqldb.master.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
+    user: root
+  - forEach(n:nodes.sqldb):
+      if (!${@n.ismaster}):
+        cmd[${@n.id}]: "jem service restart"
+        
+actions:
+  initialSetup:
+    - setupUser:
+        id: "${this.id}"
+    - setNodeDisplayName[${this.id}]: Galera
+      if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
+        cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
+        user: root
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/scripts/mysql -O /etc/init.d/mysql
+        wget ${globals.PATH}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
+      user: root
+        
+  setupUser:
+    cmd[${this.id}]: |-
+      wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
+      bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
+    user: root
+
+  setupSeeds:
+    script:
+    - var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+    - if (resp.result != 0) return resp;
+    - var nodes = [];
+    - for (var i = 0, n = resp.nodes; i < n.length; i++)
+    - "  n[i].nodeGroup == nodeGroup ? nodes.push('node' + n[i].id) : 0"
+    - 'resp = {result:0, onAfterReturn: {}};'
+    - resp.onAfterReturn['cmd['+ nodeGroup +']'] = 'sed -i "s|wsrep_cluster_address.*|wsrep_cluster_address
+      = gcomm://'+ nodes.join(',') +'|g " ${globals.GALERA_CONF}';
+    - resp.onAfterReturn['user'] = 'root';
+    - return resp;
+    nodeGroup: sqldb
+  
+  setupInstance:
+    cmd[${this.id}]: |-
+      sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}"  | head -n1)/" ${globals.GALERA_CONF}
+      sed -i "s/bind-address.*/bind-address = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
+      sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
+      sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
+      sed -i "s/wsrep_node_name.*/wsrep_node_name = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
+    
+  resetCluster:
+    - cmd[sqldb]: |-
+        [ -f ${globals.GALERA_CONF} ] && rm -f ${globals.GALERA_CONF}
+        [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
+        [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
+        [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
+        /etc/init.d/mysql stop; pkill -9 mysql; /etc/init.d/mysql start
+      user: root
