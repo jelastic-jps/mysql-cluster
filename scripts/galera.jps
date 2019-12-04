@@ -73,7 +73,7 @@ actions:
         user: root
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/mysql -O /etc/init.d/mysql
-        wget ${globals.PATH}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
+        wget ${globals.PATH}/configs/galera-myisam.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
       user: root
         
   setupUser:
