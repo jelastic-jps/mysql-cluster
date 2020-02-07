@@ -22,7 +22,6 @@ onAfterResetNodePassword[sqldb]:
 onInstall:
 
   if (nodes.proxy):
-    - cleanCluster
     - setupCluster
   if (!nodes.proxy):
     if (nodes.sqldb.length > 1): setupCluster
@@ -42,15 +41,6 @@ onAfterScaleOut[sqldb]:
   if (!nodes.proxy): setupCluster
 
 actions:
-
-  cleanCluster:
-    forEach(a:nodes.sqldb):
-      if (${@a.ismaster}):
-        forEach(i:nodes.sqldb):
-          if (!${@i.ismaster}):
-            cmd[${@i.id}]: |-
-              mysql -u${settings.db_user} -p${settings.db_pass} -e "STOP SLAVE; RESET SLAVE"
-              mysqlreplicate --master=${settings.db_user}:${settings.db_pass}@node${@a.id}:3306 --slave=${settings.db_user}:${settings.db_pass}@${@i.intIP}:3306 --rpl-user=${settings.repl_user}:${settings.repl_pass}
   
   install-jps:
     install:
