@@ -1,0 +1,110 @@
+{
+    "jps": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/auto-clustering/auto-cluster.jps",
+    "defaultState": false,
+    "skipOnEnvInstall": true,
+    "nodeGroupData": {
+        "scalingMode": "STATELESS",
+        "isResetServicePassword": "NODE",
+        "skipNodeEmails": true,
+        "isRedeploySupport": false
+    },
+    "compatibleAddons": ["mysql-auto-cluster"],
+    "settings": {
+        "data": {
+            "scheme": "slave",
+            "is_proxysql": true
+        },
+        "fields": [{
+            "type": "list",
+            "caption": "Scheme",
+            "name": "scheme",
+            "values": [{
+                "value": "master",
+                "caption": "Master-Master",
+                "tooltip": "<h3>Master-Master with Extra Slaves</h3>Pre-configured replication with two interconnected master databases. While horizontal scaling the cluster is extended with additional slave nodes. <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mysql/tip-cluster-mm.svg?sanitize=true'>"
+            }, {
+                "value": "slave",
+                "caption": "Master-Slave",
+                "tooltip": "<h3>Master-Slave with Extra Slaves</h3>Pre-configured replication with one master and one slave database. While horizontal scaling the cluster is extended with additional slaves. <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mysql/tip-cluster-ms.svg?sanitize=true'>"
+            }, {
+                "value": "multi",
+                "caption": "Multi MGR",
+                "tooltip": "<h3>Multi-Primary Group Replication</h3>All servers can accept updates even if being issued concurrently. <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mysql/tip-cluster-mg.svg?sanitize=true'>"
+            }, {
+                "value": "single",
+                "caption": "Single MGR",
+                "tooltip": "<h3>Single Primary Group Replication</h3>Just one node (primary) can accept updates at a time and an automatic election is called upon its unavailability. <img width='314' height='308' src='https://raw.githubusercontent.com/jelastic/icons/master/mysql/tip-cluster-sg.svg?sanitize=true'>"
+            }],
+            "tipParams": {
+                "dismissDelay": 600000,
+                "anchor": "l",
+                "hideOnOver": false,
+                "showDelay": 0,
+                "text": "LT_Tip_Cluster_MySQL_%(value)"
+            }
+        }, {
+            "type": "toggle",
+            "caption": "Add ProxySQL",
+            "name": "is_proxysql"
+        }]
+    },
+    "validation": {
+        "scalingMode": "STATELESS",
+        "rules": {
+            "scheme": {
+                "master": {
+                    "minCount": 2,
+                     "setGlobals": {
+                        "recCloudlets": 8
+                     }
+                },
+                "slave": {
+                    "minCount": 2,
+                     "setGlobals": {
+                        "recCloudlets": 8
+                     }
+                },
+                "single": {
+                    "minCount": 3,
+                    "maxCount": 11,
+                     "setGlobals": {
+                        "recCloudlets": 16
+                     }
+                },
+                "multi": {
+                    "minCount": 3,
+                    "maxCount": 11,
+                     "setGlobals": {
+                        "recCloudlets": 16
+                     }
+                }
+            },
+           "is_proxysql": {
+                "true": {
+                    "setGlobals": {
+                        "proxyCount": 2
+                    }
+                }
+            }  
+        }
+    },
+    "recommended": {
+        "cloudlets": "${globals.recCloudlets}"
+    },
+    "requires": [
+        "proxysql"
+    ],
+    "extraNodes": {
+        "nodeGroup": "proxy",
+        "nodeType": "proxysql",
+        "flexibleCloudlets": 8,
+        "fixedCloudlets": 1,
+        "displayName": "ProxySQL",
+        "count": "${globals.proxyCount:0}",
+        "validation": {
+            "minCount": 2,
+            "maxCount": 2
+        }
+    },
+    "description": "Automatic clusterization of the databases using the chosen scheme with pre-configured replication and auto-discovery of the nodes."
+}
