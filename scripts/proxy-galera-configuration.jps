@@ -105,6 +105,8 @@ actions:
     cmd[proxy]: |-
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id,hostname, port) VALUES (2, 'node${this.id}', 3306);"
       mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+    cmd[proxy]: |-
+      i=1; host node${this.id}; while [ $? -gt 0 ] && [ $i -lt 10 ]; do sleep 1; i=$(( $i + 1 )); host node${this.id}; done
       /usr/local/orchestrator/orchestrator -c discover -i node${this.id} cli &>> /var/log/run.log
     user: root
 
