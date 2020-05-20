@@ -96,6 +96,7 @@ nodes:
   tag: "${settings.tag}"
   cloudlets: 16
   restartDelay: 10
+  isRedeploySupport: false
   cluster:
     scheme: "${settings.scheme}"
     jps: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
