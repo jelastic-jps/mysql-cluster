@@ -2,9 +2,11 @@ jpsType: update
 id: mysql-auto-cluster-logic
 name: Database Cluster
 skipNodeEmails: true
+
 globals:
-  baseUrl: "${settings.path}"
+  path: "${settings.path}"
   scripts: "${settings.path}/scripts"
+
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
@@ -26,17 +28,6 @@ onInstall:
   if (!nodes.proxy):
     if (nodes.sqldb.length > 1): setupCluster
 
-onAfterClone:
-  install:
-    jps: "${settings.logic_jps}"
-    envName: "${event.response.env.envName}"
-    settings:
-      logic_jps: "${settings.logic_jps}"
-      db_user: "${settings.db_user}"
-      db_pass: "${settings.db_pass}"
-      repl_user: "${settings.repl_user}"
-      repl_pass: "${settings.repl_pass}"
-
 onAfterScaleOut[sqldb]:
   if (!nodes.proxy): setupCluster
 
@@ -50,7 +41,7 @@ actions:
         db_user: "${settings.db_user}"
         db_pass: "${settings.db_pass}"
         scheme: "${settings.scheme}"
-        path: "${globals.baseUrl}"
+        path: "${globals.path}"
 
   addProxyNodes:
     - addNodes:
