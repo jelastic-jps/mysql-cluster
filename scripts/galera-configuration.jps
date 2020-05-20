@@ -1,4 +1,4 @@
-psType: update
+jpsType: update
 id: galera-cluster
 name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
