@@ -1,18 +1,24 @@
 jpsType: update
 id: mysql-auto-cluster
 name: Database Cluster
+
 description:
   text: Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication
     and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator
     GUI for convenient cluster management and provides even load distribution, slaves
     healthcheck and autodiscovery of newly added DB nodes
   short: Scalable MySQL cluster with ProxySQL for even load distribution
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
+
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v2.0.0
+
 logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png
+
 globals:
   logic_jps: ${baseUrl}/addons/auto-clustering/scripts/auto-cluster-logic.jps?_r=${fn.random}
+
 nodeGroupAlias:
   ${targetNodes.nodeGroup}: sqldb
+
 onInstall:
   script: |
     var scheme = "${settings.scheme:}",
@@ -29,6 +35,7 @@ onInstall:
     db_pass = db_pass || resp.object.DB_PASS || "${fn.password(20)}";
     is_proxysql = is_proxysql || resp.object.IS_PROXYSQL || "false";
     return {result:0, onAfterReturn:{setupReplica:{scheme:scheme, db_user:db_user, db_pass:db_pass, is_proxysql:is_proxysql}}}
+
 actions:
   setupReplica:
     install:
