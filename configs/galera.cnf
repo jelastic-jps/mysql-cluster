@@ -16,6 +16,7 @@ wsrep_provider = /usr/lib64/galera/libgalera_smm.so
 # Galera Cluster Configuration
 wsrep_cluster_name = 
 wsrep_cluster_address = gcomm://
+wsrep-replicate-myisam = 1
 
 # Galera Node Configuration
 wsrep_node_name =
