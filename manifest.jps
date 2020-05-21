@@ -97,7 +97,7 @@ nodes:
   restartDelay: 10
   cluster:
     scheme: "${settings.scheme}"
-  cloudlets: 8
+  cloudlets: 16
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
