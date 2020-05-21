@@ -39,10 +39,6 @@ settings:
                 caption: Master-Slave with extra slaves
               - value: master
                 caption: Master-Master with extra slaves
-              - value: single
-                caption: Single Group Replication
-              - value: multi
-                caption: Multi Group Replication              
 
             mariadb-dockerized:    
               - value: slave
@@ -75,9 +71,9 @@ settings:
       dependsOn:                 
         stack:
             mysql:
-              - value: 8.0.18
+              - value: 8.0.20
             mariadb-dockerized:    
-              - value: 10.3.20
+              - value: 10.3.22
 
     - caption: None
       inputType: hidden
@@ -89,10 +85,6 @@ settings:
               - value: 2
             master:    
               - value: 2
-            single:
-              - value: 3
-            multi:    
-              - value: 3
             galera:    
               - value: 3
 
@@ -102,9 +94,10 @@ nodes:
   skipNodeEmails: true
   count: "${settings.nodes}"
   tag: "${settings.tag}"
+  restartDelay: 10
   cluster:
     scheme: "${settings.scheme}"
-  cloudlets: 8
+  cloudlets: 16
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
