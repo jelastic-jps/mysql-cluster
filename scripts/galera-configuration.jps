@@ -46,6 +46,10 @@ onAfterClone:
     db_user: "jelastic-${fn.random}"
     db_pass: "${fn.password(20)}"
 
+onBeforeStop:
+  - forEach(i:nodes.sqldb):
+      env.control.StopNode [${@i.id}]
+
 onInstall:
   - script[sqldb]: "${globals.PATH}/scripts/firewallRules.js"
     ports: '4567'
