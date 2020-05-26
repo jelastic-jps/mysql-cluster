@@ -67,6 +67,17 @@ settings:
     - caption: None
       inputType: hidden
       type: list
+      name: sqldb_tag
+      dependsOn:                 
+        stack:
+            mysql:
+              - value: 8.0.20
+            mariadb-dockerized:    
+              - value: 10.3.22
+              
+    - caption: None
+      inputType: hidden
+      type: list
       name: nodes
       dependsOn:                 
         scheme:
@@ -79,6 +90,7 @@ settings:
 
 nodes:
   nodeType: "${settings.nodeType}"
+  tag: "${settings.sqldb_tag}"
   nodeGroup: sqldb
   skipNodeEmails: true
   count: "${settings.nodes}"
