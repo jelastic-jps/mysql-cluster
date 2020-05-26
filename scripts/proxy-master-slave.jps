@@ -35,7 +35,7 @@ onBeforeScaleIn[sqldb]:
       
 onAfterScaleIn[sqldb]:
   forEach(event.response.nodes):
-    cmd[proxy]: mysql -h 127.0.0.1 -P3360 -uadmin -p${globals.ORCH_PASS} -e "DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';"
+    cmd[proxy]: MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin -e "DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';"
 
 
 onInstall:
@@ -56,18 +56,18 @@ onInstall:
 
   - log: ProxySQL configuration
   - cmd [proxy]: |-
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) 
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) 
         VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 10, 1000);"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "UPDATE global_variables SET variable_value='${nodes.sqldb.version}' WHERE variable_name='mysql-server_version';"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${nodes.sqldb.version}' WHERE variable_name='mysql-server_version';"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;"
 
   - forEach(nodes.sqldb):
       addMonitorUser:
@@ -104,27 +104,26 @@ onInstall:
 actions:
   addMonitorUser:
     cmd[${this.filter}]: |-
-      mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';"
-      mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
-      mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "FLUSH PRIVILEGES;"
+      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';"
+      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
+      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
   addMaster:
     cmd [proxy]: |-
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${this.id}', 3306);"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${this.id}', 3306);"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       i=1; host node${this.id}; while [ $? -gt 0 ] && [ $i -lt 10 ]; do sleep 1; i=$(( $i + 1 )); host node${this.id}; done
-      mysql -u${globals.DB_USER} -p${globals.DB_PASS} -e "quit";
       /usr/local/orchestrator/orchestrator -c discover -i node${this.id} cli;
     user: root
   
   addSlave:
     cmd[proxy]: |-
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) 
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) 
         VALUES (11, 'node${this.id}', 3306, '${globals.MAX_REPL_LAG}');"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
 
   removeSlave:
     cmd[proxy]: |-
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
-      mysql -h 127.0.0.1 -P6032 -uadmin -padmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-      mysql -h 127.0.0.1 -P3360 -uadmin -p${globals.ORCH_PASS} -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+      MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin  -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
