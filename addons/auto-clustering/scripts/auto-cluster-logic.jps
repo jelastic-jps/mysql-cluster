@@ -72,6 +72,8 @@ actions:
 
     
   setupCluster:
+    - install: https://raw.githubusercontent.com/sych74/validator/master/manifest.jps
+  
     - if (!nodes.proxy && '${settings.is_proxysql}' == 'true'): addProxyNodes
 
     - if (nodes.sqldb.length == 2):
