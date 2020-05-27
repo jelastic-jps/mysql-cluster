@@ -5,3 +5,4 @@ replicate-wild-ignore-table = performance_schema.%
 replicate-wild-ignore-table = information_schema.%
 replicate-wild-ignore-table = mysql.%
 read_only = 1
+report_host =

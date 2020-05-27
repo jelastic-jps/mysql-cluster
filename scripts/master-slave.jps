@@ -129,6 +129,7 @@ actions:
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf
     - setNodeDisplayName[${this.id}]: Slave
   
   addSlave:
