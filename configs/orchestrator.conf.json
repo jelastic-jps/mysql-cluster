@@ -21,7 +21,7 @@
     "MySQLOrchestratorSSLCAFile": "",
     "MySQLOrchestratorSSLSkipVerify": true,
     "MySQLOrchestratorUseMutualTLS": false,
-    "MySQLConnectTimeoutSeconds": 5,
+    "MySQLConnectTimeoutSeconds": 10,
     "DefaultInstancePort": 3306,
     "DiscoverByShowSlaveHosts": true,
     "InstancePollSeconds": 5,
