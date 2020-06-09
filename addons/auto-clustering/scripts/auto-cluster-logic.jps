@@ -75,8 +75,6 @@ actions:
   
     - if (!nodes.proxy && '${settings.is_proxysql}' == 'true'): addProxyNodes
     
-    - install: https://raw.githubusercontent.com/sych74/validator/master/manifest.jps
-
     - if (nodes.sqldb.length == 2):
         - install-jps:
             jps: "${globals.scripts}/master-slave.jps?_r=${fn.random}"
