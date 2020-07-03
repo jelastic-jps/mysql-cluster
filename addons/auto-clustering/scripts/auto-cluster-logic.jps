@@ -21,6 +21,13 @@ onAfterResetNodePassword[sqldb]:
       jem service restart
     user: root
 
+onBeforeRedeployContainer[sqldb]:
+   - set: { versions: "${nodes.sqldb.master.version}, ${event.params.tag}" }
+   - if (${fn.compare([this.versions])} == 1):
+      stopEvent:
+        type: warning
+        message: Downgrading is not supported for database cluster.
+
 onInstall:
 
   if (nodes.proxy):
