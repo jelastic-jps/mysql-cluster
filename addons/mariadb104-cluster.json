@@ -12,7 +12,7 @@
     "settings": {
         "data": {
             "scheme": "slave",
-            "is_proxysql": false
+            "is_proxysql": true
         },
         "fields": [{
             "type": "list",
@@ -33,6 +33,10 @@
                }
            ],
            "tipParams": {"dismissDelay":600000,"anchor":"l","hideOnOver":false,"showDelay":0,"text":"LT_Tip_Cluster_MariaDB_%(value)"}
+        }, {
+            "type": "toggle",
+            "caption": "Add ProxySQL",
+            "name": "is_proxysql"
         }]
     },
     "validation": {
@@ -57,11 +61,33 @@
                         "recCloudlets": 16
                     }
                 }
-            }
+            },
+            "is_proxysql": {
+                "true": {
+                    "setGlobals": {
+                        "proxyCount": 2
+                    }
+                }
+            }  
         }
     },
     "recommended": {
         "cloudlets": "${globals.recCloudlets}"
+    },
+    "requires": [
+        "proxysql"
+    ],
+    "extraNodes": {
+        "nodeGroup": "proxy",
+        "nodeType": "proxysql",
+        "flexibleCloudlets": 8,
+        "fixedCloudlets": 1,
+        "displayName": "ProxySQL",
+        "count": "${globals.proxyCount:0}",
+        "validation": {
+            "minCount": 2,
+            "maxCount": 2
+        }
     },
     "description": "Automatic clusterization of the databases using the chosen scheme with pre-configured replication and auto-discovery of the nodes."
 }
