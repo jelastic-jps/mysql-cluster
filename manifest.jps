@@ -96,7 +96,7 @@ nodes:
   count: "${settings.nodes}"
   cloudlets: 16
   restartDelay: 10
-  isRedeploySupport: false
+  isRedeploySupport: true
   cluster:
     scheme: "${settings.scheme}"
     jps: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
