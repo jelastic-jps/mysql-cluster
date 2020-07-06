@@ -34,7 +34,6 @@ onAfterScaleIn[sqldb]:
 onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
-    envName: ${event.response.env.envName}
     nodeGroup: sqldb
     settings:
       db_user: "jelastic-${fn.random}"
