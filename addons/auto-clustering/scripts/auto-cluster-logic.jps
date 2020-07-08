@@ -3,6 +3,13 @@ id: mysql-auto-cluster-logic
 name: Database Cluster
 skipNodeEmails: true
 
+description:
+  text: Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication
+    and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator
+    GUI for convenient cluster management and provides even load distribution, slaves
+    healthcheck and autodiscovery of newly added DB nodes
+  short: Scalable MySQL cluster with ProxySQL for even load distribution
+
 globals:
   path: "${settings.path}"
   scripts: "${settings.path}/scripts"
