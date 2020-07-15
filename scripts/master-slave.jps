@@ -102,7 +102,7 @@ actions:
         cmd[${this.id}]: |-
           yum install https://downloads.mysql.com/archives/get/p/29/file/mysql-connector-python-8.0.11-1.el7.x86_64.rpm -y &>> /var/log/run.log
           yum install https://downloads.mysql.com/archives/get/p/30/file/mysql-utilities-1.6.5-1.el7.noarch.rpm -y &>> /var/log/run.log
-          ln -s /usr/lib/python2.7/site-packages/mysql/utilities /usr/lib64/python2.7/site-packages/mysql/utilities
+          [ ! -L /usr/lib64/python2.7/site-packages/mysql/utilities ] && ln -s /usr/lib/python2.7/site-packages/mysql/utilities /usr/lib64/python2.7/site-packages/mysql/utilities
         user: root
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log

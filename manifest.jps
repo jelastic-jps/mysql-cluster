@@ -73,7 +73,7 @@ settings:
             mysql:
               - value: 8.0.20
             mariadb-dockerized:    
-              - value: 10.3.22
+              - value: 10.4.13
               
     - caption: None
       inputType: hidden

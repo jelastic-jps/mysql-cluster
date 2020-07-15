@@ -1,7 +1,14 @@
 jpsType: update
 id: mysql-auto-cluster-logic
-name: Database Cluster
+name: Logic for scalable Database cluster
 skipNodeEmails: true
+
+description:
+  text: Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication
+    and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator
+    GUI for convenient cluster management and provides even load distribution, slaves
+    healthcheck and autodiscovery of newly added DB nodes
+  short: Logic for scalable Database cluster
 
 globals:
   path: "${settings.path}"
