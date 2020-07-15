@@ -41,6 +41,16 @@ onAfterClone:
     db_user: "${globals.DB_USER}"
     db_pass: "${globals.DB_PASS}"
 
+onBeforeRemoveNode[proxy]:
+  stopEvent:
+    type: warning
+    message: Scaling is not supported for ProxySQL.
+
+onBeforeAddNode[proxy]:
+  stopEvent:
+    type: warning
+    message: Scaling is not supported for ProxySQL.
+
 onInstall:
 
   - resetProxyNodes
