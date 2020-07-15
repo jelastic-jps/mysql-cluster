@@ -16,10 +16,14 @@ globals:
   
 
 onBeforeRemoveNode[proxy]:
-  stopEvent
+  stopEvent:
+    type: warning
+    message: Scaling is not supported for ProxySQL.
 
 onBeforeAddNode[proxy]:
-  stopEvent
+  stopEvent:
+    type: warning
+    message: Scaling is not supported for ProxySQL.
 
 onAfterScaleOut[sqldb]:
   forEach(event.response.nodes):
