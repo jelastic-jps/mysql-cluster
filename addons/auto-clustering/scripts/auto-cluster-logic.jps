@@ -1,6 +1,6 @@
 jpsType: update
 id: mysql-auto-cluster-logic
-name: Database Cluster
+name: Logic for scalable Database cluster
 skipNodeEmails: true
 
 description:
