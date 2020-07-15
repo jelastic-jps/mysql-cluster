@@ -1,6 +1,6 @@
 jpsType: update
 id: mysql-auto-cluster
-name: Database Autoclustering
+name: Scalable Database cluster
 
 description:
   text: Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication
