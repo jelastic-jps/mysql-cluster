@@ -66,6 +66,11 @@ onInstall:
   - forEach(n:nodes.sqldb):
       if (!${@n.ismaster}):
         cmd[${@n.id}]: "jem service restart"
+  - env.file.AddFavorite:
+    nodeGroup: sqldb
+    path: /var/lib/mysql/grastate.dat
+    keyword: grastate.dat
+    isDir: false
         
 actions:
   initialSetup:
