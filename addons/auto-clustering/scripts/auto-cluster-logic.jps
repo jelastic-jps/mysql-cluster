@@ -42,9 +42,6 @@ onInstall:
   if (!nodes.proxy):
     if (nodes.sqldb.length > 1): setupCluster
 
-onAfterScaleOut[sqldb]:
-  if (!nodes.proxy): setupCluster
-
 actions:
   
   install-jps:
