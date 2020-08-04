@@ -7,7 +7,7 @@
 MariaDB/MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates.
 
 <p align="left"> 
-<img src="images/mysql-maria-scheme.png" width="500">
+<img src="images/mysql-maria-scheme-new.svg" width="500">
 </p>
 
 The package includes Highly Available [*ProxySQL Load Balancer*](http://www.proxysql.com) and [*Cluster Orchestrator*](https://github.com/github/orchestrator) to manage MariaDB/MySQL replication topology. And there is a choice between different MariaDB/MySQL replication types:
