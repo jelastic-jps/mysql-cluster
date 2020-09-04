@@ -1,5 +1,6 @@
 jpsType: update
-name: Database Cluster
+id: proxy-master-slave-cluster
+name: Asynchronous Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 success: "../texts/proxy-entrypoint.md"
 nodeGroupAlias: 

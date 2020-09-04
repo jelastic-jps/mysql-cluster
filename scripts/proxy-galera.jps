@@ -1,6 +1,6 @@
 jpsType: update
 id: proxy-galera-cluster
-name: MariaDB Galera Cluster
+name: MariaDB Galera Cluster with ProxySQL
 description: MariaDB Galera Cluster
 success: "../texts/proxy-entrypoint.md"
 

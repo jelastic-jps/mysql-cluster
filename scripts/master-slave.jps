@@ -1,7 +1,6 @@
----
 type: update
-version: '0.99'
-name: Database Cluster
+id: master-slave-cluster
+name: Asynchronous Database Cluster
 description: 'DB Auto Clustering: 1 x Master + N x Slave'
 
 success:
