@@ -1,5 +1,5 @@
 type: update
-id: master-slave-cluster
+id: mysql-asynchronous-cluster
 name: Asynchronous Database Cluster
 description: 'DB Auto Clustering: 1 x Master + N x Slave'
 
