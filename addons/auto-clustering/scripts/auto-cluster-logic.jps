@@ -36,11 +36,14 @@ onBeforeRedeployContainer[sqldb]:
         message: Downgrading is not supported for database cluster.
 
 onInstall:
-
-  if (nodes.proxy):
-    - setupCluster
-  if (!nodes.proxy):
-    if (nodes.sqldb.length > 1): setupCluster
+  - if ('${settings.db_pass}'.length < 8):
+      stopEvent:
+        type: warning
+        message: Password must be at least 8 characters long. 
+  - if (nodes.proxy):
+      setupCluster
+  - if (!nodes.proxy):
+      if (nodes.sqldb.length > 1): setupCluster
 
 actions:
   

@@ -1,7 +1,7 @@
 jpsType: install
 jpsVersion: '1.5.2'
 name: MySQL / MariaDB Cluster
-id: mysql-cluster
+id: mysql-cluster-main
 
 categories:
   - apps/clustered-dbs

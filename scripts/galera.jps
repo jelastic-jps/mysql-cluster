@@ -1,5 +1,5 @@
 jpsType: update
-id: galera-cluster
+id: mysql-galera-cluster
 name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
 
