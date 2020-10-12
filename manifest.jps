@@ -13,7 +13,7 @@ description:
   short: A set of MySQL/MariaDB cluster topologies
   
 logo: /images/icon.png?_r=1
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v2.1.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v2.3.0
 
 settings:
   fields:
@@ -63,17 +63,6 @@ settings:
               - value: mysql
             mariadb-dockerized:    
               - value: mariadb-dockerized
-
-    - caption: None
-      inputType: hidden
-      type: list
-      name: sqldb_tag
-      dependsOn:                 
-        stack:
-            mysql:
-              - value: 8.0.20
-            mariadb-dockerized:    
-              - value: 10.4.13
               
     - caption: None
       inputType: hidden
@@ -90,18 +79,17 @@ settings:
 
 nodes:
   nodeType: "${settings.nodeType}"
-  tag: "${settings.sqldb_tag}"
   nodeGroup: sqldb
   skipNodeEmails: true
   count: "${settings.nodes}"
   cloudlets: 16
-  restartDelay: 10
+  restartDelay: 30
   isRedeploySupport: true
   cluster:
     scheme: "${settings.scheme}"
     jps: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     is_proxysql: "${settings.is_proxysql}"
-    isRedeploySupport: false
+    isRedeploySupport: true
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
