@@ -19,16 +19,6 @@ globals:
   CUSTOM_CONF: "${settings.custom_conf}"
   STACK: ""
 
-onAfterScaleOut[sqldb]:
-  forEach(n:event.response.nodes):
-    - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
-        addDistSlave:
-          id: "${@n.id}"
-    - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
-        addSlave:
-          id: "${@n.id}"
-          masterId: "${nodes.sqldb.master.id}"
-
 onInstall:
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - log: "--> Setup Master Node"
