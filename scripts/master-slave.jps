@@ -178,10 +178,12 @@ actions:
         return { result: 0, slaveId: slaveId }
 
   cloneSlave:
+      - cmd[${this.slaveId}]: sudo /etc/init.d/mysql stop
       - api: environment.control.AddNode
         nodeGroup: sqldb
         nodeid: ${this.slaveId}
         nodeType: ${nodes.sqldb.nodeType}
+      - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
     
   setScalingMode:
     - api: jelastic.env.control.ApplyNodeGroupData
