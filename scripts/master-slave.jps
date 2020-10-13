@@ -25,74 +25,20 @@ globals:
   REPLICATION_USER: repl-${fn.random}
   REPLICATION_PASS: "${fn.password(20)}"
   CUSTOM_CONF: "${settings.custom_conf}"
-  STACK: ""
 
 onInstall:
   - setScalingMode
-  - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
-    - log: "--> Setup Master Node"
-    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
-          - cmd[${nodes.sqldb.master.id}]: |-
-              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
-          - setupMaster:
-              id: "${nodes.sqldb.master.id}"
-
-          - cmd[${nodes.sqldb[1].id}]: |-
-              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
-          - setupMaster:
-              id: "${nodes.sqldb[1].id}"
-
-    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
-          - cmd[${nodes.sqldb.master.id}]: |-
-              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
-          - setupMaster:
-              id: "${nodes.sqldb.master.id}"
-          - cmd[${nodes.sqldb.first.id}]: |-
-              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
-          - setupMaster:
-              id: "${nodes.sqldb.first.id}"
-
-    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
-        - setupReplication:
-            id: "${nodes.sqldb.master.id}"
-            masterId: "${nodes.sqldb[1].id}"
-        - setupReplication:
-            id: "${nodes.sqldb[1].id}"
-            masterId: "${nodes.sqldb.master.id}"
-
-    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
-        - setupReplication:
-            id: "${nodes.sqldb.master.id}"
-            masterId: "${nodes.sqldb.first.id}"
-        - setupReplication:
-            id: "${nodes.sqldb.first.id}"
-            masterId: "${nodes.sqldb.master.id}"
-          
-    - forEach(n:nodes.sqldb):
-         - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb[1].id}'):
-              addDistSlave:
-                id: "${@n.id}" 
-         - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb.first.id}'):
-              addDistSlave:
-                id: "${@n.id}" 
-
-  - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
-    - log: "--> Setup Slave Node"
-    - setupMaster:
-        id: "${nodes.sqldb.master.id}"
-    - forEach(i:nodes.sqldb):
-        if (!${@i.ismaster}):
-          addSlave:
-            id: "${@i.id}"
-            masterId: "${nodes.sqldb.master.id}"
-
+  - setupMaster:
+      id: "${nodes.sqldb.master.id}"
+  - forEach(i:nodes.sqldb):
+      if (!${@i.ismaster}):
+        addSlave:
+          id: "${@i.id}"
+          masterId: "${nodes.sqldb.master.id}"
 
   - return:
       result: success
+
 actions:
 
   setupReplication:
@@ -141,27 +87,6 @@ actions:
         id: "${this.id}"
         masterId: "${this.masterId}"
 
-  addDistSlave:
-    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
-        - if (/^[0-9]*[02468]$/.test("${this.id}")):
-            addSlave:
-              id: "${this.id}"
-              masterId: "${nodes.sqldb.master.id}"
-        - if (/^[0-9]*[13579]$/.test("${this.id}")):
-            addSlave:
-              id: "${this.id}"
-              masterId: "${nodes.sqldb[1].id}"
-
-    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
-        - if (/^[0-9]*[02468]$/.test("${this.id}")):
-            addSlave:
-              id: "${this.id}"
-              masterId: "${nodes.sqldb.master.id}"
-        - if (/^[0-9]*[13579]$/.test("${this.id}")):
-            addSlave:
-              id: "${this.id}"
-              masterId: "${nodes.sqldb.first.id}"
-
   addCustomConfig:
     if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
       cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
@@ -178,16 +103,15 @@ actions:
         return { result: 0, slaveId: slaveId }
 
   cloneSlave:
-      - cmd[${this.slaveId}]: sudo /etc/init.d/mysql stop
-      - api: environment.control.AddNode
-        nodeGroup: sqldb
-        nodeid: ${this.slaveId}
-        nodeType: ${nodes.sqldb.nodeType}
-      - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
+    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql stop
+    - api: environment.control.AddNode
+      nodeGroup: sqldb
+      nodeid: ${this.slaveId}
+      nodeType: ${nodes.sqldb.nodeType}
+    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
     
   setScalingMode:
     - api: jelastic.env.control.ApplyNodeGroupData
       nodeGroup: sqldb
       data:
         scalingMode: STATEFUL
-
