@@ -10,7 +10,6 @@ nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
 onBeforeCloneNodes[sqldb]:
-  - setScalingMode
   - getSlaveId
   - cloneSlave:
       slaveId: ${response.slaveId}
@@ -29,6 +28,7 @@ globals:
   STACK: ""
 
 onInstall:
+  - setScalingMode
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - log: "--> Setup Master Node"
     - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
@@ -166,7 +166,7 @@ actions:
     if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
       cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
       
-    getSlaveId:
+  getSlaveId:
     - script: |
         var api = [], slaveId;
         var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
