@@ -75,8 +75,8 @@ onInstall:
               addDistSlave:
                 id: "${@n.id}" 
 
-  - return:
-      result: success
+    - return:
+        result: success
 actions:
 
   setupReplication:
