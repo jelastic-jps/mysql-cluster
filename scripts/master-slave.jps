@@ -9,6 +9,15 @@ success:
 targetNodes: none
 nodeGroupAlias:
   ${settings.nodeGroup}: sqldb
+        
+globals:
+  PATH: "${settings.path}"
+  DB_USER: "${settings.db_user}"
+  DB_PASS: "${settings.db_pass}"
+  SCHEME: "${settings.scheme}"
+  REPLICATION_USER: repl-${fn.random}
+  REPLICATION_PASS: "${fn.password(20)}"
+  CUSTOM_CONF: "${settings.custom_conf}"
 
 onBeforeCloneNodes[sqldb]:
   - getSlaveId
@@ -27,33 +36,40 @@ onBeforeCloneNodes[sqldb]:
       message: New slaves have been successfully added
 
 onAfterClone:
-  install: ${globals.PATH}/scripts/resetReplication.jps?_r=${fn.random}
-  envName: ${event.response.env.envName}
-        
-globals:
-  PATH: "${settings.path}"
-  DB_USER: "${settings.db_user}"
-  DB_PASS: "${settings.db_pass}"
-  SCHEME: "${settings.scheme}"
-  REPLICATION_USER: repl-${fn.random}
-  REPLICATION_PASS: "${fn.password(20)}"
-  CUSTOM_CONF: "${settings.custom_conf}"
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    envName: ${event.response.env.envName}    
+    settings: 
+      nodeGroup: ${settings.nodeGroup}      
+      clone: true    
 
 onInstall:
-  - env.control.ApplyNodeGroupData [sqldb]:
-      data: 
-        globals: "${globals.toJSON()}"
-  - setScalingMode
-  - setupMaster:
-      id: "${nodes.sqldb.master.id}"
-  - forEach(i:nodes.sqldb):
-      if (!${@i.ismaster}):
-        addSlave:
-          id: "${@i.id}"
-          masterId: "${nodes.sqldb.master.id}"
+  - if (${settings.clone:false}):
+    - importGlobalsFromNodeGroup: sqldb
+    - forEach(i:nodes.sqldb):
+        if (!${@i.ismaster}):
+          reconfigureSlave:
+            id: "${@i.id}"
+            master_id: "${nodes.sqldb.master.id}"
+            db_user: "${globals.DB_USER}"
+            db_pass: "${globals.DB_PASS}"
+            repl_user: "${globals.REPLICATION_USER}"
+            repl_pass: "${globals.REPLICATION_PASS}"
+  - else:
+    - env.control.ApplyNodeGroupData [sqldb]:
+        data: 
+          globals: "${globals.toJSON()}"
+    - setScalingMode
+    - setupMaster:
+        id: "${nodes.sqldb.master.id}"
+    - forEach(i:nodes.sqldb):
+        if (!${@i.ismaster}):
+          addSlave:
+            id: "${@i.id}"
+            masterId: "${nodes.sqldb.master.id}"
 
-  - return:
-      result: success
+    - return:
+        result: success
 
 actions:
 
@@ -67,7 +83,6 @@ actions:
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
         bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
-
 
   setupUser:
     cmd[${this.id}]: |-
@@ -140,4 +155,19 @@ actions:
       nodeGroup: sqldb
       data:
         scalingMode: STATEFUL
-  
+
+  reconfigureSlave:
+    cmd[${this.id}]: |-
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+
+  importGlobalsFromNodeGroup:
+    - script: |
+        var resp = api.env.control.GetNodeGroups("${env.name}", session);
+        if (resp.result != 0) return resp;
+        var groups = resp.object, globals;
+        for (var i = 0, n = groups.length; i < n; i++)
+          if (groups[i].name == "${this}" && groups[i].globals) {
+            globals = new org.yaml.snakeyaml.Yaml().load(groups[i].globals);
+            break;
+          }
+        return { result: 0, onAfterReturn: { setGlobals: globals } };
