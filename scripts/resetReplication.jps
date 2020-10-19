@@ -19,5 +19,5 @@ onInstall:
 actions:
   reconfigureSlave:
     cmd[${this.id}]: |-
-      mysqlreplicate --master=${this.db_user}:${this.db_pass}@${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
  
