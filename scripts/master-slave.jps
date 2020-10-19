@@ -56,8 +56,7 @@ onInstall:
             repl_user: "${globals.REPLICATION_USER}"
             repl_pass: "${globals.REPLICATION_PASS}"
   - else:
-    - env.control.ApplyNodeGroupData:
-      nodeGroup: sqldb
+    - env.control.ApplyNodeGroupData [sqldb]:
         data: 
           globals: "${globals.toJSON()}"
     - setScalingMode
