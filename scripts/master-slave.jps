@@ -56,6 +56,9 @@ onInstall:
             repl_user: "${globals.REPLICATION_USER}"
             repl_pass: "${globals.REPLICATION_PASS}"
   - else:
+    - env.control.ApplyNodeGroupData [sqldb]:
+        data: 
+          globals: "${globals.toJSON()}" 
     - setScalingMode
     - setupMaster:
         id: "${nodes.sqldb.master.id}"
@@ -149,7 +152,7 @@ actions:
     
   setScalingMode:
     - api: jelastic.env.control.ApplyNodeGroupData
-      nodeGroup: ${settings.nodeGroup}
+      nodeGroup: sqldb
       data:
         scalingMode: STATEFUL
 
