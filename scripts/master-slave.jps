@@ -23,7 +23,7 @@ onBeforeCloneNodes[sqldb]:
         slaveId: ${this.slaveId}
   - stopEvent:
       type: success
-      message: New slaves via cloning is completed
+      message: New slaves have been successfully added
 
 globals:
   PATH: "${settings.path}"
