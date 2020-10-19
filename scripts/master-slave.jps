@@ -149,7 +149,7 @@ actions:
     
   setScalingMode:
     - api: jelastic.env.control.ApplyNodeGroupData
-      nodeGroup: sqldb
+      nodeGroup: ${settings.nodeGroup}
       data:
         scalingMode: STATEFUL
 
