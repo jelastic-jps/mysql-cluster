@@ -101,7 +101,7 @@ actions:
 
         - if ('${settings.scheme}'.toLowerCase() == 'master'):
           - install-jps:
-              jps: "${globals.scripts}/master-slave.jps?_r=${fn.random}"
+              jps: "${globals.scripts}/master-master.jps?_r=${fn.random}"
           - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-master-slave.jps?_r=${fn.random}"
