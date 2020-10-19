@@ -88,16 +88,8 @@ actions:
   setupCluster:
   
     - if (!nodes.proxy && '${settings.is_proxysql}' == 'true'): addProxyNodes
-    
-    - if (nodes.sqldb.length == 2):
-        - install-jps:
-            jps: "${globals.scripts}/master-slave.jps?_r=${fn.random}"
-        - if ('${settings.is_proxysql}' == 'true'):    
-          - install-jps:
-              jps: "${globals.scripts}/proxy-master-slave.jps?_r=${fn.random}"
-    
-    - if (nodes.sqldb.length > 2):
-      - if (/mysql/.test("${nodes.sqldb.nodeType}")):
+        
+    - if (/mysql/.test("${nodes.sqldb.nodeType}")):
 
         - if ('${settings.scheme}'.toLowerCase() == 'master'):
           - install-jps:
@@ -113,7 +105,7 @@ actions:
             - install-jps:
                 jps: "${globals.scripts}/proxy-master-slave.jps?_r=${fn.random}"
 
-      - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
+    - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
         - if ('${settings.scheme}'.toLowerCase() == 'galera'):  
           - install-jps:
               jps: "${globals.scripts}/galera.jps?_r=${fn.random}"
@@ -121,7 +113,14 @@ actions:
             - install-jps:
                 jps: "${globals.scripts}/proxy-galera.jps?_r=${fn.random}"
       
-        - if ('${settings.scheme}'.toLowerCase() != 'galera'):  
+        - if ('${settings.scheme}'.toLowerCase() == 'master'):
+          - install-jps:
+              jps: "${globals.scripts}/master-master.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-master-slave.jps?_r=${fn.random}"
+        
+        - if ('${settings.scheme}'.toLowerCase() == 'slave'):
           - install-jps:
               jps: "${globals.scripts}/master-slave.jps?_r=${fn.random}"
           - if ('${settings.is_proxysql}' == 'true'):    
