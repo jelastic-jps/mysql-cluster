@@ -51,4 +51,4 @@ actions:
         repl_user: repl-${fn.random}
         repl_pass: ${fn.password(20)}
         is_proxysql: ${this.is_proxysql}
-        nodeGroup: sqldb
+        
