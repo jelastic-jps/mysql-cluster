@@ -25,6 +25,10 @@ onBeforeCloneNodes[sqldb]:
       type: success
       message: New slaves have been successfully added
 
+onAfterClone:
+  install: ${globals.PATH}/scripts/resetReplication.jps?_r=${fn.random}
+  envName: ${event.response.env.envName}
+        
 globals:
   PATH: "${settings.path}"
   DB_USER: "${settings.db_user}"
