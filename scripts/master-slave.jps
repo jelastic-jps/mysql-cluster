@@ -15,7 +15,7 @@ onBeforeCloneNodes[sqldb]:
       slaveId: ${response.slaveId}
   - stopEvent:
       type: warning
-      message: testttttttttttt
+      message: New slave via cloning is completed
 
 globals:
   PATH: "${settings.path}"
@@ -108,7 +108,16 @@ actions:
       nodeGroup: sqldb
       nodeid: ${this.slaveId}
       nodeType: ${nodes.sqldb.nodeType}
+    - set:
+        newSlaveId: ${response.node.id}
+    - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
     - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
+    - cmd[${this.newSlaveId}]: |-
+        rm -f /var/lib/mysql/auto.cnf;
+        sed -i "s/server-id.*/server-id = ${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+        sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+        sudo /etc/init.d/mysql restart;
+    - setNodeDisplayName[${this.newSlaveId}]: Slave
     
   setScalingMode:
     - api: jelastic.env.control.ApplyNodeGroupData
