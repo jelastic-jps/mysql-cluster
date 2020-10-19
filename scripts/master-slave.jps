@@ -11,8 +11,10 @@ nodeGroupAlias:
 
 onBeforeCloneNodes[sqldb]:
   - getSlaveId
-  - cloneSlave:
+  - setGlobals:
       slaveId: ${response.slaveId}
+  - cloneSlave:
+      slaveId: ${globals.slaveId}
   - stopEvent:
       type: warning
       message: New slave via cloning is completed
