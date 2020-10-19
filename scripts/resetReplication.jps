@@ -4,6 +4,7 @@ name: Reconfiguring Asynchronous Database Cluster
 description: 'Reconfigure DB Auto Clustering: 1 x Master + N x Slave'
 
 onInstall:
+  - importGlobalsFromNodeGroup: sqldb
   - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
     - log: "--> Reconfigure Slave Nodes to new master"
     - forEach(i:nodes.sqldb):
@@ -21,3 +22,15 @@ actions:
     cmd[${this.id}]: |-
       mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
  
+  importGlobalsFromNodeGroup:
+    - script: |
+        var resp = api.env.control.GetNodeGroups("${env.name}", session);
+        if (resp.result != 0) return resp;
+        var groups = resp.object, globals;
+        for (var i = 0, n = groups.length; i < n; i++)
+          if (groups[i].name == "${this}" && groups[i].globals) {
+            globals = new org.yaml.snakeyaml.Yaml().load(groups[i].globals);
+            break;
+          }
+        return { result: 0, onAfterReturn: { setGlobals: globals } };
+
