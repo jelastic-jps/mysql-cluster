@@ -1,0 +1,168 @@
+type: update
+id: mysql-asynchronous-cluster
+name: Asynchronous Database Cluster
+description: 'DB Auto Clustering: 1 x Master + N x Slave'
+
+success:
+  text: "../texts/phpmyadmin-credentials.md"
+
+nodeGroupAlias:
+  "${targetNodes.nodeGroup}": sqldb
+
+globals:
+  PATH: "${settings.path}"
+  DB_USER: "${settings.db_user}"
+  DB_PASS: "${settings.db_pass}"
+  SCHEME: "${settings.scheme}"
+  REPLICATION_USER: repl-${fn.random}
+  REPLICATION_PASS: "${fn.password(20)}"
+  CUSTOM_CONF: "${settings.custom_conf}"
+  STACK: ""
+
+onAfterScaleOut[sqldb]:
+  forEach(n:event.response.nodes):
+    - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
+        addDistSlave:
+          id: "${@n.id}"
+    - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
+        addSlave:
+          id: "${@n.id}"
+          masterId: "${nodes.sqldb.master.id}"
+
+onInstall:
+  - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
+    - log: "--> Setup Master Node"
+    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
+          - cmd[${nodes.sqldb.master.id}]: |-
+              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+              sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
+          - setupMaster:
+              id: "${nodes.sqldb.master.id}"
+
+          - cmd[${nodes.sqldb[1].id}]: |-
+              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+              sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
+          - setupMaster:
+              id: "${nodes.sqldb[1].id}"
+
+    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
+          - cmd[${nodes.sqldb.master.id}]: |-
+              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+              sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
+          - setupMaster:
+              id: "${nodes.sqldb.master.id}"
+          - cmd[${nodes.sqldb.first.id}]: |-
+              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+              sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
+          - setupMaster:
+              id: "${nodes.sqldb.first.id}"
+
+    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
+        - setupReplication:
+            id: "${nodes.sqldb.master.id}"
+            masterId: "${nodes.sqldb[1].id}"
+        - setupReplication:
+            id: "${nodes.sqldb[1].id}"
+            masterId: "${nodes.sqldb.master.id}"
+
+    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
+        - setupReplication:
+            id: "${nodes.sqldb.master.id}"
+            masterId: "${nodes.sqldb.first.id}"
+        - setupReplication:
+            id: "${nodes.sqldb.first.id}"
+            masterId: "${nodes.sqldb.master.id}"
+          
+    - forEach(n:nodes.sqldb):
+         - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb[1].id}'):
+              addDistSlave:
+                id: "${@n.id}" 
+         - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb.first.id}'):
+              addDistSlave:
+                id: "${@n.id}" 
+
+  - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
+    - log: "--> Setup Slave Node"
+    - setupMaster:
+        id: "${nodes.sqldb.master.id}"
+    - forEach(i:nodes.sqldb):
+        if (!${@i.ismaster}):
+          addSlave:
+            id: "${@i.id}"
+            masterId: "${nodes.sqldb.master.id}"
+
+
+  - return:
+      result: success
+actions:
+
+  setupReplication:
+    - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
+        cmd[${this.id}]: |-
+          yum install https://downloads.mysql.com/archives/get/p/29/file/mysql-connector-python-8.0.11-1.el7.x86_64.rpm -y &>> /var/log/run.log
+          yum install https://downloads.mysql.com/archives/get/p/30/file/mysql-utilities-1.6.5-1.el7.noarch.rpm -y &>> /var/log/run.log
+          ln -s /usr/lib/python2.7/site-packages/mysql/utilities /usr/lib64/python2.7/site-packages/mysql/utilities
+        user: root
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
+        bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
+
+
+  setupUser:
+    cmd[${this.id}]: |-
+      wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
+      bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
+    user: root
+
+  setupMaster:
+    - addCustomConfig:
+        id: "${this.id}"
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
+        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
+    - setupUser:
+        id: "${this.id}"
+    - setNodeDisplayName[${this.id}]: Master
+
+  setupSlave:
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
+        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf
+    - setNodeDisplayName[${this.id}]: Slave
+  
+  addSlave:
+    - addCustomConfig:
+        id: "${this.id}"
+    - setupSlave:
+        id: "${this.id}"
+    - setupUser:
+        id: "${this.id}"
+    - setupReplication:
+        id: "${this.id}"
+        masterId: "${this.masterId}"
+
+  addDistSlave:
+    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
+        - if (/^[0-9]*[02468]$/.test("${this.id}")):
+            addSlave:
+              id: "${this.id}"
+              masterId: "${nodes.sqldb.master.id}"
+        - if (/^[0-9]*[13579]$/.test("${this.id}")):
+            addSlave:
+              id: "${this.id}"
+              masterId: "${nodes.sqldb[1].id}"
+
+    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
+        - if (/^[0-9]*[02468]$/.test("${this.id}")):
+            addSlave:
+              id: "${this.id}"
+              masterId: "${nodes.sqldb.master.id}"
+        - if (/^[0-9]*[13579]$/.test("${this.id}")):
+            addSlave:
+              id: "${this.id}"
+              masterId: "${nodes.sqldb.first.id}"
+
+  addCustomConfig:
+    if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
+      cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
