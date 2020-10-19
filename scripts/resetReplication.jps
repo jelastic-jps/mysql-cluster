@@ -1,0 +1,23 @@
+type: update
+id: mysql-reset-asynchronous-cluster
+name: Reconfiguring Asynchronous Database Cluster
+description: 'Reconfigure DB Auto Clustering: 1 x Master + N x Slave'
+
+onInstall:
+  - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
+    - log: "--> Reconfigure Slave Nodes to new master"
+    - forEach(i:nodes.sqldb):
+        if (!${@i.ismaster}):
+          reconfigureSlave:
+            id: "${@i.id}"
+            master_id: "${nodes.sqldb.master.id}"
+            db_user: "${globals.DB_USER}"
+            db_pass: "${globals.DB_PASS}"
+            repl_user: "${globals.REPLICATION_USER}"
+            repl_pass: "${globals.REPLICATION_PASS}"
+
+actions:
+  reconfigureSlave:
+    cmd[${this.id}]: |-
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+ 
