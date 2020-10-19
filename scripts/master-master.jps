@@ -21,16 +21,10 @@ globals:
 
 onAfterScaleOut[sqldb]:
   forEach(n:event.response.nodes):
-    - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
-        addDistSlave:
-          id: "${@n.id}"
-    - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
-        addSlave:
-          id: "${@n.id}"
-          masterId: "${nodes.sqldb.master.id}"
+    addDistSlave:
+      id: "${@n.id}"
 
 onInstall:
-  - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - log: "--> Setup Master Node"
     - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
           - cmd[${nodes.sqldb.master.id}]: |-
@@ -80,17 +74,6 @@ onInstall:
          - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb.first.id}'):
               addDistSlave:
                 id: "${@n.id}" 
-
-  - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
-    - log: "--> Setup Slave Node"
-    - setupMaster:
-        id: "${nodes.sqldb.master.id}"
-    - forEach(i:nodes.sqldb):
-        if (!${@i.ismaster}):
-          addSlave:
-            id: "${@i.id}"
-            masterId: "${nodes.sqldb.master.id}"
-
 
   - return:
       result: success
