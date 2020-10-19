@@ -6,8 +6,9 @@ description: 'DB Auto Clustering: 1 x Master + N x Slave'
 success:
   text: "../texts/phpmyadmin-credentials.md"
 
+targetNodes: none
 nodeGroupAlias:
-  "${targetNodes.nodeGroup}": sqldb
+  ${settings.nodeGroup}: sqldb
 
 onBeforeCloneNodes[sqldb]:
   - getSlaveId
