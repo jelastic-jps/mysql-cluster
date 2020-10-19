@@ -56,6 +56,7 @@ actions:
         db_pass: "${settings.db_pass}"
         scheme: "${settings.scheme}"
         path: "${globals.path}"
+        nodeGroup: sqldb
 
   addProxyNodes:
     - addNodes:
