@@ -6,8 +6,9 @@ description: 'DB Auto Clustering: 1 x Master + N x Slave'
 success:
   text: "../texts/phpmyadmin-credentials.md"
 
+targetNodes: none
 nodeGroupAlias:
-  "${targetNodes.nodeGroup}": sqldb
+  ${settings.nodeGroup}: sqldb
 
 globals:
   PATH: "${settings.path}"
@@ -25,60 +26,54 @@ onAfterScaleOut[sqldb]:
       id: "${@n.id}"
 
 onInstall:
-    - log: "--> Setup Master Node"
-    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
-          - cmd[${nodes.sqldb.master.id}]: |-
-              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
-          - setupMaster:
-              id: "${nodes.sqldb.master.id}"
+  - setMasterIDs
+  - setupMasters
+  - forEach(n:nodes.sqldb):
+    - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
+        - addSlave:
+            id: "${this.id}"
+            masterId: "${globals.master_for_new_slave}"
+        - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
+            setGlobals:
+              master_for_new_slave: ${globals.master2_id}
+          else:
+            setGlobals:
+              master_for_new_slave: ${globals.master1_id}
 
-          - cmd[${nodes.sqldb[1].id}]: |-
-              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
-          - setupMaster:
-              id: "${nodes.sqldb[1].id}"
-
-    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
-          - cmd[${nodes.sqldb.master.id}]: |-
-              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
-          - setupMaster:
-              id: "${nodes.sqldb.master.id}"
-          - cmd[${nodes.sqldb.first.id}]: |-
-              wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-              sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
-          - setupMaster:
-              id: "${nodes.sqldb.first.id}"
-
-    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
-        - setupReplication:
-            id: "${nodes.sqldb.master.id}"
-            masterId: "${nodes.sqldb[1].id}"
-        - setupReplication:
-            id: "${nodes.sqldb[1].id}"
-            masterId: "${nodes.sqldb.master.id}"
-
-    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
-        - setupReplication:
-            id: "${nodes.sqldb.master.id}"
-            masterId: "${nodes.sqldb.first.id}"
-        - setupReplication:
-            id: "${nodes.sqldb.first.id}"
-            masterId: "${nodes.sqldb.master.id}"
-          
-    - forEach(n:nodes.sqldb):
-         - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb[1].id}'):
-              addDistSlave:
-                id: "${@n.id}" 
-         - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}' && '${@n.id}' != '${nodes.sqldb.master.id}' && '${@n.id}' != '${nodes.sqldb.first.id}'):
-              addDistSlave:
-                id: "${@n.id}" 
-
-    - return:
-        result: success
 actions:
 
+  setMasterIDs:
+    - log: "--> Setup Master Node"
+    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
+        setGlobals:
+          master1_id: ${nodes.sqldb.master.id}
+          master2_id: ${nodes.sqldb[1].id}
+      else:
+        setGlobals:
+          master1_id: ${nodes.sqldb.master.id}
+          master2_id: ${nodes.sqldb.first.id}
+    - setGlobals:
+        node_for_clone_to_slave: ${globals.master2_id}
+        master_for_new_slave: ${globals.master1_id}
+          
+  setupMasters:
+    - cmd[${globals.master1_id}]: |-
+        wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+        sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
+    - setupMaster:
+        id: "${globals.master1_id}"
+    - cmd[${globals.master2_id}]: |-
+        wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+        sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
+    - setupMaster:
+        id: "${globals.master2_id}"
+    - setupReplication:
+        id: "${globals.master1_id}"
+        masterId: "${globals.master2_id}"
+    - setupReplication:
+        id: "${globals.master2_id}"
+        masterId: "${globals.master1_id}"
+    
   setupReplication:
     - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
         cmd[${this.id}]: |-
@@ -89,7 +84,6 @@ actions:
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
         bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
-
 
   setupUser:
     cmd[${this.id}]: |-
@@ -124,27 +118,6 @@ actions:
     - setupReplication:
         id: "${this.id}"
         masterId: "${this.masterId}"
-
-  addDistSlave:
-    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
-        - if (/^[0-9]*[02468]$/.test("${this.id}")):
-            addSlave:
-              id: "${this.id}"
-              masterId: "${nodes.sqldb.master.id}"
-        - if (/^[0-9]*[13579]$/.test("${this.id}")):
-            addSlave:
-              id: "${this.id}"
-              masterId: "${nodes.sqldb[1].id}"
-
-    - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
-        - if (/^[0-9]*[02468]$/.test("${this.id}")):
-            addSlave:
-              id: "${this.id}"
-              masterId: "${nodes.sqldb.master.id}"
-        - if (/^[0-9]*[13579]$/.test("${this.id}")):
-            addSlave:
-              id: "${this.id}"
-              masterId: "${nodes.sqldb.first.id}"
 
   addCustomConfig:
     if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
