@@ -163,7 +163,7 @@ actions:
 
   reconfigureSlave:
     cmd[${this.id}]: |-
-      sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
       sudo /etc/init.d/mysql restart;
       mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass};
 
