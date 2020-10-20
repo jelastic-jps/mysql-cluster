@@ -42,7 +42,7 @@ onAfterScaleIn[sqldb]:
     cmd[proxy]: MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin -e "DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';"
 
 onAfterClone:
-  install: ${globals.PATH}/scripts/proxy-master-slave?_r=${fn.random}
+  install: ${globals.PATH}/scripts/proxy-master-slave.jps?_r=${fn.random}
   envName: ${event.response.env.envName}
   nodeGroup: sqldb
   settings:
