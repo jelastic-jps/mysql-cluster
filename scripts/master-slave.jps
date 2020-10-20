@@ -49,7 +49,7 @@ onInstall:
     - forEach(i:nodes.sqldb):
       - if (${@i.ismaster}):
           cmd[${@i.id}]: |-
-            sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf;
+            sed -i "s/report_host.*/report_host = node${@i.id}/" /etc/mysql/conf.d/master.cnf;
             sudo /etc/init.d/mysql restart;
       - else:
           reconfigureSlave:
