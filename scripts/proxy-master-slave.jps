@@ -64,9 +64,9 @@ onInstall:
         MAX_REPL_LAG: 0
     - getMasters
     - addMaster:
-        id: "${nodes.master1_id}"
+        id: "${globals.master1_id}"
     - addMaster:
-        id: "${nodes.master2_id}"
+        id: "${globals.master2_id}"
     - forEach(k:nodes.sqldb):
       - if (('${@k.id}' != '${globals.master1_id}') && ('${@k.id}' != '${globals.master2_id}')):
           addSlave:
