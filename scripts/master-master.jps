@@ -236,7 +236,7 @@ actions:
     - cmd[${this.newSlaveId}]: |-
         rm -f /var/lib/mysql/auto.cnf;
         rm -f /etc/mysql/conf.d/master.cnf;
-        sed -i "s/report_host.*/report_host = node${@i.id}/" /etc/mysql/conf.d/slave.cnf;
+        sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
         sudo /etc/init.d/mysql restart;
     - setNodeDisplayName[${this.newSlaveId}]: Slave
     
