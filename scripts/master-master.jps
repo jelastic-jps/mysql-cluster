@@ -31,32 +31,33 @@ onBeforeCloneNodes[sqldb]:
     - if ('${globals.node_for_clone_to_slave}' == '${globals.master1_id}'):
         setGlobals:
           node_for_clone_to_slave: ${globals.master2_id}
-      else:
+    - else:
         setGlobals:
           node_for_clone_to_slave: ${globals.master1_id}
-
   - stopEvent:
       type: success
       message: New slaves have been successfully added
 
+onAfterClone:
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    envName: ${event.response.env.envName}    
+    settings: 
+      nodeGroup: ${settings.nodeGroup}      
+      clone: true
+
 onInstall:
-  - setMasterIDs
-  - setupMasters
-  - forEach(n:nodes.sqldb):
-    - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
-        - addSlave:
-            id: "${@n.id}"
-            masterId: "${globals.master_for_new_slave}"
-        - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
-            setGlobals:
-              master_for_new_slave: ${globals.master2_id}
-          else:
-            setGlobals:
-              master_for_new_slave: ${globals.master1_id}
-  - env.control.ApplyNodeGroupData [sqldb]:
-      data: 
-        globals: "${globals.toJSON()}" 
-  - setScalingMode
+  - if (${settings.clone:false}):
+    - importGlobalsFromNodeGroup: sqldb
+    - getMasters
+    - reconfigureMasters
+    - reconfigureSlaves
+  - else:
+    - setMasterIDs
+    - setupMasters
+    - addSlaves
+    - exportsGlobalsToNodeGroup
+    - setScalingMode
 
 actions:
 
@@ -73,7 +74,25 @@ actions:
     - setGlobals:
         node_for_clone_to_slave: ${globals.master2_id}
         master_for_new_slave: ${globals.master1_id}
-          
+
+  getMasters:
+    - setGlobals:
+        master1_id: "NULL"
+        master2_id: "NULL"
+    - forEach(n:nodes.sqldb):
+        - cmd[${@n.id}]: |-
+            [ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";
+        - if ('${response.out}' == 'YES'):
+          - if ('${globals.master1_id}' == 'NULL'):
+              setGlobals:
+                master1_id: ${@n.id}
+          - else: 
+              setGlobals:
+                master2_id: ${@n.id}
+    - setGlobals:
+        node_for_clone_to_slave: ${globals.master2_id}
+        master_for_new_slave: ${globals.master1_id}
+
   setupMasters:
     - cmd[${globals.master1_id}]: |-
         wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
@@ -137,6 +156,58 @@ actions:
         id: "${this.id}"
         masterId: "${this.masterId}"
 
+  addSlaves:
+    - forEach(n:nodes.sqldb):
+      - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
+        - addSlave:
+            id: "${@n.id}"
+            masterId: "${globals.master_for_new_slave}"
+        - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
+            setGlobals:
+              master_for_new_slave: ${globals.master2_id}
+        - else:
+            setGlobals:
+              master_for_new_slave: ${globals.master1_id}
+
+  reconfigureSlave:
+    cmd[${this.id}]: |-
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+
+  reconfigureMasters:
+    - reconfigureSlave:
+        id: "${globals.master1_id}"
+        master_id: "${globals.master2_id}"
+        db_user: "${globals.DB_USER}"
+        db_pass: "${globals.DB_PASS}"
+        repl_user: "${globals.REPLICATION_USER}"
+        repl_pass: "${globals.REPLICATION_PASS}"
+
+    - reconfigureSlave:
+        id: "${globals.master2_id}"
+        master_id: "${globals.master1_id}"
+        db_user: "${globals.DB_USER}"
+        db_pass: "${globals.DB_PASS}"
+        repl_user: "${globals.REPLICATION_USER}"
+        repl_pass: "${globals.REPLICATION_PASS}"
+
+  reconfigureSlaves:
+    - forEach(n:nodes.sqldb):
+      - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
+        - reconfigureSlave:
+            id: "${@n.id}"
+            master_id: "${globals.master_for_new_slave}"
+            db_user: "${globals.DB_USER}"
+            db_pass: "${globals.DB_PASS}"
+            repl_user: "${globals.REPLICATION_USER}"
+            repl_pass: "${globals.REPLICATION_PASS}"
+
+        - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
+            setGlobals:
+              master_for_new_slave: ${globals.master2_id}
+        - else:
+            setGlobals:
+              master_for_new_slave: ${globals.master1_id}
+
   addCustomConfig:
     if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
       cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
@@ -165,10 +236,6 @@ actions:
       data:
         scalingMode: STATEFUL
 
-  reconfigureSlave:
-    cmd[${this.id}]: |-
-      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
-
   importGlobalsFromNodeGroup:
     - script: |
         var resp = api.env.control.GetNodeGroups("${env.name}", session);
@@ -180,4 +247,9 @@ actions:
             break;
           }
         return { result: 0, onAfterReturn: { setGlobals: globals } };
-        
+
+  exportsGlobalsToNodeGroup:
+    - env.control.ApplyNodeGroupData [sqldb]:
+        data: 
+          globals: "${globals.toJSON()}" 
+  
