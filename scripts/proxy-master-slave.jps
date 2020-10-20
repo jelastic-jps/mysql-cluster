@@ -3,8 +3,11 @@ id: mysql-proxy-asynchronous-cluster
 name: Asynchronous Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 success: "../texts/proxy-entrypoint.md"
-nodeGroupAlias: 
-  "${targetNodes.nodeGroup}": sqldb
+
+targetNodes: none
+nodeGroupAlias:
+  ${settings.nodeGroup}: sqldb
+
 globals:
   PATH: "${settings.path}"
   DB_USER: "${settings.db_user}"
@@ -15,7 +18,6 @@ globals:
   ORCH_PASS: "${fn.password(10)}"
   MAX_REPL_LAG: 20
   
-
 onBeforeRemoveNode[proxy]:
   stopEvent:
     type: warning
@@ -28,8 +30,6 @@ onBeforeAddNode[proxy]:
 
 onAfterScaleOut[sqldb]:
   forEach(event.response.nodes):
-  - addMonitorUser:
-      filter: "${@i.id}"
   - addSlave:
       id: "${@i.id}"
 
@@ -42,59 +42,33 @@ onAfterScaleIn[sqldb]:
   forEach(event.response.nodes):
     cmd[proxy]: MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin -e "DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';"
 
+onAfterClone:
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+    envName: ${event.response.env.envName}
+    settings:
+      scheme: ${globals.SCHEME}
+      db_user: "${globals.DB_USER}"
+      db_pass: "${globals.DB_PASS}"
+      nodeGroup: ${settings.nodeGroup}
 
 onInstall:
-  - log: Orchestrator configuration
-  - cmd [proxy]: |-
-      mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
-      mysql -h 127.0.0.1 -P3360 -uroot -e "CREATE DATABASE IF NOT EXISTS orchestrator;"
-      mysql -h 127.0.0.1 -P3360 -uroot -e "GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';"
-      wget ${globals.PATH}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
-      sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json
-      sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json
-      sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json
-      sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
-      sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json
-      sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
-      systemctl restart orchestrator
-    user: root
-
-  - log: ProxySQL configuration
-  - cmd [proxy]: |-
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) 
-        VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 10, 1000);"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${nodes.sqldb.version}' WHERE variable_name='mysql-server_version';"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;"
-
+  - resetProxyNodes
+  - setupOrchestrator
+  - setupProxySQL
   - forEach(nodes.sqldb):
       addMonitorUser:
         filter: "${@i.id}"
 
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
-      - setGlobals:
-          MAX_REPL_LAG: 0
-
-      - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
-        - addMaster:
-            id: "${nodes.sqldb.master.id}"
-        - addMaster:
-            id: "${nodes.sqldb[1].id}"
-
-      - if ('${nodes.sqldb.master.id}' != '${nodes.sqldb.first.id}'):
-        - addMaster:
-            id: "${nodes.sqldb.master.id}"
-        - addMaster:
-            id: "${nodes.sqldb.first.id}"
-
-      - forEach(k:nodes.sqldb):
+    - setGlobals:
+        MAX_REPL_LAG: 0
+    - getMasters
+    - addMaster:
+        id: "${nodes.master1_id}"
+    - addMaster:
+        id: "${nodes.master2_id}"
+    - forEach(k:nodes.sqldb):
+      - if (('${@k.id}' != '${globals.master1_id}') && ('${@k.id}' != '${globals.master2_id}')):
           addSlave:
             id: "${@k.id}"
 
@@ -107,6 +81,38 @@ onInstall:
             id: "${@l.id}"
 
 actions:
+  setupOrchestrator:
+    - log: Orchestrator configuration
+    - cmd [proxy]: |-
+        mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
+        mysql -h 127.0.0.1 -P3360 -uroot -e "CREATE DATABASE IF NOT EXISTS orchestrator;"
+        mysql -h 127.0.0.1 -P3360 -uroot -e "GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';"
+        wget ${globals.PATH}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
+        sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json
+        sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json
+        sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json
+        sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
+        sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json
+        sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
+        systemctl restart orchestrator
+      user: root
+
+  setupProxySQL:
+    - log: ProxySQL configuration
+    - cmd [proxy]: |-
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) 
+          VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 10, 1000);"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${nodes.sqldb.version}' WHERE variable_name='mysql-server_version';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;"
+
   addMonitorUser:
     cmd[${this.filter}]: |-
       MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';"
@@ -132,3 +138,25 @@ actions:
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin  -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
+      
+  resetProxyNodes:
+    cmd[proxy]: |-
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "delete from mysql_replication_hostgroups; delete from mysql_users; delete from scheduler; delete from mysql_servers;"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
+      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
+      mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
+
+  getMasters:
+    - setGlobals:
+        master1_id: "NULL"
+        master2_id: "NULL"
+    - forEach(n:nodes.sqldb):
+        - cmd[${@n.id}]: |-
+            [ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";
+        - if ('${response.out}' == 'YES'):
+          - if ('${globals.master1_id}' == 'NULL'):
+              setGlobals:
+                master1_id: ${@n.id}
+          - else: 
+              setGlobals:
+                master2_id: ${@n.id}
