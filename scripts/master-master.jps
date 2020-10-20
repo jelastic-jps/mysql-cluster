@@ -151,10 +151,11 @@ actions:
         newSlaveId: ${response.node.id}
     - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
     - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
+    - setupSlave:
+        id: ${this.newSlaveId}
     - cmd[${this.newSlaveId}]: |-
         rm -f /var/lib/mysql/auto.cnf;
-        sed -i "s/server-id.*/server-id = ${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
-        sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+        rm -f /etc/mysql/conf.d/master.cnf;
         sudo /etc/init.d/mysql restart;
     - setNodeDisplayName[${this.newSlaveId}]: Slave
     
@@ -179,3 +180,4 @@ actions:
             break;
           }
         return { result: 0, onAfterReturn: { setGlobals: globals } };
+        
