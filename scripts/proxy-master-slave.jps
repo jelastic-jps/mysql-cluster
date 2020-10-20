@@ -100,7 +100,7 @@ actions:
   setupProxySQL:
     - log: ProxySQL configuration
     - cmd [proxy]: |-
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_replication_hostgroups VALUES (10,11,'Group setup');"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_replication_hostgroups VALUES (10,11,'read_only','Group setup');"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) 
           VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 10, 1000);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);"
