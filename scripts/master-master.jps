@@ -18,12 +18,26 @@ globals:
   REPLICATION_USER: repl-${fn.random}
   REPLICATION_PASS: "${fn.password(20)}"
   CUSTOM_CONF: "${settings.custom_conf}"
-  STACK: ""
 
-onAfterScaleOut[sqldb]:
-  forEach(n:event.response.nodes):
-    addDistSlave:
-      id: "${@n.id}"
+onBeforeCloneNodes[sqldb]:
+  - script: |
+      var nodeCount = [];
+      for (var i = 0, n = ${event.params.count}; i < n; i ++) 
+        nodeCount.push(i);
+      return { result : 0, nodeCount: nodeCount}
+  - forEach(response.nodeCount):
+    - cloneSlave:
+        slaveId: ${globals.node_for_clone_to_slave}
+    - if ('${globals.node_for_clone_to_slave}' == '${globals.master1_id}'):
+        setGlobals:
+          node_for_clone_to_slave: ${globals.master2_id}
+      else:
+        setGlobals:
+          master_for_new_slave: ${globals.master1_id}
+
+  - stopEvent:
+      type: success
+      message: New slaves have been successfully added
 
 onInstall:
   - setMasterIDs
@@ -39,6 +53,10 @@ onInstall:
           else:
             setGlobals:
               master_for_new_slave: ${globals.master1_id}
+  - env.control.ApplyNodeGroupData [sqldb]:
+      data: 
+        globals: "${globals.toJSON()}" 
+  - setScalingMode
 
 actions:
 
@@ -122,3 +140,42 @@ actions:
   addCustomConfig:
     if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
       cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
+      
+  cloneSlave:
+    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql stop
+    - api: environment.control.AddNode
+      nodeGroup: sqldb
+      nodeid: ${this.slaveId}
+      nodeType: ${nodes.sqldb.nodeType}
+    - set:
+        newSlaveId: ${response.node.id}
+    - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
+    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
+    - cmd[${this.newSlaveId}]: |-
+        rm -f /var/lib/mysql/auto.cnf;
+        sed -i "s/server-id.*/server-id = ${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+        sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+        sudo /etc/init.d/mysql restart;
+    - setNodeDisplayName[${this.newSlaveId}]: Slave
+    
+  setScalingMode:
+    - api: jelastic.env.control.ApplyNodeGroupData
+      nodeGroup: sqldb
+      data:
+        scalingMode: STATEFUL
+
+  reconfigureSlave:
+    cmd[${this.id}]: |-
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+
+  importGlobalsFromNodeGroup:
+    - script: |
+        var resp = api.env.control.GetNodeGroups("${env.name}", session);
+        if (resp.result != 0) return resp;
+        var groups = resp.object, globals;
+        for (var i = 0, n = groups.length; i < n; i++)
+          if (groups[i].name == "${this}" && groups[i].globals) {
+            globals = new org.yaml.snakeyaml.Yaml().load(groups[i].globals);
+            break;
+          }
+        return { result: 0, onAfterReturn: { setGlobals: globals } };
