@@ -133,6 +133,7 @@ actions:
         id: "${this.id}"
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf; 
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
     - setupUser:
         id: "${this.id}"
@@ -172,9 +173,17 @@ actions:
   reconfigureSlave:
     cmd[${this.id}]: |-
       mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
+      sudo /etc/init.d/mysql restart;
+
+  reconfigureMaster:
+    cmd[${this.id}]: |-
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf;
+      sudo /etc/init.d/mysql restart;
 
   reconfigureMasters:
-    - reconfigureSlave:
+    - reconfigureMaster:
         id: "${globals.master1_id}"
         master_id: "${globals.master2_id}"
         db_user: "${globals.DB_USER}"
@@ -182,7 +191,7 @@ actions:
         repl_user: "${globals.REPLICATION_USER}"
         repl_pass: "${globals.REPLICATION_PASS}"
 
-    - reconfigureSlave:
+    - reconfigureMaster:
         id: "${globals.master2_id}"
         master_id: "${globals.master1_id}"
         db_user: "${globals.DB_USER}"
@@ -227,6 +236,7 @@ actions:
     - cmd[${this.newSlaveId}]: |-
         rm -f /var/lib/mysql/auto.cnf;
         rm -f /etc/mysql/conf.d/master.cnf;
+        sed -i "s/report_host.*/report_host = node${@i.id}/" /etc/mysql/conf.d/slave.cnf;
         sudo /etc/init.d/mysql restart;
     - setNodeDisplayName[${this.newSlaveId}]: Slave
     
