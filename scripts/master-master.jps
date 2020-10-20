@@ -67,7 +67,7 @@ actions:
         setGlobals:
           master1_id: ${nodes.sqldb.master.id}
           master2_id: ${nodes.sqldb[1].id}
-      else:
+    - else:
         setGlobals:
           master1_id: ${nodes.sqldb.master.id}
           master2_id: ${nodes.sqldb.first.id}
