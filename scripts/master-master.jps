@@ -31,7 +31,7 @@ onInstall:
   - forEach(n:nodes.sqldb):
     - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
         - addSlave:
-            id: "${this.id}"
+            id: "${@n.id}"
             masterId: "${globals.master_for_new_slave}"
         - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
             setGlobals:
