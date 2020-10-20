@@ -49,7 +49,6 @@ onAfterClone:
       scheme: ${globals.SCHEME}
       db_user: "${globals.DB_USER}"
       db_pass: "${globals.DB_PASS}"
-      nodeGroup: ${settings.nodeGroup}
 
 onInstall:
   - resetProxyNodes
