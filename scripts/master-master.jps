@@ -33,7 +33,7 @@ onBeforeCloneNodes[sqldb]:
           node_for_clone_to_slave: ${globals.master2_id}
       else:
         setGlobals:
-          master_for_new_slave: ${globals.master1_id}
+          node_for_clone_to_slave: ${globals.master1_id}
 
   - stopEvent:
       type: success
