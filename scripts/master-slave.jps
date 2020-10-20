@@ -47,7 +47,11 @@ onInstall:
   - if (${settings.clone:false}):
     - importGlobalsFromNodeGroup: sqldb
     - forEach(i:nodes.sqldb):
-        if (!${@i.ismaster}):
+      - if (${@i.ismaster}):
+          cmd[${@i.id}]: |-
+            sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf;
+            sudo /etc/init.d/mysql restart;
+      - else:
           reconfigureSlave:
             id: "${@i.id}"
             master_id: "${nodes.sqldb.master.id}"
@@ -96,6 +100,7 @@ actions:
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf
     - setupUser:
         id: "${this.id}"
     - setNodeDisplayName[${this.id}]: Master
@@ -158,7 +163,9 @@ actions:
 
   reconfigureSlave:
     cmd[${this.id}]: |-
-      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+      sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+      sudo /etc/init.d/mysql restart;
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass};
 
   importGlobalsFromNodeGroup:
     - script: |
