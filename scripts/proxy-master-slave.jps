@@ -4,9 +4,8 @@ name: Asynchronous Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 success: "../texts/proxy-entrypoint.md"
 
-targetNodes: none
 nodeGroupAlias:
-  ${settings.nodeGroup}: sqldb
+  "${targetNodes.nodeGroup}": sqldb
 
 globals:
   PATH: "${settings.path}"
@@ -43,12 +42,13 @@ onAfterScaleIn[sqldb]:
     cmd[proxy]: MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin -e "DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';"
 
 onAfterClone:
-  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
-    envName: ${event.response.env.envName}
-    settings:
-      scheme: ${globals.SCHEME}
-      db_user: "${globals.DB_USER}"
-      db_pass: "${globals.DB_PASS}"
+  install: ${globals.PATH}/scripts/proxy-master-slave?_r=${fn.random}
+  envName: ${event.response.env.envName}
+  nodeGroup: sqldb
+  settings:
+    db_user: "${globals.DB_USER}"
+    db_pass: "${globals.DB_PASS}"
+    path: "${globals.PATH}"
 
 onInstall:
   - resetProxyNodes
