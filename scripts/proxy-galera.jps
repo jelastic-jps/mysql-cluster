@@ -40,6 +40,7 @@ onAfterClone:
   settings:
     db_user: "${globals.DB_USER}"
     db_pass: "${globals.DB_PASS}"
+    path: "${globals.PATH}"
 
 onBeforeRemoveNode[proxy]:
   stopEvent:
