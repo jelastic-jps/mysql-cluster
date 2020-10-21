@@ -17,13 +17,6 @@ The package includes Highly Available [*ProxySQL Load Balancer*](http://www.prox
 * *master-slave* - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon master failure. Slaves can be read without impact on master.
 * *master-master* - operates with two master nodes simultaneously, while other instances are configured as slaves.
 
-## MariaDB/MySQL Group Replication (MGR)
-
-[MySQL group replication](https://dev.mysql.com/doc/refman/5.7/en/group-replication.html) provides benefits of the elastic, highly-available and fault-tolerant topology.
-
-* *single-primary group* - a group of replicated servers with an automatic primary election, i.e. only one node accepts the data updates at a time
-* *multi-primary group* - solution allows all servers to accept the updates (all nodes are primaries with the read-write permissions)
-
 ## MariaDB Galera Cluster
 
 [MariaDB Galera Cluster](https://mariadb.com/kb/en/library/what-is-mariadb-galera-cluster/) is a type of multi-master synchronous replication which is performed at a transaction commit time, by broadcasting transaction write set to all cluster nodes for applying with the following benefits:
@@ -51,7 +44,7 @@ Or you can click the **Deploy to Jelastic** button, specify your email address w
 
 ## Installation Process
 
-In the opened confirmation window at Jelastic dashboard, choose MariaDB/MySQL replication type with appropriate cluster topology, state the *Environment* name, optionally, customize its [Display Name](https://docs.jelastic.com/environment-aliases). Then, select the preferable [region](https://docs.jelastic.com/environment-regions) (if several are available) and click on **Install**.
+In the opened confirmation window at Jelastic dashboard, choose MariaDB/MySQL replication type with appropriate cluster topology, state the *Environment* name, optionally, customize its [Display Name](https://docs.jelastic.com/environment-aliases). If required you may exclude ProxySQL layer from the cluster topology before installation, just uncheck it. Keep in mind that you won’t be able to do that later and vice versa if you disable it before installation you will not be able to add the proxy layer afterward.Then, select the preferable [region](https://docs.jelastic.com/environment-regions) (if several are available) and click on **Install**.
 
 <p align="left">
 <img src="images/install.png" width="500">
