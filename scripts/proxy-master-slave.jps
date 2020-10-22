@@ -1,6 +1,6 @@
 jpsType: update
-id: mysql-proxy-asynchronous-cluster
-name: Asynchronous Database Cluster with ProxySQL
+id: mysql-proxy-master-slave-cluster
+name: MySQL/MariaDB Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 success: "../texts/proxy-entrypoint.md"
 
