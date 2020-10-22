@@ -227,6 +227,8 @@ actions:
       nodeGroup: sqldb
       nodeid: ${this.slaveId}
       nodeType: ${nodes.sqldb.nodeType}
+      flexibleCloudlets: ${nodes.sqldb.flexibleCloudlets}
+      fixedCloudlets: ${nodes.sqldb.fixedCloudlets}
     - set:
         newSlaveId: ${response.node.id}
     - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
