@@ -1,6 +1,6 @@
 type: update
 id: mysql-master-slave-replication-cluster
-name: Master-Slave Replication Database Cluster
+name: MySQL/MariaDB Master-Slave Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Master + N x Slave'
 
 success:
