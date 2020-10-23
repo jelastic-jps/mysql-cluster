@@ -163,8 +163,10 @@ actions:
             [ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";
         - if ('${response.out}' == 'YES'):
           - if ('${globals.master1_id}' == 'NULL'):
-              setGlobals:
-                master1_id: ${@n.id}
+              - setGlobals:
+                  master1_id: ${@n.id}
+              - script: 'return { result: 0 }'
           - else: 
-              setGlobals:
-                master2_id: ${@n.id}
+              - setGlobals:
+                  master2_id: ${@n.id}
+              - script: 'return { result: 0 }'
