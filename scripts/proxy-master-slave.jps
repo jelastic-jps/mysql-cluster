@@ -70,7 +70,19 @@ onInstall:
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - setGlobals:
         MAX_REPL_LAG: 0
-    - getMasters
+    - setGlobals:
+        master1_id: "NULL"
+        master2_id: "NULL"
+    - forEach(n:nodes.sqldb):
+        - cmd[${@n.id}]: |-
+            [ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";
+        - if ('${response.out}' == 'YES'):
+          - if ('${globals.master1_id}' == 'NULL'):
+              setGlobals:
+                master1_id: ${@n.id}
+          - else: 
+              setGlobals:
+                master2_id: ${@n.id}
     - addMaster:
         id: "${globals.master1_id}"
     - addMaster:
