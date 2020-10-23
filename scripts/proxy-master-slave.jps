@@ -52,7 +52,6 @@ onAfterClone:
 
 onAfterMigrate:
   install: ${globals.PATH}/scripts/proxy-master-slave.jps?_r=${fn.random}
-  envName: ${event.response.env.envName}
   nodeGroup: sqldb
   settings:
     db_user: "${globals.DB_USER}"
