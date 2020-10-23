@@ -2,8 +2,11 @@
 server-id = 1
 log-bin = mysql-bin
 log-slave-updates
+relay-log = /var/lib/mysql/mysql-relay-bin
+relay-log-index = /var/lib/mysql/mysql-relay-bin.index
 replicate-wild-ignore-table = performance_schema.%
 replicate-wild-ignore-table = information_schema.%
 replicate-wild-ignore-table = mysql.%
 binlog_format = mixed
 read_only = 0
+report_host =

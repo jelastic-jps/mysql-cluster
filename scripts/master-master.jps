@@ -1,0 +1,267 @@
+type: update
+id: mysql-master-master-replication-cluster
+name: MySQL/MariaDB Master-Master Replication Database Cluster
+description: 'DB Auto Clustering: 1 x Master + N x Slave'
+
+success:
+  text: "../texts/phpmyadmin-credentials.md"
+
+targetNodes: none
+nodeGroupAlias:
+  ${settings.nodeGroup}: sqldb
+
+globals:
+  PATH: "${settings.path}"
+  DB_USER: "${settings.db_user}"
+  DB_PASS: "${settings.db_pass}"
+  SCHEME: "${settings.scheme}"
+  REPLICATION_USER: repl-${fn.random}
+  REPLICATION_PASS: "${fn.password(20)}"
+  CUSTOM_CONF: "${settings.custom_conf}"
+
+onBeforeCloneNodes[sqldb]:
+  - script: |
+      var nodeCount = [];
+      for (var i = 0, n = ${event.params.count}; i < n; i ++) 
+        nodeCount.push(i);
+      return { result : 0, nodeCount: nodeCount}
+  - forEach(response.nodeCount):
+    - cloneSlave:
+        slaveId: ${globals.node_for_clone_to_slave}
+    - if ('${globals.node_for_clone_to_slave}' == '${globals.master1_id}'):
+        setGlobals:
+          node_for_clone_to_slave: ${globals.master2_id}
+    - else:
+        setGlobals:
+          node_for_clone_to_slave: ${globals.master1_id}
+  - stopEvent:
+      type: success
+      message: New slaves have been successfully added
+
+onAfterClone:
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    envName: ${event.response.env.envName}    
+    settings: 
+      nodeGroup: ${settings.nodeGroup}      
+      clone: true
+
+onInstall:
+  - if (${settings.clone:false}):
+    - importGlobalsFromNodeGroup: sqldb
+    - getMasters
+    - reconfigureMasters
+    - reconfigureSlaves
+  - else:
+    - setMasterIDs
+    - setupMasters
+    - addSlaves
+    - exportsGlobalsToNodeGroup
+    - setScalingMode
+
+actions:
+
+  setMasterIDs:
+    - log: "--> Setup Master Node"
+    - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
+        setGlobals:
+          master1_id: ${nodes.sqldb.master.id}
+          master2_id: ${nodes.sqldb[1].id}
+    - else:
+        setGlobals:
+          master1_id: ${nodes.sqldb.master.id}
+          master2_id: ${nodes.sqldb.first.id}
+    - setGlobals:
+        node_for_clone_to_slave: ${globals.master2_id}
+        master_for_new_slave: ${globals.master1_id}
+
+  getMasters:
+    - setGlobals:
+        master1_id: "NULL"
+        master2_id: "NULL"
+    - forEach(n:nodes.sqldb):
+        - cmd[${@n.id}]: |-
+            [ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";
+        - if ('${response.out}' == 'YES'):
+          - if ('${globals.master1_id}' == 'NULL'):
+              setGlobals:
+                master1_id: ${@n.id}
+          - else: 
+              setGlobals:
+                master2_id: ${@n.id}
+    - setGlobals:
+        node_for_clone_to_slave: ${globals.master2_id}
+        master_for_new_slave: ${globals.master1_id}
+
+  setupMasters:
+    - cmd[${globals.master1_id}]: |-
+        wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+        sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
+    - setupMaster:
+        id: "${globals.master1_id}"
+    - cmd[${globals.master2_id}]: |-
+        wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
+        sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
+    - setupMaster:
+        id: "${globals.master2_id}"
+    - setupReplication:
+        id: "${globals.master1_id}"
+        masterId: "${globals.master2_id}"
+    - setupReplication:
+        id: "${globals.master2_id}"
+        masterId: "${globals.master1_id}"
+    
+  setupReplication:
+    - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
+        cmd[${this.id}]: |-
+          yum install https://downloads.mysql.com/archives/get/p/29/file/mysql-connector-python-8.0.11-1.el7.x86_64.rpm -y &>> /var/log/run.log
+          yum install https://downloads.mysql.com/archives/get/p/30/file/mysql-utilities-1.6.5-1.el7.noarch.rpm -y &>> /var/log/run.log
+          ln -s /usr/lib/python2.7/site-packages/mysql/utilities /usr/lib64/python2.7/site-packages/mysql/utilities
+        user: root
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
+        bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
+
+  setupUser:
+    cmd[${this.id}]: |-
+      wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
+      bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
+    user: root
+
+  setupMaster:
+    - addCustomConfig:
+        id: "${this.id}"
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf; 
+        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
+    - setupUser:
+        id: "${this.id}"
+    - setNodeDisplayName[${this.id}]: Master
+
+  setupSlave:
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
+        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf
+    - setNodeDisplayName[${this.id}]: Slave
+  
+  addSlave:
+    - addCustomConfig:
+        id: "${this.id}"
+    - setupSlave:
+        id: "${this.id}"
+    - setupUser:
+        id: "${this.id}"
+    - setupReplication:
+        id: "${this.id}"
+        masterId: "${this.masterId}"
+
+  addSlaves:
+    - forEach(n:nodes.sqldb):
+      - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
+        - addSlave:
+            id: "${@n.id}"
+            masterId: "${globals.master_for_new_slave}"
+        - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
+            setGlobals:
+              master_for_new_slave: ${globals.master2_id}
+        - else:
+            setGlobals:
+              master_for_new_slave: ${globals.master1_id}
+
+  reconfigureSlave:
+    cmd[${this.id}]: |-
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
+      sudo /etc/init.d/mysql restart;
+
+  reconfigureMaster:
+    cmd[${this.id}]: |-
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf;
+      sudo /etc/init.d/mysql restart;
+
+  reconfigureMasters:
+    - reconfigureMaster:
+        id: "${globals.master1_id}"
+        master_id: "${globals.master2_id}"
+        db_user: "${globals.DB_USER}"
+        db_pass: "${globals.DB_PASS}"
+        repl_user: "${globals.REPLICATION_USER}"
+        repl_pass: "${globals.REPLICATION_PASS}"
+
+    - reconfigureMaster:
+        id: "${globals.master2_id}"
+        master_id: "${globals.master1_id}"
+        db_user: "${globals.DB_USER}"
+        db_pass: "${globals.DB_PASS}"
+        repl_user: "${globals.REPLICATION_USER}"
+        repl_pass: "${globals.REPLICATION_PASS}"
+
+  reconfigureSlaves:
+    - forEach(n:nodes.sqldb):
+      - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
+        - reconfigureSlave:
+            id: "${@n.id}"
+            master_id: "${globals.master_for_new_slave}"
+            db_user: "${globals.DB_USER}"
+            db_pass: "${globals.DB_PASS}"
+            repl_user: "${globals.REPLICATION_USER}"
+            repl_pass: "${globals.REPLICATION_PASS}"
+
+        - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
+            setGlobals:
+              master_for_new_slave: ${globals.master2_id}
+        - else:
+            setGlobals:
+              master_for_new_slave: ${globals.master1_id}
+
+  addCustomConfig:
+    if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
+      cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
+      
+  cloneSlave:
+    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql stop
+    - api: environment.control.AddNode
+      nodeGroup: sqldb
+      nodeid: ${this.slaveId}
+      nodeType: ${nodes.sqldb.nodeType}
+      flexibleCloudlets: ${nodes.sqldb.flexibleCloudlets}
+      fixedCloudlets: ${nodes.sqldb.fixedCloudlets}
+    - set:
+        newSlaveId: ${response.node.id}
+    - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
+    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
+    - setupSlave:
+        id: ${this.newSlaveId}
+    - cmd[${this.newSlaveId}]: |-
+        rm -f /var/lib/mysql/auto.cnf;
+        rm -f /etc/mysql/conf.d/master.cnf;
+        sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+        sudo /etc/init.d/mysql restart;
+    - setNodeDisplayName[${this.newSlaveId}]: Slave
+    
+  setScalingMode:
+    - api: jelastic.env.control.ApplyNodeGroupData
+      nodeGroup: sqldb
+      data:
+        scalingMode: STATEFUL
+
+  importGlobalsFromNodeGroup:
+    - script: |
+        var resp = api.env.control.GetNodeGroups("${env.name}", session);
+        if (resp.result != 0) return resp;
+        var groups = resp.object, globals;
+        for (var i = 0, n = groups.length; i < n; i++)
+          if (groups[i].name == "${this}" && groups[i].globals) {
+            globals = new org.yaml.snakeyaml.Yaml().load(groups[i].globals);
+            break;
+          }
+        return { result: 0, onAfterReturn: { setGlobals: globals } };
+
+  exportsGlobalsToNodeGroup:
+    - env.control.ApplyNodeGroupData [sqldb]:
+        data: 
+          globals: "${globals.toJSON()}" 
+  

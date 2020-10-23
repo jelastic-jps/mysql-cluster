@@ -27,19 +27,20 @@ onBeforeScaleIn[sqldb]:
   - cmd[proxy]: 'MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;" '
   
 onAfterMigrate:
-  install: ${globals.PATH}/scripts/proxy-galera-configuration.jps?_r=${fn.random}
+  install: ${globals.PATH}/scripts/proxy-galera.jps?_r=${fn.random}
   nodeGroup: sqldb
   settings:
     db_user: "${globals.DB_USER}"
     db_pass: "${globals.DB_PASS}"
     
 onAfterClone:
-  install: ${globals.PATH}/scripts/proxy-galera-configuration.jps?_r=${fn.random}
+  install: ${globals.PATH}/scripts/proxy-galera.jps?_r=${fn.random}
   envName: ${event.response.env.envName}
   nodeGroup: sqldb
   settings:
     db_user: "${globals.DB_USER}"
     db_pass: "${globals.DB_PASS}"
+    path: "${globals.PATH}"
 
 onBeforeRemoveNode[proxy]:
   stopEvent:
