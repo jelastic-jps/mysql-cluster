@@ -160,11 +160,11 @@ actions:
     - script: 'return { result: 0 }'
     - forEach(n:nodes.sqldb):
         - cmd[${@n.id}]: |-
-            [ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";
-        - if ('${response.out}' == 'YES'):
-          - if ('${globals.master1_id}' == 'NULL'):
-              setGlobals:
-                master1_id: ${@n.id}
-          - else: 
-              setGlobals:
-                master2_id: ${@n.id}
+            [ -f "/etc/mysql/conf.d/master.cnf" ] && Хecho "YES" || echo "NO";
+        - script: |
+            var resp = { result: 0 };
+            if ('${response.out}' == 'YES') {
+              resp.onAfterReturn = { setGlobals: {} }, setGlobals = resp.onAfterReturn.setGlobals;
+              setGlobals['${globals.master1_id}' == 'NULL' ? "master1_id" : master2_id ] = ${@n.id};
+            }
+            return resp;
