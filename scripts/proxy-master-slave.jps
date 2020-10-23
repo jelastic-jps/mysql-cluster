@@ -168,3 +168,4 @@ actions:
               setGlobals['${globals.master1_id}' == 'NULL' ? "master1_id" : master2_id ] = ${@n.id};
             }
             return resp;
+    - log: ---- ${globals.master1_id}  ----  ${globals.master2_id}
