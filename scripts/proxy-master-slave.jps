@@ -154,18 +154,14 @@ actions:
       mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
 
   getMasters:
-    - setGlobals:
-        master1_id: "NULL"
-        master2_id: "NULL"
-    - script: 'return { result: 0 }'
-    - forEach(n:nodes.sqldb):
-        - cmd[${@n.id}]: |-
-            [ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";
-        - script: |
-            var resp = { result: 0 };
-            if ('${response.out}' == 'YES') {
-              resp.onAfterReturn = { setGlobals: {} }, setGlobals = resp.onAfterReturn.setGlobals;
-              setGlobals['${globals.master1_id}' == 'NULL' ? "master1_id" : master2_id ] = ${@n.id};
-            }
-            return resp;
-    - log: ---- ${globals.master1_id}  ----  ${globals.master2_id}
+  - script: |
+      var onAfterReturn = { setGlobals: {} },
+          glbs = onAfterReturn.setGlobals;
+      resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.conf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
+      if (resp.result != 0) return resp;
+      var groups = resp.responses;
+      for (var i = 0, n = groups.length; i < n; i++) {
+        if (groups[i].out == "YES")
+          glbs["master" + (i + 1) + "_id"] = groups[i].nodeid;
+      }
+      return { result: 0, onAfterReturn: onAfterReturn };
