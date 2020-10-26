@@ -50,6 +50,15 @@ onInstall:
   - if (${settings.clone:false}):
     - importGlobalsFromNodeGroup: sqldb
     - getMastersIDs
+    - if (('${globals.master2_id}' != '${nodes.sqldb[0].id}') && ('${globals.master2_id}' != '${nodes.sqldb[1].id}')):
+      - setupSlave:
+          id: ${globals.master2_id}
+      - cmd[${globals.master2_id}]: sudo /etc/init.d/mysql restart
+      - setMastersIDs
+      - setupMaster:
+        id: "${globals.master2_id}"
+        increment: 2
+      - cmd[${globals.master2_id}]: sudo /etc/init.d/mysql restart
     - reconfigureMasters
     - reconfigureSlaves
   - else:
