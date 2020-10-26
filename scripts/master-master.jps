@@ -56,8 +56,8 @@ onInstall:
       - cmd[${globals.master2_id}]: sudo /etc/init.d/mysql restart
       - setMastersIDs
       - setupMaster:
-        id: "${globals.master2_id}"
-        increment: 2
+          id: "${globals.master2_id}"
+          increment: 2
       - cmd[${globals.master2_id}]: sudo /etc/init.d/mysql restart
     - reconfigureMasters
     - reconfigureSlaves
@@ -150,6 +150,8 @@ actions:
     - setNodeDisplayName[${this.id}]: Master
 
   setupSlave:
+    - addCustomConfig:
+        id: "${this.id}"
     - cmd[${this.id}]: |-
         [ -f "/etc/mysql/conf.d/master.cnf" ] && rm -f /etc/mysql/conf.d/master.cnf;
         wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
@@ -158,8 +160,6 @@ actions:
     - setNodeDisplayName[${this.id}]: Slave
   
   addSlave:
-    - addCustomConfig:
-        id: "${this.id}"
     - setupSlave:
         id: "${this.id}"
     - setupUser:
