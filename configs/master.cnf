@@ -1,7 +1,10 @@
 [mysqld]
-server-id = 1
+server-id = 
 log-bin = mysql-bin
 log-slave-updates
+auto-increment-increment = 2
+auto-increment-offset = 
+slave-skip-errors = 1062
 relay-log = /var/lib/mysql/mysql-relay-bin
 relay-log-index = /var/lib/mysql/mysql-relay-bin.index
 replicate-wild-ignore-table = performance_schema.%
