@@ -83,8 +83,13 @@ actions:
       var groups = resp.responses;
       for (var i = 0, n = groups.length; i < n; i++) {
         if (groups[i].out == "YES") {
-          if (groups[i].out == "YES")
-          glbs["master" + (i + 1) + "_id"] = groups[i].nodeid;
+          var envInfo = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+          for (var node = 0, nodes = envInfo.nodes; node < nodes.length; node++) {
+            if ((nodes[node].nodeGroup == 'sqldb') && (nodes[node].ismaster))
+              glbs["master1_id"] = groups[i].nodeid;
+            else
+              glbs["master2_id"] = groups[i].nodeid;            
+          }
         }
       }
       return { result: 0, onAfterReturn: onAfterReturn };
