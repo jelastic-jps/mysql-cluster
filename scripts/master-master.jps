@@ -79,7 +79,7 @@ actions:
   - script: |
       var onAfterReturn = { setGlobals: {} },
           glbs = onAfterReturn.setGlobals;
-      resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.conf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
+      resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
       if (resp.result != 0) return resp;
       var groups = resp.responses;
       for (var i = 0, n = groups.length; i < n; i++) {
