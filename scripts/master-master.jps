@@ -76,19 +76,18 @@ actions:
 
   getMasters:
   - script: |
-      var onAfterReturn = { setGlobals: {} },
+      var envInfo, resp, groups,
+          onAfterReturn = { setGlobals: {} },
           glbs = onAfterReturn.setGlobals;
       resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
       if (resp.result != 0) return resp;
-      var groups = resp.responses;
+      groups = resp.responses;
       for (var i = 0, n = groups.length; i < n; i++) {
         if (groups[i].out == "YES") {
-          var envInfo = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+          envInfo = jelastic.env.control.GetEnvInfo('${env.envName}', session);
           for (var node = 0, nodes = envInfo.nodes; node < nodes.length; node++) {
-            if ((nodes[node].nodeGroup == 'sqldb') && (nodes[node].ismaster))
-              glbs["master1_id"] = groups[i].nodeid;
-            else
-              glbs["master2_id"] = groups[i].nodeid;            
+            if (nodes[node].id == groups[i].nodeid)
+              nodes[node].ismaster ? glbs["master1_id"] = groups[i].nodeid : glbs["master2_id"] = groups[i].nodeid;
           }
         }
       }
