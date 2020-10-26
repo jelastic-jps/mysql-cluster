@@ -62,7 +62,6 @@ onInstall:
 actions:
 
   setMasterIDs:
-    - log: "--> Setup Master Node"
     - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
         setGlobals:
           master1_id: ${nodes.sqldb.master.id}
@@ -83,8 +82,10 @@ actions:
       if (resp.result != 0) return resp;
       var groups = resp.responses;
       for (var i = 0, n = groups.length; i < n; i++) {
-        if (groups[i].out == "YES")
+        if (groups[i].out == "YES") {
+          if (groups[i].out == "YES")
           glbs["master" + (i + 1) + "_id"] = groups[i].nodeid;
+        }
       }
       return { result: 0, onAfterReturn: onAfterReturn };
   - setGlobals:
@@ -92,16 +93,12 @@ actions:
       master_for_new_slave: ${globals.master1_id}
 
   setupMasters:
-    - cmd[${globals.master1_id}]: |-
-        wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-        sed -i "s/auto-increment-offset.*/auto-increment-offset = 1/" /etc/mysql/conf.d/increment.cnf
     - setupMaster:
         id: "${globals.master1_id}"
-    - cmd[${globals.master2_id}]: |-
-        wget ${globals.PATH}/configs/increment.cnf -O /etc/mysql/conf.d/increment.cnf
-        sed -i "s/auto-increment-offset.*/auto-increment-offset = 2/" /etc/mysql/conf.d/increment.cnf
+        increment: 1
     - setupMaster:
         id: "${globals.master2_id}"
+        increment: 2
     - setupReplication:
         id: "${globals.master1_id}"
         masterId: "${globals.master2_id}"
@@ -130,15 +127,18 @@ actions:
     - addCustomConfig:
         id: "${this.id}"
     - cmd[${this.id}]: |-
+        [ -f "/etc/mysql/conf.d/slave.cnf" ] && rm -f /etc/mysql/conf.d/slave.cnf;
         wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf; 
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
+        sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf
     - setupUser:
         id: "${this.id}"
     - setNodeDisplayName[${this.id}]: Master
 
   setupSlave:
     - cmd[${this.id}]: |-
+        [ -f "/etc/mysql/conf.d/master.cnf" ] && rm -f /etc/mysql/conf.d/master.cnf;
         wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf
