@@ -52,7 +52,6 @@ onAfterClone:
 
 onAfterMigrate:
   install: ${globals.PATH}/scripts/proxy-master-slave.jps?_r=${fn.random}
-  envName: ${event.response.env.envName}
   nodeGroup: sqldb
   settings:
     db_user: "${globals.DB_USER}"
@@ -155,16 +154,14 @@ actions:
       mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
 
   getMasters:
-    - setGlobals:
-        master1_id: "NULL"
-        master2_id: "NULL"
-    - forEach(n:nodes.sqldb):
-        - cmd[${@n.id}]: |-
-            [ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";
-        - if ('${response.out}' == 'YES'):
-          - if ('${globals.master1_id}' == 'NULL'):
-              setGlobals:
-                master1_id: ${@n.id}
-          - else: 
-              setGlobals:
-                master2_id: ${@n.id}
+  - script: |
+      var onAfterReturn = { setGlobals: {} },
+          glbs = onAfterReturn.setGlobals;
+      resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
+      if (resp.result != 0) return resp;
+      var groups = resp.responses;
+      for (var i = 0, n = groups.length; i < n; i++) {
+        if (groups[i].out == "YES")
+          glbs["master" + (i + 1) + "_id"] = groups[i].nodeid;
+      }
+      return { result: 0, onAfterReturn: onAfterReturn };

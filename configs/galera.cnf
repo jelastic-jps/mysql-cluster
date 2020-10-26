@@ -6,6 +6,8 @@ binlog_format = ROW
 default-storage-engine = innodb
 innodb_autoinc_lock_mode = 2
 
+innodb_force_primary_key = 1
+
 bind-address =
 report_host = 
 
