@@ -47,7 +47,6 @@ onInstall:
     - if (('${globals.master2_id}' != '${nodes.sqldb[0].id}') && ('${globals.master2_id}' != '${nodes.sqldb[1].id}')):
       - setupSlave:
           id: ${globals.master2_id}
-      - cmd[${globals.master2_id}]: sudo /etc/init.d/mysql restart
       - setMastersIDs
       - setupMaster:
           id: "${globals.master2_id}"
@@ -153,70 +152,49 @@ actions:
         id: "${this.id}"
     - cmd[${this.id}]: |-
         [ -f "/etc/mysql/conf.d/master.cnf" ] && rm -f /etc/mysql/conf.d/master.cnf;
-        wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
-        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf
-        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf
+        wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log;
+        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf;
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
+        sudo /etc/init.d/mysql restart;
     - setNodeDisplayName[${this.id}]: Slave
   
-  addSlave:
-    - setupSlave:
-        id: "${this.id}"
-    - setupUser:
-        id: "${this.id}"
-    - setupReplication:
-        id: "${this.id}"
-        masterId: "${this.masterId}"
-
   addSlaves:
     - forEach(n:nodes.sqldb):
       - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
-        - addSlave:
+        - setupSlave:
+            id: "${@n.id}"
+        - setupUser:
+            id: "${@n.id}"
+        - setupReplication:
             id: "${@n.id}"
             masterId: "${globals.master_for_new_slave}"
         - setMasterForNewSlave
   
-  reconfigureSlave:
+  reconfigureReplication:
     cmd[${this.id}]: |-
       rm -f /var/lib/mysql/auto.cnf;
-      [ -f "/etc/mysql/conf.d/master.cnf" ] && rm -f /etc/mysql/conf.d/master.cnf;
-      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
-      sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf
+      sed -i "s/report_host.*/report_host = node${this.id}/" ${this.config};
+      sed -i "s/server-id.*/server-id = ${this.id}/" ${this.config};
       sudo /etc/init.d/mysql restart;
-      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
-
-  reconfigureMaster:
-    cmd[${this.id}]: |-
-      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
-      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf;
-      sudo /etc/init.d/mysql restart;
+      mysqlreplicate --master=${globals.DB_USER}:${globals.DB_PASS}@node${this.master_id}:3306 --slave=${globals.DB_USER}:${globals.DB_PASS}@node${this.id}:3306 --rpl-user=${globals.REPLICATION_USER}:${globals.REPLICATION_PASS}
 
   reconfigureMasters:
-    - reconfigureMaster:
+    - reconfigureReplication:
         id: "${globals.master1_id}"
         master_id: "${globals.master2_id}"
-        db_user: "${globals.DB_USER}"
-        db_pass: "${globals.DB_PASS}"
-        repl_user: "${globals.REPLICATION_USER}"
-        repl_pass: "${globals.REPLICATION_PASS}"
-
-    - reconfigureMaster:
+        config: "/etc/mysql/conf.d/master.cnf"
+    - reconfigureReplication:
         id: "${globals.master2_id}"
         master_id: "${globals.master1_id}"
-        db_user: "${globals.DB_USER}"
-        db_pass: "${globals.DB_PASS}"
-        repl_user: "${globals.REPLICATION_USER}"
-        repl_pass: "${globals.REPLICATION_PASS}"
+        config: "/etc/mysql/conf.d/master.cnf"
 
   reconfigureSlaves:
     - forEach(n:nodes.sqldb):
       - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
-        - reconfigureSlave:
+        - reconfigureReplication:
             id: "${@n.id}"
             master_id: "${globals.master_for_new_slave}"
-            db_user: "${globals.DB_USER}"
-            db_pass: "${globals.DB_PASS}"
-            repl_user: "${globals.REPLICATION_USER}"
-            repl_pass: "${globals.REPLICATION_PASS}"
+            config: "/etc/mysql/conf.d/slave.cnf"
         - setMasterForNewSlave
   
   addCustomConfig:
@@ -234,15 +212,13 @@ actions:
     - set:
         new_slave_id: ${response.node.id}
     - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
-    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start   
-    - reconfigureSlave:
+    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start
+    - setupSlave:
+        id: "${this.new_slave_id}"
+    - reconfigureReplication:
         id: "${this.new_slave_id}"
         master_id: "${globals.master_for_new_slave}"
-        db_user: "${globals.DB_USER}"
-        db_pass: "${globals.DB_PASS}"
-        repl_user: "${globals.REPLICATION_USER}"
-        repl_pass: "${globals.REPLICATION_PASS}"    
-    - setNodeDisplayName[${this.new_slave_id}]: Slave
+        config: "/etc/mysql/conf.d/slave.cnf"
     - setMasterForNewSlave
     
   setScalingMode:
