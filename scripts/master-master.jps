@@ -28,7 +28,6 @@ onBeforeCloneNodes[sqldb]:
       return { result : 0, nodeCount: nodeCount}
   - forEach(response.nodeCount):
     - cloneSlave:
-        nodeid_for_clone: ${globals.master2_id}
   - exportsGlobalsToNodeGroup
   - stopEvent:
       type: success
@@ -74,7 +73,8 @@ actions:
           master1_id: ${nodes.sqldb.master.id}
           master2_id: ${nodes.sqldb.first.id}
     - setGlobals:
-        master_for_new_slave: ${globals.master1_id}
+        master_id_for_new_slave: ${globals.master1_id}
+        node_id_for_new_slave: ${globals.master2_id}
 
   getMastersIDs:
     - script: |
@@ -95,13 +95,21 @@ actions:
         }
         return { result: 0, onAfterReturn: onAfterReturn };
     - setGlobals:
-        master_for_new_slave: ${globals.master1_id}
+        master_id_for_new_slave: ${globals.master1_id}
+        node_id_for_new_slave: ${globals.master2_id}
 
   setMasterForNewSlave:
     - script: |
         var onAfterReturn = { setGlobals: {} },
             glbs = onAfterReturn.setGlobals;
-        ('${globals.master_for_new_slave}' == '${globals.master1_id}') ? glbs["master_for_new_slave"] = '${globals.master2_id}' : glbs["master_for_new_slave"] = '${globals.master1_id}';
+        if ('${globals.master_id_for_new_slave}' == '${globals.master1_id}') {
+          glbs["master_id_for_new_slave"] = '${globals.master2_id}';
+          glbs["node_id_for_new_slave"] = '${globals.master1_id}';
+        }
+        else {
+          glbs["master_id_for_new_slave"] = '${globals.master1_id}';
+          glbs["node_id_for_new_slave"] = '${globals.master2_id}';
+        }
         return { result: 0, onAfterReturn: onAfterReturn };
 
   setupMasters:
@@ -167,7 +175,7 @@ actions:
             id: "${@n.id}"
         - setupReplication:
             id: "${@n.id}"
-            masterId: "${globals.master_for_new_slave}"
+            masterId: "${globals.master_id_for_new_slave}"
         - setMasterForNewSlave
   
   reconfigureReplication:
@@ -193,7 +201,7 @@ actions:
       - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
         - reconfigureReplication:
             id: "${@n.id}"
-            master_id: "${globals.master_for_new_slave}"
+            master_id: "${globals.master_id_for_new_slave}"
             config: "/etc/mysql/conf.d/slave.cnf"
         - setMasterForNewSlave
   
@@ -205,7 +213,7 @@ actions:
     - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql stop
     - api: environment.control.AddNode
       nodeGroup: sqldb
-      nodeid: ${this.nodeid_for_clone}
+      nodeid: ${globals.node_id_for_new_slave}
       nodeType: ${nodes.sqldb.nodeType}
       flexibleCloudlets: ${nodes.sqldb.flexibleCloudlets}
       fixedCloudlets: ${nodes.sqldb.fixedCloudlets}
@@ -216,7 +224,7 @@ actions:
         id: "${this.new_slave_id}"
     - reconfigureReplication:
         id: "${this.new_slave_id}"
-        master_id: "${globals.master_for_new_slave}"
+        master_id: "${globals.master_id_for_new_slave}"
         config: "/etc/mysql/conf.d/slave.cnf"
     - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start
     - setMasterForNewSlave
