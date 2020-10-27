@@ -210,7 +210,7 @@ actions:
       cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
       
   cloneSlave:
-    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql stop
+    - cmd[${globals.node_id_for_new_slave}]: sudo /etc/init.d/mysql stop
     - api: environment.control.AddNode
       nodeGroup: sqldb
       nodeid: ${globals.node_id_for_new_slave}
@@ -226,7 +226,7 @@ actions:
         id: "${this.new_slave_id}"
         master_id: "${globals.master_id_for_new_slave}"
         config: "/etc/mysql/conf.d/slave.cnf"
-    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start
+    - cmd[${globals.node_id_for_new_slave}]: sudo /etc/init.d/mysql start
     - setMasterForNewSlave
     
   setScalingMode:
