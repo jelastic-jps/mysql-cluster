@@ -27,7 +27,7 @@ onBeforeCloneNodes[sqldb]:
       return { result : 0, nodeCount: nodeCount}
   - forEach(response.nodeCount):
     - cloneSlave:
-        slaveId: ${globals.master2_id}
+        nodeid_for_clone: ${globals.master2_id}
   - stopEvent:
       type: success
       message: New slaves have been successfully added
@@ -96,6 +96,13 @@ actions:
       return { result: 0, onAfterReturn: onAfterReturn };
   - setGlobals:
       master_for_new_slave: ${globals.master1_id}
+
+  setMasterForNewSlave:
+    - script: |
+        var onAfterReturn = { setGlobals: {} },
+            glbs = onAfterReturn.setGlobals;
+        ('${globals.master_for_new_slave}' == '${globals.master1_id}') ? glbs["master_for_new_slave"] = '${globals.master2_id}' : glbs["master_for_new_slave"] = '${globals.master1_id}';
+        return { result: 0, onAfterReturn: onAfterReturn };
 
   setupMasters:
     - setupMaster:
@@ -166,13 +173,8 @@ actions:
         - addSlave:
             id: "${@n.id}"
             masterId: "${globals.master_for_new_slave}"
-        - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
-            setGlobals:
-              master_for_new_slave: ${globals.master2_id}
-        - else:
-            setGlobals:
-              master_for_new_slave: ${globals.master1_id}
-
+        - setMasterForNewSlave
+  
   reconfigureSlave:
     cmd[${this.id}]: |-
       mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
@@ -212,38 +214,33 @@ actions:
             db_pass: "${globals.DB_PASS}"
             repl_user: "${globals.REPLICATION_USER}"
             repl_pass: "${globals.REPLICATION_PASS}"
-
-        - if ('${globals.master_for_new_slave}' == '${globals.master1_id}'):
-            setGlobals:
-              master_for_new_slave: ${globals.master2_id}
-        - else:
-            setGlobals:
-              master_for_new_slave: ${globals.master1_id}
-
+        - setMasterForNewSlave
+  
   addCustomConfig:
     if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
       cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
       
   cloneSlave:
-    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql stop
+    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql stop
     - api: environment.control.AddNode
       nodeGroup: sqldb
-      nodeid: ${this.slaveId}
+      nodeid: ${this.nodeid_for_clone}
       nodeType: ${nodes.sqldb.nodeType}
       flexibleCloudlets: ${nodes.sqldb.flexibleCloudlets}
       fixedCloudlets: ${nodes.sqldb.fixedCloudlets}
     - set:
-        newSlaveId: ${response.node.id}
+        new_slave_id: ${response.node.id}
     - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
-    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
+    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start
     - setupSlave:
-        id: ${this.newSlaveId}
-    - cmd[${this.newSlaveId}]: |-
+        id: ${this.new_slave_id}
+    - cmd[${this.new_slave_id}]: |-
         rm -f /var/lib/mysql/auto.cnf;
         rm -f /etc/mysql/conf.d/master.cnf;
-        sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
+        sed -i "s/report_host.*/report_host = node${this.new_slave_id}/" /etc/mysql/conf.d/slave.cnf;
         sudo /etc/init.d/mysql restart;
-    - setNodeDisplayName[${this.newSlaveId}]: Slave
+    - setNodeDisplayName[${this.new_slave_id}]: Slave
+    - setMasterForNewSlave
     
   setScalingMode:
     - api: jelastic.env.control.ApplyNodeGroupData
