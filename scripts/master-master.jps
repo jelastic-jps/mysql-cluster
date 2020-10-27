@@ -155,7 +155,6 @@ actions:
         wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log;
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf;
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
-        sudo /etc/init.d/mysql restart;
     - setNodeDisplayName[${this.id}]: Slave
   
   addSlaves:
@@ -175,8 +174,8 @@ actions:
       rm -f /var/lib/mysql/auto.cnf;
       sed -i "s/report_host.*/report_host = node${this.id}/" ${this.config};
       sed -i "s/server-id.*/server-id = ${this.id}/" ${this.config};
-      sudo /etc/init.d/mysql restart;
       mysqlreplicate --master=${globals.DB_USER}:${globals.DB_PASS}@node${this.master_id}:3306 --slave=${globals.DB_USER}:${globals.DB_PASS}@node${this.id}:3306 --rpl-user=${globals.REPLICATION_USER}:${globals.REPLICATION_PASS}
+      sudo /etc/init.d/mysql restart;
 
   reconfigureMasters:
     - reconfigureReplication:
