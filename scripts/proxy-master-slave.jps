@@ -75,9 +75,8 @@ onInstall:
     - addMaster:
         id: "${globals.master2_id}"
     - forEach(k:nodes.sqldb):
-      - if (('${@k.id}' != '${globals.master1_id}') && ('${@k.id}' != '${globals.master2_id}')):
-          addSlave:
-            id: "${@k.id}"
+        addSlave:
+          id: "${@k.id}"
 
   - if ('${globals.SCHEME}'.toLowerCase() != 'master'):
       forEach(l:nodes.sqldb):
