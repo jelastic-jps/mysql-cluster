@@ -30,7 +30,7 @@ onBeforeCloneNodes[sqldb]:
         nodeid_for_clone: ${globals.master2_id}
   - stopEvent:
       type: success
-      message: New slaves successfully added
+      message: New slaves have been successfully added
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
@@ -177,9 +177,12 @@ actions:
   
   reconfigureSlave:
     cmd[${this.id}]: |-
-      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
+      rm -f /var/lib/mysql/auto.cnf;
+      [ -f "/etc/mysql/conf.d/master.cnf" ] && rm -f /etc/mysql/conf.d/master.cnf;
       sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
+      sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf
       sudo /etc/init.d/mysql restart;
+      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass}
 
   reconfigureMaster:
     cmd[${this.id}]: |-
@@ -231,14 +234,14 @@ actions:
     - set:
         new_slave_id: ${response.node.id}
     - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
-    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start
-    - setupSlave:
-        id: ${this.new_slave_id}
-    - cmd[${this.new_slave_id}]: |-
-        rm -f /var/lib/mysql/auto.cnf;
-        rm -f /etc/mysql/conf.d/master.cnf;
-        sed -i "s/report_host.*/report_host = node${this.new_slave_id}/" /etc/mysql/conf.d/slave.cnf;
-        sudo /etc/init.d/mysql restart;
+    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start   
+    - reconfigureSlave:
+        id: "${this.new_slave_id}"
+        master_id: "${globals.master_for_new_slave}"
+        db_user: "${globals.DB_USER}"
+        db_pass: "${globals.DB_PASS}"
+        repl_user: "${globals.REPLICATION_USER}"
+        repl_pass: "${globals.REPLICATION_PASS}"    
     - setNodeDisplayName[${this.new_slave_id}]: Slave
     - setMasterForNewSlave
     
