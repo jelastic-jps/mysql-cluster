@@ -51,7 +51,6 @@ onInstall:
       - setupMaster:
           id: "${globals.master2_id}"
           increment: 2
-      - cmd[${globals.master2_id}]: sudo /etc/init.d/mysql restart
     - reconfigureMasters
     - reconfigureSlaves
   - else:
@@ -76,25 +75,25 @@ actions:
         master_for_new_slave: ${globals.master1_id}
 
   getMastersIDs:
-  - script: |
-      var envInfo, resp, groups,
-          onAfterReturn = { setGlobals: {} },
-          glbs = onAfterReturn.setGlobals;
-      resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
-      if (resp.result != 0) return resp;
-      groups = resp.responses;
-      for (var i = 0, n = groups.length; i < n; i++) {
-        if (groups[i].out == "YES") {
-          envInfo = jelastic.env.control.GetEnvInfo('${env.envName}', session);
-          for (var node = 0, nodes = envInfo.nodes; node < nodes.length; node++) {
-            if (nodes[node].id == groups[i].nodeid)
-              nodes[node].ismaster ? glbs["master1_id"] = groups[i].nodeid : glbs["master2_id"] = groups[i].nodeid;
+    - script: |
+        var envInfo, resp, groups,
+            onAfterReturn = { setGlobals: {} },
+            glbs = onAfterReturn.setGlobals;
+        resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
+        if (resp.result != 0) return resp;
+        groups = resp.responses;
+        for (var i = 0, n = groups.length; i < n; i++) {
+          if (groups[i].out == "YES") {
+            envInfo = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+            for (var node = 0, nodes = envInfo.nodes; node < nodes.length; node++) {
+              if (nodes[node].id == groups[i].nodeid)
+                nodes[node].ismaster ? glbs["master1_id"] = groups[i].nodeid : glbs["master2_id"] = groups[i].nodeid;
+            }
           }
         }
-      }
-      return { result: 0, onAfterReturn: onAfterReturn };
-  - setGlobals:
-      master_for_new_slave: ${globals.master1_id}
+        return { result: 0, onAfterReturn: onAfterReturn };
+    - setGlobals:
+        master_for_new_slave: ${globals.master1_id}
 
   setMasterForNewSlave:
     - script: |
@@ -155,14 +154,14 @@ actions:
         wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log;
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf;
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
+    - setupUser:
+        id: "${this.id}"
     - setNodeDisplayName[${this.id}]: Slave
   
   addSlaves:
     - forEach(n:nodes.sqldb):
       - if (('${@n.id}' != '${globals.master1_id}') && ('${@n.id}' != '${globals.master2_id}')):
         - setupSlave:
-            id: "${@n.id}"
-        - setupUser:
             id: "${@n.id}"
         - setupReplication:
             id: "${@n.id}"
@@ -211,13 +210,13 @@ actions:
     - set:
         new_slave_id: ${response.node.id}
     - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
-    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start
     - setupSlave:
         id: "${this.new_slave_id}"
     - reconfigureReplication:
         id: "${this.new_slave_id}"
         master_id: "${globals.master_for_new_slave}"
         config: "/etc/mysql/conf.d/slave.cnf"
+    - cmd[${this.nodeid_for_clone}]: sudo /etc/init.d/mysql start
     - setMasterForNewSlave
     
   setScalingMode:
