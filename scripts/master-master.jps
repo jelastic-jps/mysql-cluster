@@ -27,13 +27,7 @@ onBeforeCloneNodes[sqldb]:
       return { result : 0, nodeCount: nodeCount}
   - forEach(response.nodeCount):
     - cloneSlave:
-        slaveId: ${globals.node_for_clone_to_slave}
-    - if ('${globals.node_for_clone_to_slave}' == '${globals.master1_id}'):
-        setGlobals:
-          node_for_clone_to_slave: ${globals.master2_id}
-    - else:
-        setGlobals:
-          node_for_clone_to_slave: ${globals.master1_id}
+        slaveId: ${globals.master2_id}
   - stopEvent:
       type: success
       message: New slaves have been successfully added
@@ -80,7 +74,6 @@ actions:
           master1_id: ${nodes.sqldb.master.id}
           master2_id: ${nodes.sqldb.first.id}
     - setGlobals:
-        node_for_clone_to_slave: ${globals.master2_id}
         master_for_new_slave: ${globals.master1_id}
 
   getMastersIDs:
@@ -102,7 +95,6 @@ actions:
       }
       return { result: 0, onAfterReturn: onAfterReturn };
   - setGlobals:
-      node_for_clone_to_slave: ${globals.master2_id}
       master_for_new_slave: ${globals.master1_id}
 
   setupMasters:
