@@ -20,6 +20,7 @@ globals:
   CUSTOM_CONF: "${settings.custom_conf}"
 
 onBeforeCloneNodes[sqldb]:
+  - importGlobalsFromNodeGroup: sqldb
   - script: |
       var nodeCount = [];
       for (var i = 0, n = ${event.params.count}; i < n; i ++) 
@@ -28,9 +29,10 @@ onBeforeCloneNodes[sqldb]:
   - forEach(response.nodeCount):
     - cloneSlave:
         nodeid_for_clone: ${globals.master2_id}
+  - exportsGlobalsToNodeGroup
   - stopEvent:
       type: success
-      message: New slaves have been successfully added
+      message: New slaves successfully added
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
