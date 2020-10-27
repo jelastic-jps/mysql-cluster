@@ -101,6 +101,7 @@ actions:
         wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf
+        sed -i "/auto-increment/d" /etc/mysql/conf.d/master.cnf
     - setupUser:
         id: "${this.id}"
     - setNodeDisplayName[${this.id}]: Master
