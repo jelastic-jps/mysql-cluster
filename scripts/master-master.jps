@@ -46,12 +46,7 @@ onInstall:
     - importGlobalsFromNodeGroup: sqldb
     - getMastersIDs
     - if (('${globals.master2_id}' != '${nodes.sqldb[0].id}') && ('${globals.master2_id}' != '${nodes.sqldb[1].id}')):
-      - setupSlave:
-          id: ${globals.master2_id}
-      - setMastersIDs
-      - setupMaster:
-          id: "${globals.master2_id}"
-          increment: 2
+      - assignNewMaster
     - reconfigureMasters
     - reconfigureSlaves
   - else:
@@ -63,6 +58,14 @@ onInstall:
 
 actions:
 
+  assignNewMaster:
+    - setupSlave:
+        id: ${globals.master2_id}
+    - setMastersIDs
+    - setupMaster:
+        id: "${globals.master2_id}"
+        increment: 2
+  
   setMastersIDs:
     - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
         setGlobals:
