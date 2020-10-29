@@ -33,7 +33,7 @@ onBeforeCloneNodes[sqldb]:
         slaveId: ${this.slaveId}
   - stopEvent:
       type: success
-      message: New slaves have been successfully added
+      message: New slaves successfully added
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};

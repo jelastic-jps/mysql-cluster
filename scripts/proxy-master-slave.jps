@@ -69,7 +69,7 @@ onInstall:
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - setGlobals:
         MAX_REPL_LAG: 0
-    - getMasters
+    - getMastersIDs
     - addMaster:
         id: "${globals.master1_id}"
     - addMaster:
@@ -152,15 +152,21 @@ actions:
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
       mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
 
-  getMasters:
-  - script: |
-      var onAfterReturn = { setGlobals: {} },
-          glbs = onAfterReturn.setGlobals;
-      resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
-      if (resp.result != 0) return resp;
-      var groups = resp.responses;
-      for (var i = 0, n = groups.length; i < n; i++) {
-        if (groups[i].out == "YES")
-          glbs["master" + (i + 1) + "_id"] = groups[i].nodeid;
-      }
-      return { result: 0, onAfterReturn: onAfterReturn };
+  getMastersIDs:
+    - script: |
+        var envInfo, resp, groups,
+            onAfterReturn = { setGlobals: {} },
+            glbs = onAfterReturn.setGlobals;
+        resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
+        if (resp.result != 0) return resp;
+        groups = resp.responses;
+        for (var i = 0, n = groups.length; i < n; i++) {
+          if (groups[i].out == "YES") {
+            envInfo = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+            for (var node = 0, nodes = envInfo.nodes; node < nodes.length; node++) {
+              if (nodes[node].id == groups[i].nodeid)
+                nodes[node].ismaster ? glbs["master1_id"] = groups[i].nodeid : glbs["master2_id"] = groups[i].nodeid;
+            }
+          }
+        }
+        return { result: 0, onAfterReturn: onAfterReturn };
