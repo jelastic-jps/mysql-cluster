@@ -49,6 +49,7 @@ onInstall:
       - assignNewMaster
     - reconfigureMasters
     - reconfigureSlaves
+    - exportsGlobalsToNodeGroup
   - else:
     - setMastersIDs
     - setupMasters
