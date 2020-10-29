@@ -105,6 +105,7 @@ actions:
 
   setupProxySQL:
     - log: ProxySQL configuration
+    - cmd [proxy]: sudo service proxysql restart;
     - cmd [proxy]: |-
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_replication_hostgroups VALUES (10,11,'read_only','Group setup');"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username, password, active, default_hostgroup, max_connections) 
