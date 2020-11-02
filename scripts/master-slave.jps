@@ -55,14 +55,7 @@ onInstall:
           reconfigureSlave:
             id: "${@i.id}"
             master_id: "${nodes.sqldb.master.id}"
-            db_user: "${globals.DB_USER}"
-            db_pass: "${globals.DB_PASS}"
-            repl_user: "${globals.REPLICATION_USER}"
-            repl_pass: "${globals.REPLICATION_PASS}"
   - else:
-    - env.control.ApplyNodeGroupData [sqldb]:
-        data: 
-          globals: "${globals.toJSON()}" 
     - setScalingMode
     - setupMaster:
         id: "${nodes.sqldb.master.id}"
@@ -71,6 +64,8 @@ onInstall:
           addSlave:
             id: "${@i.id}"
             masterId: "${nodes.sqldb.master.id}"
+            
+    - exportsGlobalsToNodeGroup
 
     - return:
         result: success
@@ -168,7 +163,7 @@ actions:
     cmd[${this.id}]: |-
       sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
       sudo /etc/init.d/mysql restart;
-      mysqlreplicate --master=${this.db_user}:${this.db_pass}@node${this.master_id}:3306 --slave=${this.db_user}:${this.db_pass}@node${this.id}:3306 --rpl-user=${this.repl_user}:${this.repl_pass};
+      mysqlreplicate --master=${globals.DB_USER}:${globals.DB_PASS}@node${this.master_id}:3306 --slave=${globals.DB_USER}:${globals.DB_PASS}@node${this.id}:3306 --rpl-user=${globals.REPLICATION_USER}:${globals.REPLICATION_PASS}
 
   importGlobalsFromNodeGroup:
     - script: |
@@ -181,3 +176,8 @@ actions:
             break;
           }
         return { result: 0, onAfterReturn: { setGlobals: globals } };
+
+  exportsGlobalsToNodeGroup:
+    - env.control.ApplyNodeGroupData [sqldb]:
+        data: 
+          globals: "${globals.toJSON()}" 
