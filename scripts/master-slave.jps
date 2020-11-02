@@ -60,9 +60,6 @@ onInstall:
             repl_user: "${globals.REPLICATION_USER}"
             repl_pass: "${globals.REPLICATION_PASS}"
   - else:
-    - env.control.ApplyNodeGroupData [sqldb]:
-        data: 
-          globals: "${globals.toJSON()}" 
     - setScalingMode
     - setupMaster:
         id: "${nodes.sqldb.master.id}"
@@ -71,6 +68,8 @@ onInstall:
           addSlave:
             id: "${@i.id}"
             masterId: "${nodes.sqldb.master.id}"
+            
+    - exportsGlobalsToNodeGroup
 
     - return:
         result: success
@@ -181,3 +180,8 @@ actions:
             break;
           }
         return { result: 0, onAfterReturn: { setGlobals: globals } };
+
+  exportsGlobalsToNodeGroup:
+    - env.control.ApplyNodeGroupData [sqldb]:
+        data: 
+          globals: "${globals.toJSON()}" 
