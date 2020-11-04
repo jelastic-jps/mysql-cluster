@@ -53,7 +53,14 @@ onAfterClone:
 onBeforeStop:
   - forEach(i:nodes.sqldb):
       env.control.StopNode [${@i.id}]
-    
+      
+onBeforeRestartNode[sqldb]:
+  - forEach(i:nodes.sqldb):
+      cmd [${@i.id}]: sudo jem service restart
+  - stopEvent:
+      type: success
+      message: Galera cluster successfully restarted
+   
 onInstall:
   - resetCluster
   - initialSetup:
