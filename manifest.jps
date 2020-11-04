@@ -82,7 +82,7 @@ nodes:
   skipNodeEmails: true
   count: "${settings.nodes}"
   cloudlets: 16
-  restartDelay: 60
+  restartDelay: 30
   isRedeploySupport: true
   cluster:
     scheme: "${settings.scheme}"
