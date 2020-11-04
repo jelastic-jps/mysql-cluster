@@ -78,7 +78,6 @@ onInstall:
     path: /var/lib/mysql/grastate.dat
     keyword: grastate.dat
     isDir: false
-  - setRestartDelay
         
 actions:
   initialSetup:
@@ -129,9 +128,4 @@ actions:
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
         /etc/init.d/mysql stop; pkill -9 mysql; /etc/init.d/mysql start
       user: root
-      
-  setRestartDelay:
-    - api: jelastic.env.control.ApplyNodeGroupData
-      nodeGroup: sqldb
-      data:
-        restartDelay: 60
+ 
