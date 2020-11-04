@@ -53,7 +53,14 @@ onAfterClone:
 onBeforeStop:
   - forEach(i:nodes.sqldb):
       env.control.StopNode [${@i.id}]
-    
+      
+onBeforeRestartNode[sqldb]:
+  - forEach(i:nodes.sqldb):
+      cmd [${@i.id}]: sudo jem service restart
+  - stopEvent:
+      type: success
+      message: Galera cluster successfully restarted
+   
 onInstall:
   - resetCluster
   - initialSetup:
@@ -121,3 +128,4 @@ actions:
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
         /etc/init.d/mysql stop; pkill -9 mysql; /etc/init.d/mysql start
       user: root
+ 
