@@ -1,7 +1,7 @@
 jpsType: install
 jpsVersion: '1.5.2'
 name: MySQL / MariaDB Cluster
-id: mysql-cluster
+id: mysql-cluster-main
 
 categories:
   - apps/clustered-dbs
@@ -13,8 +13,7 @@ description:
   short: A set of MySQL/MariaDB cluster topologies
   
 logo: /images/icon.png?_r=1
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.1.0
-
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.3.0
 settings:
   fields:
     - caption: Stack
@@ -63,17 +62,6 @@ settings:
               - value: mysql
             mariadb-dockerized:    
               - value: mariadb-dockerized
-
-    - caption: None
-      inputType: hidden
-      type: list
-      name: sqldb_tag
-      dependsOn:                 
-        stack:
-            mysql:
-              - value: 8.0.20
-            mariadb-dockerized:    
-              - value: 10.3.22
               
     - caption: None
       inputType: hidden
@@ -90,18 +78,17 @@ settings:
 
 nodes:
   nodeType: "${settings.nodeType}"
-  tag: "${settings.sqldb_tag}"
   nodeGroup: sqldb
   skipNodeEmails: true
   count: "${settings.nodes}"
   cloudlets: 16
-  restartDelay: 10
+  restartDelay: 30
   isRedeploySupport: true
   cluster:
-    scheme: "${settings.scheme}"
     jps: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
-    is_proxysql: "${settings.is_proxysql}"
-    isRedeploySupport: false
+    settings:
+      scheme: "${settings.scheme}"
+      is_proxysql: "${settings.is_proxysql}"
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
