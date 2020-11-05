@@ -85,10 +85,10 @@ nodes:
   restartDelay: 30
   isRedeploySupport: true
   cluster:
-    scheme: "${settings.scheme}"
     jps: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
-    is_proxysql: "${settings.is_proxysql}"
-    isRedeploySupport: true
+    settings:
+      scheme: "${settings.scheme}"
+      is_proxysql: "${settings.is_proxysql}"
   env:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
