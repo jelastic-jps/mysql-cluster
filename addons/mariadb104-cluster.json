@@ -1,12 +1,11 @@
 {
-    "jps": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.1.0/addons/auto-clustering/auto-cluster.jps",
+    "jps": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.3.0/addons/auto-clustering/auto-cluster.jps",
     "defaultState": false,
     "skipOnEnvInstall": true,
     "nodeGroupData": {
-        "scalingMode": "STATELESS",
         "skipNodeEmails": true,
         "isResetServicePassword": "NODE",
-        "isRedeploySupport": false
+        "isRedeploySupport": true
     },
     "compatibleAddons": ["mysql-auto-cluster"],
     "settings": {
@@ -40,22 +39,24 @@
         }]
     },
     "validation": {
-        "scalingMode": "STATELESS",
         "rules": {
             "scheme": {
                 "master": {
+                    "scalingMode": "STATEFUL",
                     "minCount": 2,
                     "setGlobals": {
                         "recCloudlets": 8
                     }
                 },
                 "slave": {
+                    "scalingMode": "STATEFUL",
                     "minCount": 2,
                      "setGlobals": {
                         "recCloudlets": 8
                     }
                 },
                 "galera": {
+                    "scalingMode": "STATELESS",
                     "minCount": 3,
                     "setGlobals": {
                         "recCloudlets": 16
