@@ -40,7 +40,7 @@
         }]
     },
     "validation": {
-        "scalingMode": "STATELESS",
+        "scalingMode": "STATEFUL",
         "rules": {
             "scheme": {
                 "master": {
