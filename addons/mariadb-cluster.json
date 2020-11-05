@@ -5,7 +5,7 @@
     "nodeGroupData": {
         "skipNodeEmails": true,
         "isResetServicePassword": "NODE",
-        "isRedeploySupport": false
+        "isRedeploySupport": true
     },
     "compatibleAddons": ["mysql-auto-cluster"],
     "settings": {
