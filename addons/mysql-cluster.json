@@ -3,7 +3,6 @@
     "defaultState": false,
     "skipOnEnvInstall": true,
     "nodeGroupData": {
-        "scalingMode": "STATELESS",
         "isResetServicePassword": "NODE",
         "skipNodeEmails": true,
         "isRedeploySupport": true
