@@ -26,6 +26,10 @@ The package includes Highly Available [*ProxySQL Load Balancer*](http://www.prox
 * Both read and write scalability
 * Smaller client latencies
 
+## Cluster Horizontal Scaling
+
+The topologies *master-slave* or *master-master* are improved with a new horizontal scaling algorithm. The key idea of that is a new cluster member is created via cloning an existing *slave* node. Right after the cloning procedure is completed the database on the new cluster member catches up data via binlog replay which definitely will be pretty short in time and guarantees the binlog will not expire unlike the case when the newly added node was created from scratch. Following this improvement we may guarantee cluster fast scaling with no inconsistencies that could arise since the binlog may be overwritten or expire during database cluster lifecycle before cloning. 
+
 ## Deployment to the Cloud
 
 To get started, log in to Jelastic dashboard, import the required manifest using the link from GitHub:
