@@ -119,8 +119,8 @@ actions:
       sed -i "s/bind-address.*/bind-address = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
       sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
-      sed -i "s/envname.*/envname=\"$(env.envName}\"/" /var/lib/jelastic/bin/wsrep-notify.sh
-      sed -i "s/recipients.*/recipients=\"${user.email}\"/" /var/lib/jelastic/bin/wsrep-notify.sh
+      sed -i "s/envname.*/envname='$(env.envName}'/" /var/lib/jelastic/bin/wsrep-notify.sh
+      sed -i "s/recipients.*/recipients='${user.email}'/" /var/lib/jelastic/bin/wsrep-notify.sh
     
   resetCluster:
     - cmd[sqldb]: |-
