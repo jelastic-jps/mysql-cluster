@@ -88,7 +88,8 @@ actions:
         cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${settings.custom_conf} &>> /var/log/run.log
         user: root
     - cmd[${this.id}]: |-
-        wget ${globals.PATH}/scripts/mysql -O /etc/init.d/mysql
+        wget ${globals.PATH}/scripts/mysql -O /etc/init.d/mysql &>> /var/log/run.log
+        wget ${globals.PATH}/scripts/wsrep-notify.sh -O /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
         wget ${globals.PATH}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
       user: root
         
@@ -118,7 +119,8 @@ actions:
       sed -i "s/bind-address.*/bind-address = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
       sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_node_name.*/wsrep_node_name = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
+      sed -i "s/envname.*/envname=\"$(env.envName}\"/" /var/lib/jelastic/bin/wsrep-notify.sh
+      sed -i "s/recipients.*/recipients=\"${user.email}\"/" /var/lib/jelastic/bin/wsrep-notify.sh
     
   resetCluster:
     - cmd[sqldb]: |-
