@@ -94,6 +94,7 @@ actions:
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/wsrep-notify.sh -O /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
         wget ${globals.PATH}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
+        chmod 700 /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
         
   setupUser:
     cmd[${this.id}]: |-
