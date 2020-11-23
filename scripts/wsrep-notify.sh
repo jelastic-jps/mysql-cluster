@@ -1,6 +1,5 @@
 #!/bin/sh -eu
 currentDate=`date +"%Y-%m-%d %T"`
-recipients=
 from="GaleraMonitoring"
 sendmail=`which sendmail`
 node=`hostname`
@@ -38,7 +37,7 @@ then
    subject="Galera monitoring - envname - $STATUS ";
    message="$currentDate - member $node is $STATUS";
    mail="subject:$subject\nfrom:$from\n$message";
-   echo -e $mail | $sendmail -v "$recipients";
+   echo -e $mail | $sendmail -v "recipients";
 fi
 
 echo "$currentDate $node is $STATUS: PRIMARY:$PRIMARY INDEX:$INDEX MEMBERS:$MEMBERS" >> $LOG;
