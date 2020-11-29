@@ -32,12 +32,4 @@ do
          shift
    done
 
-if [[ "$STATUS" == "disconnected" || "$STATUS" == "joined" ]]
-then
-   subject="Galera monitoring - envname - $STATUS ";
-   message="$currentDate - member $node is $STATUS";
-   mail="subject:$subject\nfrom:$from\n$message";
-   echo -e $mail | $sendmail -v "recipients";
-fi
-
 echo "$currentDate $node is $STATUS: PRIMARY:$PRIMARY INDEX:$INDEX MEMBERS:$MEMBERS" >> $LOG;
