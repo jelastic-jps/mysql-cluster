@@ -86,10 +86,8 @@ actions:
     - setNodeDisplayName[${this.id}]: Galera
       if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
         cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${settings.custom_conf} &>> /var/log/run.log
-        user: root
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/mysql -O /etc/init.d/mysql &>> /var/log/run.log
-        systemctl enable sendmail; service sendmail start;
       user: root
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/wsrep-notify.sh -O /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
