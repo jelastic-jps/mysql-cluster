@@ -135,6 +135,10 @@ actions:
         return { result: 0, slaveId: slaveId }
 
   cloneSlave:
+    - if (nodes.proxy):
+        cmd[proxy]: |-
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='SHUNNED' where hostname='${this.slaveId}';"
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
     - cmd[${this.slaveId}]: sudo /etc/init.d/mysql stop
     - api: environment.control.AddNode
       nodeGroup: sqldb
@@ -146,6 +150,10 @@ actions:
         newSlaveId: ${response.node.id}
     - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
     - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
+    - if (nodes.proxy):
+        cmd[proxy]: |-
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='ONLINE' where hostname='${this.slaveId}';"
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
     - cmd[${this.newSlaveId}]: |-
         rm -f /var/lib/mysql/auto.cnf;
         sed -i "s/server-id.*/server-id = ${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
