@@ -220,6 +220,10 @@ actions:
       cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
       
   cloneSlave:
+    - if (nodes.proxy):
+        cmd[proxy]: |-
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='SHUNNED' where hostname='${globals.node_id_for_new_slave}';"
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
     - cmd[${globals.node_id_for_new_slave}]: sudo /etc/init.d/mysql stop
     - api: environment.control.AddNode
       nodeGroup: sqldb
@@ -237,6 +241,10 @@ actions:
         master_id: "${globals.master_id_for_new_slave}"
         config: "/etc/mysql/conf.d/slave.cnf"
     - cmd[${globals.node_id_for_new_slave}]: sudo /etc/init.d/mysql start
+    - if (nodes.proxy):
+        cmd[proxy]: |-
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='ONLINE' where hostname='${globals.node_id_for_new_slave}';"
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
     - setMasterForNewSlave
     
   setScalingMode:
