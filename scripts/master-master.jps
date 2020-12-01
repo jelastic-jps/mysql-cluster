@@ -222,7 +222,7 @@ actions:
   cloneSlave:
     - if (nodes.proxy):
         cmd[proxy]: |-
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='SHUNNED' where hostname='${globals.node_id_for_new_slave}';"
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='SHUNNED' where hostname='node${globals.node_id_for_new_slave}';"
           MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
     - cmd[${globals.node_id_for_new_slave}]: sudo /etc/init.d/mysql stop
     - api: environment.control.AddNode
@@ -243,7 +243,7 @@ actions:
     - cmd[${globals.node_id_for_new_slave}]: sudo /etc/init.d/mysql start
     - if (nodes.proxy):
         cmd[proxy]: |-
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='ONLINE' where hostname='${globals.node_id_for_new_slave}';"
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='ONLINE' where hostname='node${globals.node_id_for_new_slave}';"
           MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
     - setMasterForNewSlave
     
