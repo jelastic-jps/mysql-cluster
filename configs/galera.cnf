@@ -19,7 +19,6 @@ wsrep_provider = /usr/lib64/galera/libgalera_smm.so
 wsrep_cluster_name = 
 wsrep_cluster_address = gcomm://
 wsrep-replicate-myisam = 1
-wsrep_notify_cmd=/var/lib/jelastic/bin/wsrep-notify.sh
 
 # Galera Node Configuration
 wsrep_node_name =
