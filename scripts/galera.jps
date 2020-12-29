@@ -54,10 +54,6 @@ onBeforeStop:
   - forEach(i:nodes.sqldb):
       env.control.StopNode [${@i.id}]
      
-onBeforeSetCloudletCount[sqldb]:     
-  - forEach(i:nodes.sqldb):
-      cmd [${@i.id}]: sudo jem service stop
-
 onBeforeRestartNode[sqldb]:
   - forEach(i:nodes.sqldb):
       cmd [${@i.id}]: sudo jem service restart
