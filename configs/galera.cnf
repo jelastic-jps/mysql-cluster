@@ -22,4 +22,5 @@ wsrep-replicate-myisam = 1
 # wsrep_notify_cmd=/var/lib/jelastic/bin/wsrep-notify.sh
 
 # Galera Node Configuration
+wsrep_node_address =
 wsrep_node_name =
