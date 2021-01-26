@@ -43,7 +43,7 @@ if (!install) {
   fields["message"].markup = "DataBase cluster is not available. " + markup + "Please upgrade your account.";
   fields["message"].cls = "warning";
   fields["message"].hidden = false;
-  fields["message"].height = 30;
+  fields["message"].height = 25;
   
   settings.fields.push(
     {"type": "compositefield","height": 0,"hideLabel": true,"width": 0,"items": [{"height": 0,"type": "string","required": true}]}
