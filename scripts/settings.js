@@ -8,6 +8,11 @@ var perEnv = "environment.maxnodescount",
 var nodesPerEnvMin = 1,
       nodesPerGroupMin = 2,
       markup = "", cur = null, text = "used", install = true;
+      
+var settings = jps.settings;
+var fields = {};
+for (var i = 0, field; field = jps.settings.fields[i]; i++)
+  fields[field.name] = field;
 
 var quotas = jelastic.billing.account.GetQuotas(perEnv + ";"+perNodeGroup ).array;
 for (var i = 0; i < quotas.length; i++){
