@@ -5,7 +5,8 @@ import com.hivext.api.core.utils.Transport;
 //checking quotas
 var perEnv = "environment.maxnodescount",
       perNodeGroup = "environment.maxsamenodescount";
-var nodesPerEnvMin = 1,
+var nodesPerEnvMin = 2,
+      nodesPerEnvMinWithProxy = 4,
       nodesPerGroupMin = 2,
       markup = "", cur = null, text = "used", install = true;
       
@@ -28,13 +29,13 @@ for (var i = 0; i < quotas.length; i++){
     install = false;
   }
 
-  if (n == perEnv && nodesPerEnvMin  == q.value){
+  if (n == perEnv && nodesPerEnvMinWithProxy  > q.value){
     fields["is_proxysql"].value = false;
     fields["is_proxysql"].disabled = true;
-    fields["message"].markup = "ProxySQL is not available. Please upgrade your account.";
+    fields["message"].markup = "ProxySQL is not available. " + markup + "Please upgrade your account.";
     fields["message"].cls = "warning";
     fields["message"].hideLabel = true;
-    fields["message"].height = 25;      
+    fields["message"].height = 30;      
   }
 }
 
