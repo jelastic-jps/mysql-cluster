@@ -16,26 +16,26 @@ for (var i = 0, field; field = jps.settings.fields[i]; i++)
 
 var quotas = jelastic.billing.account.GetQuotas(perEnv + ";"+perNodeGroup ).array;
 for (var i = 0; i < quotas.length; i++){
-    var q = quotas[i], n = toNative(q.quota.name);
+  var q = quotas[i], n = toNative(q.quota.name);
 
-    if (n == perEnv && nodesPerEnvMin > q.value){
-        err(q, "required", nodesPerEnvMin, true);
-        install = false;
-    }
+  if (n == perEnv && nodesPerEnvMin > q.value){
+    err(q, "required", nodesPerEnvMin, true);
+    install = false;
+  }
     
-   if (n == perNodeGroup && nodesPerGroupMin > q.value){
-        if (!markup) err(q, "required", nodesPerGroupMin, true);
-        install = false;
-    }
+  if (n == perNodeGroup && nodesPerGroupMin > q.value){
+    if (!markup) err(q, "required", nodesPerGroupMin, true);
+    install = false;
+  }
 
   if (n == perEnv && nodesPerEnvMin  == q.value){
-      fields["is_proxysql"].value = false;
-      fields["is_proxysql"].disabled = true;
-      fields["message"].markup = "ProxySQL is not available. Please upgrade your account.";
-      fields["message"].cls = "warning";
-      fields["message"].hideLabel = true;
-      fields["message"].height = 25;      
-    }
+    fields["is_proxysql"].value = false;
+    fields["is_proxysql"].disabled = true;
+    fields["message"].markup = "ProxySQL is not available. Please upgrade your account.";
+    fields["message"].cls = "warning";
+    fields["message"].hideLabel = true;
+    fields["message"].height = 25;      
+  }
 }
 
 if (!install) {
