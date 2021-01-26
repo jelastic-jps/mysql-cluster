@@ -13,7 +13,11 @@ description:
   short: A set of MySQL/MariaDB cluster topologies
   
 logo: /images/icon.png?_r=1
+
 baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v2.4.0
+
+onBeforeInit: /scripts/settings.js?_r=${fn.random}
+
 settings:
   fields:
     - caption: Stack
@@ -75,6 +79,12 @@ settings:
               - value: 2
             galera:    
               - value: 3
+              
+    - type: displayfield
+      hideLabel: true
+      hidden: true
+      name: message   
+      markup:
 
 nodes:
   nodeType: "${settings.nodeType}"
