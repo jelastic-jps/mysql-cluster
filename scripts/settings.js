@@ -39,10 +39,10 @@ for (var i = 0; i < quotas.length; i++){
 }
 
 if (!install) {
-  fields["bl_count"].markup = "DataBase cluster is not available. " + markup + "Please upgrade your account.";
-  fields["bl_count"].cls = "warning";
-  fields["bl_count"].hidden = false;
-  fields["bl_count"].height = 30;
+  fields["message"].markup = "DataBase cluster is not available. " + markup + "Please upgrade your account.";
+  fields["message"].cls = "warning";
+  fields["message"].hidden = false;
+  fields["message"].height = 30;
   
   settings.fields.push(
     {"type": "compositefield","height": 0,"hideLabel": true,"width": 0,"items": [{"height": 0,"type": "string","required": true}]}
