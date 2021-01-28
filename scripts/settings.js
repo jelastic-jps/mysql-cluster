@@ -30,6 +30,7 @@ for (var i = 0; i < quotas.length; i++){
   }
 
   if (n == perEnv && nodesPerEnvMinWithProxy  > q.value){
+    if (!markup) err(q, "required", nodesPerEnvMinWithProxy, true);
     fields["is_proxysql"].value = false;
     fields["is_proxysql"].disabled = true;
     fields["message"].markup = "ProxySQL is not available. " + markup + "Please upgrade your account.";
