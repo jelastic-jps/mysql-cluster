@@ -44,10 +44,6 @@ if (!install) {
   fields["message"].cls = "warning";
   fields["message"].hidden = false;
   fields["message"].height = 30;
-  
-  settings.fields.push(
-    {"type": "compositefield","height": 0,"hideLabel": true,"width": 0,"items": [{"height": 0,"type": "string","required": true}]}
-  );
 }
 
 
