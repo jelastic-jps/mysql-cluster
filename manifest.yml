@@ -58,6 +58,7 @@ settings:
 
     - caption: None
       inputType: hidden
+      hidden: true
       type: list
       name: nodeType
       dependsOn:                 
@@ -69,6 +70,7 @@ settings:
               
     - caption: None
       inputType: hidden
+      hidden: true
       type: list
       name: nodes
       dependsOn:                 
