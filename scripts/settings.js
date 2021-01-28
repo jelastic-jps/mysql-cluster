@@ -34,7 +34,7 @@ for (var i = 0; i < quotas.length; i++){
     fields["is_proxysql"].disabled = true;
     fields["message"].markup = "ProxySQL is not available. " + markup + "Please upgrade your account.";
     fields["message"].cls = "warning";
-    fields["message"].hideLabel = false;
+    fields["message"].hidden = false;
     fields["message"].height = 30;      
   }
 }
