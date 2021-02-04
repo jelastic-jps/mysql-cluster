@@ -42,10 +42,13 @@ for (var i = 0; i < quotas.length; i++){
     fields["message"].height = 30;      
   }
  
-  if ((n == perEnv && nodesPerEnvGaleraMinWithProxy > q.value) || (n == perNodeGroup && nodesPerGroupGaleraMin > q.value)) {
+  if (n == perEnv && nodesPerEnvGaleraMinWithProxy > q.value){
     fields["scheme"].dependsOn.stack["mariadb-dockerized"].splice(-1);
-  }      
- 
+  }
+    
+  if (n == perNodeGroup && nodesPerGroupGaleraMin > q.value) {
+    fields["scheme"].dependsOn.stack["mariadb-dockerized"].splice(-1);
+  }
 }
 
 if (!install) {
