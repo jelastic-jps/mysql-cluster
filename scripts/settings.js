@@ -11,7 +11,7 @@ var nodesPerEnvSlaveMin = 2,
     nodesPerEnvGaleraMinWithProxy = 5,
     nodesPerGroupSlaveMin = 2,
     nodesPerGroupGaleraMin = 3,
-    markup = "", cur = null, text = "used", install = true;
+    markup = "", cur = null, text = "used", install = true, galera = true;
       
 var settings = jps.settings;
 var fields = {};
@@ -43,12 +43,16 @@ for (var i = 0; i < quotas.length; i++){
   }
  
   if (n == perEnv && nodesPerEnvGaleraMinWithProxy > q.value){
-    fields["scheme"].dependsOn.stack["mariadb-dockerized"].splice(-1);
+    galera = false;
   }
     
   if (n == perNodeGroup && nodesPerGroupGaleraMin > q.value) {
-    fields["scheme"].dependsOn.stack["mariadb-dockerized"].splice(-1);
+    galera = false;
   }
+}
+
+if (!galera) {
+  fields["scheme"].dependsOn.stack["mariadb-dockerized"].splice(-1);
 }
 
 if (!install) {
@@ -60,7 +64,6 @@ if (!install) {
     {"type": "compositefield","height": 0,"hideLabel": true,"width": 0,"items": [{"height": 0,"type": "string","required": true}]}
   );
 }
-
 
 return {
     result: 0,
