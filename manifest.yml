@@ -13,7 +13,11 @@ description:
   short: A set of MySQL/MariaDB cluster topologies
   
 logo: /images/icon.png?_r=1
+
+onBeforeInit: /scripts/settings.js?_r=${fn.random}
+
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.4.0
+
 settings:
   fields:
     - caption: Stack
@@ -54,6 +58,7 @@ settings:
 
     - caption: None
       inputType: hidden
+      hidden: true
       type: list
       name: nodeType
       dependsOn:                 
@@ -65,6 +70,7 @@ settings:
               
     - caption: None
       inputType: hidden
+      hidden: true
       type: list
       name: nodes
       dependsOn:                 
@@ -75,6 +81,12 @@ settings:
               - value: 2
             galera:    
               - value: 3
+              
+    - type: displayfield
+      hideLabel: true
+      hidden: true
+      name: message   
+      markup:
 
 nodes:
   nodeType: "${settings.nodeType}"

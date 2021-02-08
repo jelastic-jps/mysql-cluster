@@ -53,7 +53,7 @@ onAfterClone:
 onBeforeStop:
   - forEach(i:nodes.sqldb):
       env.control.StopNode [${@i.id}]
-      
+     
 onBeforeRestartNode[sqldb]:
   - forEach(i:nodes.sqldb):
       cmd [${@i.id}]: sudo jem service restart
@@ -121,6 +121,7 @@ actions:
       sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_node_name.*/wsrep_node_name = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
+      sed -i "s/wsrep_node_address.*/wsrep_node_address = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
     
   resetCluster:
     - cmd[sqldb]: |-
