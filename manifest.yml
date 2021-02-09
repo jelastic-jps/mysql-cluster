@@ -94,10 +94,13 @@ nodes:
   skipNodeEmails: true
   count: "${settings.nodes}"
   cloudlets: 16
+  fixedCloudlets: 1
   restartDelay: 30
   isRedeploySupport: true
   cluster:
     jps: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
+    validation:
+      minCount: "${settings.nodes}"
     settings:
       scheme: "${settings.scheme}"
       is_proxysql: "${settings.is_proxysql}"
