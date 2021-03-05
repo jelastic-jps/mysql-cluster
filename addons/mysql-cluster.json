@@ -20,11 +20,11 @@
             "values": [{
                 "value": "master",
                 "caption": "Master-Master",
-                "tooltip": "<h3>Master-Master with Extra Slaves</h3>Pre-configured replication with two interconnected master databases. While horizontal scaling the cluster is extended with additional slave nodes. <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mysql/tip-cluster-mm.svg?sanitize=true'>"
+                "tooltip": "<h3>Master-Master with Scalable Slaves</h3>Pre-configured replication with two interconnected master databases. While scaling horizontally, the cluster is extended with additional slave nodes. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mysql/tip-cluster-mm.svg?sanitize=true'>"
             }, {
                 "value": "slave",
                 "caption": "Master-Slave",
-                "tooltip": "<h3>Master-Slave with Extra Slaves</h3>Pre-configured replication with one master and one slave database. While horizontal scaling the cluster is extended with additional slaves. <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mysql/tip-cluster-ms.svg?sanitize=true'>"
+                "tooltip": "<h3>Master-Slave with Scalable Slaves</h3>Pre-configured replication with one master and one slave database. While scaling horizontally, the cluster is extended with additional slaves. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mysql/tip-cluster-ms.svg?sanitize=true'>"
             }],
             "tipParams": {
                 "dismissDelay": 600000,
