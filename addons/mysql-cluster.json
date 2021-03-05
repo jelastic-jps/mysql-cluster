@@ -83,5 +83,5 @@
             "maxCount": 2
         }
     },
-    "description": "Automatic clusterization of the databases using the chosen scheme with pre-configured replication and auto-discovery of the nodes."
+    "description": "Automatic clusterization of the databases using a chosen scheme with pre-configured replication and auto-discovery of the nodes."
 }
