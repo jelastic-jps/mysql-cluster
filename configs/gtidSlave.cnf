@@ -1,0 +1,12 @@
+[mysqld]
+server-id = 
+gtid_mode=ON
+enforce_gtid_consistency=ON
+log-slave-updates
+relay-log = /var/lib/mysql/mysql-relay-bin
+relay-log-index = /var/lib/mysql/mysql-relay-bin.index
+replicate-wild-ignore-table = performance_schema.%
+replicate-wild-ignore-table = information_schema.%
+replicate-wild-ignore-table = mysql.%
+read_only = 1
+report_host = 
