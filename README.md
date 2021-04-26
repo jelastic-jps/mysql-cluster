@@ -14,21 +14,21 @@ The package includes Highly Available [*ProxySQL Load Balancer*](http://www.prox
 
 ## Simple MariaDB/MySQL Replication
 
-* *master-slave* - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon master failure. Slaves can be read without impact on master.
-* *master-master* - operates with two master nodes simultaneously, while other instances are configured as slaves.
+* *primary*-*secondary*(*source*-*replica*) - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon primary failure. Secondaries can be read without impact on primary. This topology is previously known as *master-slave*
+* *primary*-*primary*(*source*-*source*) - operates with two primary nodes simultaneously, while other instances are configured as secondaries. This topology is previously known as *master-master*
 
 ## MariaDB Galera Cluster
 
-[MariaDB Galera Cluster](https://mariadb.com/kb/en/library/what-is-mariadb-galera-cluster/) is a type of multi-master synchronous replication which is performed at a transaction commit time, by broadcasting transaction write set to all cluster nodes for applying with the following benefits:
+[MariaDB Galera Cluster](https://mariadb.com/kb/en/library/what-is-mariadb-galera-cluster/) is a type of multi-primary synchronous replication which is performed at a transaction commit time, by broadcasting transaction write set to all cluster nodes for applying with the following benefits:
 
-* No slave lag
+* No secondary lag
 * No lost transactions
 * Both read and write scalability
 * Smaller client latencies
 
 ## Cluster Horizontal Scaling
 
-The topologies *master-slave* or *master-master* are improved with a new horizontal scaling algorithm. The key idea of that is a new cluster member is created via cloning an existing *slave* node. Right after the cloning procedure is completed the database on the new cluster member catches up data via binlog replay which definitely will be pretty short in time and guarantees the binlog will not expire unlike the case when the newly added node was created from scratch. Following this improvement we may guarantee cluster fast scaling with no inconsistencies that could arise since the binlog may be overwritten or expire during database cluster lifecycle before cloning. 
+The topologies *primary*-*secondary* or *primary*-*primary* are improved with a new horizontal scaling algorithm. The key idea of that is a new cluster member is created via cloning an existing *secondary* node. Right after the cloning procedure is completed the database on the new cluster member catches up data via binlog replay which definitely will be pretty short in time and guarantees the binlog will not expire unlike the case when the newly added node was created from scratch. Following this improvement we may guarantee cluster fast scaling with no inconsistencies that could arise since the binlog may be overwritten or expire during database cluster lifecycle before cloning. 
 
 ## Deployment to the Cloud
 
