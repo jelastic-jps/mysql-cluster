@@ -39,15 +39,15 @@ settings:
         stack:
             mysql:
               - value: slave
-                caption: Master-Slave with extra slaves
+                caption: Primary-Secondary with extra secondaries
               - value: master
-                caption: Master-Master with extra slaves
+                caption: Primary-Primary with extra secondaries
  
             mariadb-dockerized:    
               - value: slave
-                caption: Master-Slave with extra slaves
+                caption: Primary-Secondary with extra secondaries
               - value: master
-                caption: Master-Master with extra slaves
+                caption: Primary-Primary with extra secondaries
               - value: galera
                 caption: Galera Cluster
 
