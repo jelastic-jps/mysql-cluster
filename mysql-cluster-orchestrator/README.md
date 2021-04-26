@@ -1,22 +1,22 @@
 # Scalable MySQL Cluster with Load Balancing
 
-The JPS package to deploy a ready-to-go scalable MySQL cluster with asynchronous master-slave DB replication, embedded Orchestrator GUI and ProxySQL load balancer.
+The JPS package to deploy a ready-to-go scalable MySQL cluster with asynchronous Primary-Secondary DB replication, embedded Orchestrator GUI and ProxySQL load balancer.
 
 ## Scalable MySQL Cluster Package Specifics
 
 The **Scalable MySQL Cluster with Load Balancing** package can be installed in just one-click to create a Docker-based environment with the following topology specifics:
 - by default, includes 1 ProxySQL load balancer node (based on _jelastic/proxysql_ image) and a pair of MySQL database servers (built over the  _[jelastic/mysql](https://hub.docker.com/r/jelastic/mysql/):5.7-latest_ template) with asynchronous replication between them
-- one MySQL container is assigned a _master_ role, whilst the second one (and all the further manually added nodes) will serve as _slave_
+- one MySQL container is assigned a _primary_ role, whilst the second one (and all the further manually added nodes) will serve as _secondary_
 - each container is assigned the default 8-cloudlet limit (equals to _1 GiB_ of RAM and _3.2 GHz_ of CPU) for [automatic vertical scaling](https://docs.jelastic.com/automatic-vertical-scaling)
 
 ![mysql-cluster-scheme](images/mysql-cluster-scheme.png)
 
 Being delivered with a set of special preconfigurations, the current Scalable MySQL Cluster solution provides the following distinguishing features and extensions:
-- _**efficient load balancing**_ - ProxySQL uses the _hostgroups_ concept to separate DB master (with read-write possibility) and slaves (with read-only permissions); herewith, due to special _query rules_, all _select_ requests are redirected only to slave servers and distributed between them with round-robin algorithm to ensure even load
+- _**efficient load balancing**_ - ProxySQL uses the _hostgroups_ concept to separate DB primary (with read-write possibility) and secondaries (with read-only permissions); herewith, due to special _query rules_, all _select_ requests are redirected only to secondary servers and distributed between them with round-robin algorithm to ensure even load
 - _**re-configuration with no downtime**_ - a cluster is designed to run continuously and can be adjusted on a fly without the necessity to restart the running services
-- _**automated failover**_ - slave nodes, which respond with a high latency or can not be reached at all, are temporarily excluded from a cluster and automatically re-added to it once the connection is restored
+- _**automated failover**_ - secondary nodes, which respond with a high latency or can not be reached at all, are temporarily excluded from a cluster and automatically re-added to it once the connection is restored
 - _**comfortable GUI**_ - the solution includes pre-installed [Orchestrator](https://github.com/github/orchestrator) tool to simplify cluster management
-- _**scalability and autodiscovery**_ - new MySQL nodes, added during manual DB server [horizontal scaling](https://docs.jelastic.com/multi-nodes), are included into a cluster as _slaves_ with all the required adjustments being applied automatically
+- _**scalability and autodiscovery**_ - new MySQL nodes, added during manual DB server [horizontal scaling](https://docs.jelastic.com/multi-nodes), are included into a cluster as _secondaries_ with all the required adjustments being applied automatically
 
 Before proceeding to the package installation, consider, that the appropriate Platform should run Jelastic 5.0.5 version or higher.
 
