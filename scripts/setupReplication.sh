@@ -13,7 +13,7 @@ MYSQL=`which mysql`
 MYSQLADMIN=`which mysqladmin`
 MYSQLREPLICATE=`which mysqlreplicate`
 
-# Set MySQL REPLICATION-MASTER
+# Set MySQL REPLICATION-PRIMARY
 
 waiting_MYSQL_service() {
         local LOOP_LIMIT=60
@@ -49,12 +49,12 @@ then
 fi
 
 if [ ${IS_MASTER} == TRUE ]; then
-	echo "=> Configuring MySQL replicaiton as master ..."
+	echo "=> Configuring MySQL replicaiton as primary ..."
 else
-# Set MySQL REPLICATION - SLAVE
-	echo "=> Configuring MySQL replicaiton as slave ..."
+# Set MySQL REPLICATION - SECONDARY
+	echo "=> Configuring MySQL replicaiton as secondary ..."
 	if [ ! -f ~/save_repl_set ]; then
-		echo "=> Setting master connection info on slave"
+		echo "=> Setting primary connection info on secondary"
 		echo "=> Creating a replica user ${REPLICATION_USER}:${REPLICATION_PASS}"
         	$MYSQL -u${MYSQL_ADMIN_USER} -p${MYSQL_ADMIN_PASSWORD} -h${DB_MASTER} -e "CREATE USER '${DB_REPLICA_USER}'@'%' IDENTIFIED BY '${DB_REPLICA_PASSWORD}'"
         	$MYSQL -u${MYSQL_ADMIN_USER} -p${MYSQL_ADMIN_PASSWORD} -h${DB_MASTER} -e "GRANT REPLICATION CLIENT,REPLICATION SLAVE ON *.* TO '${DB_REPLICA_USER}'@'%'; FLUSH PRIVILEGES;"
@@ -62,6 +62,6 @@ else
 		echo "=> Done!"
 		touch ~/save_repl_set
 	else
-		echo "=> MySQL replicaiton slave already configured, skip"
+		echo "=> MySQL replicaiton secondary already configured, skip"
 	fi
 fi
