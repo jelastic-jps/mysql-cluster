@@ -1,7 +1,7 @@
 type: update
 id: mysql-master-master-replication-cluster
-name: MySQL/MariaDB Master-Master Replication Database Cluster
-description: 'DB Auto Clustering: 1 x Master + N x Slave'
+name: MySQL/MariaDB Primary-Primary Replication Database Cluster
+description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
 success:
   text: "../texts/phpmyadmin-credentials.md"
@@ -31,7 +31,7 @@ onBeforeCloneNodes[sqldb]:
   - exportsGlobalsToNodeGroup
   - stopEvent:
       type: success
-      message: New slaves successfully added
+      message: New secondaries successfully added
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
