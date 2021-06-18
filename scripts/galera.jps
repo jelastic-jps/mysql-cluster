@@ -60,7 +60,15 @@ onBeforeRestartNode[sqldb]:
   - stopEvent:
       type: success
       message: Galera cluster successfully restarted
-   
+
+onBeforeRedeployContainer[sqldb]:
+  - env.control.RedeployContainerById [${nodes.sqldb.join(id,)}]:
+      tag: ${event.params.tag}
+      sync: true
+  - stopEvent:
+      type: success
+      message: Galera cluster successfully redeployed to ${event.params.tag} tag.
+
 onInstall:
   - resetCluster
   - initialSetup:
