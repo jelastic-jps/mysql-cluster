@@ -105,12 +105,6 @@ nodes:
       scheme: "${settings.scheme}"
       is_proxysql: "${settings.is_proxysql}"
   env:
-    ADMINPANEL_ENABLED: false
-    PHPMYADMIN_ENABLED: false
-    DB_USER: ${globals.db_user}
-    DB_PASS: ${globals.db_pass}
-    _PROVIDE: Database
-    _ROLE": galera
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
     IS_PROXYSQL: "${settings.is_proxysql}"
