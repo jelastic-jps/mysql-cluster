@@ -63,6 +63,12 @@ onBeforeRestartNode[sqldb]:
       type: success
       message: Galera cluster successfully restarted
 
+onAfterSetCloudletCount[sqldb]:
+  - forEach(i:nodes.sqldb):
+    - wsrepSlaveThreads:
+        id: "${@i.id}"
+    - cmd [${@i.id}]: sudo jem service restart;
+
 onInstall:
   - resetCluster
   - initialSetup:
