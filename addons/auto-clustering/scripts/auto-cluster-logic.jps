@@ -29,11 +29,19 @@ onAfterResetNodePassword[sqldb]:
     user: root
 
 onBeforeRedeployContainer[sqldb]:
-   - set: { versions: "${nodes.sqldb.master.version}, ${event.params.tag}" }
-   - if (${fn.compare([this.versions])} == 1):
+  - set:
+      tag: ${event.params.tag}
+  - set: { versions: "${nodes.sqldb.master.version}, ${this.tag}" }
+  - if (${fn.compare([this.versions])} == 1):
       stopEvent:
         type: warning
         message: Downgrading is not supported for database cluster.
+  - env.control.RedeployContainerById [${nodes.sqldb.join(id,)}]:
+      tag: ${this.tag}
+      sync: true
+  - stopEvent:
+      type: success
+      message: Database cluster successfully redeployed to ${this.tag} tag.
 
 onInstall:
   - if ('${settings.db_pass}'.length < 8):
@@ -127,4 +135,4 @@ actions:
           - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-master-slave.jps?_r=${fn.random}"
-  
+ 
