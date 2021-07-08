@@ -149,6 +149,7 @@ actions:
     - set:
         newSlaveId: ${response.node.id}
     - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
+    - cmd[${this.newSlaveId}]: sudo /etc/init.d/mysql stop
     - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
     - if (nodes.proxy):
         cmd[proxy]: |-
