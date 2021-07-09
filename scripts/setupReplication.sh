@@ -48,8 +48,8 @@ then
     IS_MASTER=TRUE;
 fi
 
-if [ ${IS_MASTER} == TRUE ]; then
-	echo "=> Configuring MySQL replicaiton as primary ..."
+if [ "x${IS_MASTER}" == "xTRUE" ]; then
+ 	echo "=> Configuring MySQL replicaiton as primary ..."
 else
 # Set MySQL REPLICATION - SLAVE
 	echo "=> Configuring MySQL replicaiton as secondary ..."
