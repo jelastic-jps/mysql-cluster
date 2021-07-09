@@ -27,8 +27,7 @@ onAfterScaleOut[sqldb]:
         id: "${@i.id}"
     - wsrepSlaveThreads:
         id: "${@i.id}"
-    - cmd[${@i.id}]: "/etc/init.d/mysql restart"
-      user: root
+    - cmd[${@i.id}]: "jem service restart"
 
 onAfterScaleIn[sqldb]:
   setupSeeds
@@ -54,11 +53,10 @@ onAfterClone:
 
 onBeforeStop:
   - forEach(i:nodes.sqldb):
-      cmd [${@i.id}]: sudo jem service stop; sleep 5;
-     
+      env.control.StopNode [${@i.id}]
+
 onBeforeRestartNode[sqldb]:
-  - forEach(i:nodes.sqldb):
-      cmd [${@i.id}]: sudo jem service restart
+  - restartNodesInOrder
   - stopEvent:
       type: success
       message: Galera cluster successfully restarted
@@ -71,18 +69,18 @@ onAfterSetCloudletCount[sqldb]:
 
 onInstall:
   - resetCluster
+  - restartNodesInOrder
   - initialSetup:
       id: "sqldb"
   - setupSeeds
   - setupInstance:
       id: "sqldb"
-  - wsrepSlaveThreads:
-      id: "sqldb"
-  - cmd[${nodes.sqldb.master.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
+  - cmd[${nodes.sqldb.master.id}]: "jem service stop; sleep 5; pkill -9 mysql; pkill -9 mariadb; service httpd start; galera_new_cluster"
     user: root
   - forEach(n:nodes.sqldb):
       if (!${@n.ismaster}):
         cmd[${@n.id}]: "jem service restart"
+        user: root
   - env.file.AddFavorite:
     nodeGroup: sqldb
     path: /var/lib/mysql/grastate.dat
@@ -95,9 +93,12 @@ actions:
         id: "${this.id}"
     - setNodeDisplayName[${this.id}]: Galera
       if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
-        cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${settings.custom_conf} &>> /var/log/run.log
+        cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
+        user: root
     - cmd[${this.id}]: |-
-        wget ${globals.PATH}/scripts/mysql -O /etc/init.d/mysql &>> /var/log/run.log
+        [ -e /etc/systemd/system/mariadb.service.d ] && wget ${globals.PATH}/scripts/mariadb-systemd-override.conf -O /etc/systemd/system/mariadb.service.d/bootstrap.conf || wget ${globals.PATH}/scripts/mysql -O /etc/init.d/mysql;
+        wget ${globals.PATH}/configs/galera-myisam.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log; wget ${globals.PATH}/scripts/setMySQLOOMScore -O /usr/local/sbin/setMySQLOOMScore; 
+        chmod +x /usr/local/sbin/setMySQLOOMScore; echo '/etc/systemd/system/mariadb.service.d/bootstrap.conf' >> /etc/jelastic/redeploy.conf; systemctl daemon-reload
       user: root
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/wsrep-notify.sh -O /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
@@ -142,6 +143,10 @@ actions:
         [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
         [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
-        /etc/init.d/mysql stop; pkill -9 mysql; /etc/init.d/mysql start
+        pgrep mysql 1>/dev/null && pkill -9 mysql;
+        pgrep mariadb 1>/dev/null && pkill -9 mariadb || true
       user: root
  
+  restartNodesInOrder:
+    - forEach(i:nodes.sqldb):
+        cmd [${@i.id}]: sudo jem service restart
