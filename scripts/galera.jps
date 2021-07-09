@@ -168,12 +168,6 @@ actions:
           galeraClusterSizeOk: False
 
   redeployGalera:
-    - if (nodes.sqldb.length > 1):
-        - checkGaleraClusterSize
-        - if (!${globals.galeraClusterSizeOk}):
-            return:
-              type: error
-              message: "Galera cluster size is wrong. Aborting"
     - forEach(nodes.sqldb):
         - log: "Redeploying MariaDB on node ${@i.id}..."
         - cmd[${@i.id}]: sudo jem service stop
@@ -183,8 +177,3 @@ actions:
           useExistingVolumes: true
           skipReinstall: false
           envName: ${env.envName}
-        - checkGaleraClusterSize
-        - if (!${globals.galeraClusterSizeOk}):
-            return:
-              type: error
-              message: "Galera node ${globals.currentNode} was not able to join the cluster after being redeployed"
