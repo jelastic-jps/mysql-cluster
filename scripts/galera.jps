@@ -4,30 +4,31 @@ name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
 
 success:
-  text: "../texts/phpmyadmin-credentials.md"
+  text: ../texts/phpmyadmin-credentials.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
 globals:
-  PATH: "${settings.path}"
-  DB_USER: "${settings.db_user}"
-  DB_PASS: "${settings.db_pass}"
+  PATH: ${settings.path}
+  DB_USER: ${settings.db_user}
+  DB_PASS: ${settings.db_pass}
   CLUSTER_NAME: galera-cluster
-  GALERA_CONF: "/etc/mysql/conf.d/galera.cnf"
-  CUSTOM_CONF: "${settings.custom_conf}"
+  GALERA_CONF: /etc/mysql/conf.d/galera.cnf
+  CUSTOM_CONF: ${settings.custom_conf}
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
       initialSetup:
-        id: "${@i.id}"
+        id: ${@i.id}
   - setupSeeds
   - forEach(event.response.nodes):
     - setupInstance:
-        id: "${@i.id}"
+        id: ${@i.id}
+        ip: ${@i.intIP}
     - wsrepSlaveThreads:
-        id: "${@i.id}"
-    - cmd[${@i.id}]: "jem service restart"
+        id: ${@i.id}
+    - cmd[${@i.id}]: jem service restart
 
 onAfterScaleIn[sqldb]:
   setupSeeds
@@ -37,8 +38,8 @@ onAfterMigrate:
   - install: ${response.jps}
     nodeGroup: sqldb
     settings:
-      db_user: "jelastic-${fn.random}"
-      db_pass: "${fn.password(20)}"
+      db_user: jelastic-${fn.random}
+      db_pass: ${fn.password(20)}
       path: ${globals.PATH}
 
 onAfterClone:
@@ -47,8 +48,8 @@ onAfterClone:
     envName: ${event.response.env.envName}
     nodeGroup: sqldb
     settings:
-      db_user: "jelastic-${fn.random}"
-      db_pass: "${fn.password(20)}"
+      db_user: jelastic-${fn.random}
+      db_pass: ${fn.password(20)}
       path: ${globals.PATH}
 
 onBeforeStop:
@@ -64,22 +65,24 @@ onBeforeRestartNode[sqldb]:
 onAfterSetCloudletCount[sqldb]:
   - forEach(i:nodes.sqldb):
     - wsrepSlaveThreads:
-        id: "${@i.id}"
+        id: ${@i.id}
     - cmd [${@i.id}]: sudo jem service restart;
 
 onInstall:
   - resetCluster
   - restartNodesInOrder
   - initialSetup:
-      id: "sqldb"
+      id: sqldb
   - setupSeeds
-  - setupInstance:
-      id: "sqldb"
-  - cmd[${nodes.sqldb.master.id}]: "jem service stop; sleep 5; pkill -9 mysql; pkill -9 mariadb; service httpd start; galera_new_cluster"
+  - forEach(i:nodes.sqldb):
+      setupInstance:
+        id: ${@i.id}
+        ip: ${@i.intIP}
+  - cmd[${nodes.sqldb.master.id}]: jem service stop; sleep 5; pkill -9 mysql; pkill -9 mariadb; service httpd start; galera_new_cluster;
     user: root
   - forEach(n:nodes.sqldb):
       if (!${@n.ismaster}):
-        cmd[${@n.id}]: "jem service restart"
+        cmd[${@n.id}]: jem service restart
         user: root
   - env.file.AddFavorite:
     nodeGroup: sqldb
@@ -90,7 +93,7 @@ onInstall:
 actions:
   initialSetup:
     - setupUser:
-        id: "${this.id}"
+        id: ${this.id}
     - setNodeDisplayName[${this.id}]: Galera
       if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
         cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
@@ -112,18 +115,16 @@ actions:
     user: root
 
   setupSeeds:
-    script:
-    - var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
-    - if (resp.result != 0) return resp;
-    - var nodes = [];
-    - for (var i = 0, n = resp.nodes; i < n.length; i++)
-    - "  n[i].nodeGroup == nodeGroup ? nodes.push('node' + n[i].id) : 0"
-    - 'resp = {result:0, onAfterReturn: {}};'
-    - resp.onAfterReturn['cmd['+ nodeGroup +']'] = 'sed -i "s|wsrep_cluster_address.*|wsrep_cluster_address
-      = gcomm://'+ nodes.join(',') +'|g " ${globals.GALERA_CONF}';
-    - resp.onAfterReturn['user'] = 'root';
-    - return resp;
-    nodeGroup: sqldb
+    script: |
+      var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+      if (resp.result != 0) return resp;
+      var intIP = [];
+      for (var i = 0, n = resp.nodes; i < n.length; i++)
+        n[i].nodeGroup == "sqldb" ? intIP.push(n[i].intIP) : 0
+      resp = {result:0, onAfterReturn: {}};
+      resp.onAfterReturn['cmd[sqldb]'] = 'sed -i "s|wsrep_cluster_address.*|wsrep_cluster_address = gcomm://'+ intIP.join(',') +'|g " ${globals.GALERA_CONF}';
+      resp.onAfterReturn['user'] = 'root';
+      return resp;
   
   setupInstance:
     cmd[${this.id}]: |-
@@ -132,7 +133,7 @@ actions:
       sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
       sed -i "s/wsrep_node_name.*/wsrep_node_name = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_node_address.*/wsrep_node_address = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
+      sed -i "s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/" ${globals.GALERA_CONF}
  
   wsrepSlaveThreads:
     cmd[${this.id}]: sed -i "s/wsrep_slave_threads.*/wsrep_slave_threads = $(nproc --all)/" ${globals.GALERA_CONF}
