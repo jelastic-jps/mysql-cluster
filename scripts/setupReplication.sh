@@ -54,6 +54,9 @@ else
 # Set MySQL REPLICATION - SLAVE
 	echo "=> Configuring MySQL replicaiton as secondary ..."
 	if [ ! -f ~/save_repl_set ]; then
+		if [[ ! -z "$MYSQL_VERSION" && ${MYSQL_VERSION%.*} = "8.0" && {MARIADB_VERSION##*.} > 24 ]] || [[ ! -z "$MARIADB_VERSION" && ${MARIADB_VERSION%.*} = "10.6" && ${MARIADB_VERSION##*.} > 2 ]] ; then 
+      			sed -i '/charset = options.get/s/None/"utf8mb4"/' /usr/lib/python2.7/site-packages/mysql/utilities/common/server.py; 
+		fi 
 		echo "=> Setting primary connection info on secondary"
 		echo "=> Creating a replica user ${REPLICATION_USER}:${REPLICATION_PASS}"
         	$MYSQL -u${MYSQL_ADMIN_USER} -p${MYSQL_ADMIN_PASSWORD} -h${DB_MASTER} -e "CREATE USER '${DB_REPLICA_USER}'@'%' IDENTIFIED BY '${DB_REPLICA_PASSWORD}'"
