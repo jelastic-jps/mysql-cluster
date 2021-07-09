@@ -28,15 +28,6 @@ onAfterResetNodePassword[sqldb]:
       jem service restart
     user: root
 
-onBeforeRedeployContainer[sqldb]:
-  - set:
-      tag: ${event.params.tag}
-  - set: { versions: "${nodes.sqldb.master.version}, ${this.tag}" }
-  - if (${fn.compare([this.versions])} == 1):
-      stopEvent:
-        type: warning
-        message: Downgrading is not supported for database cluster.
-
 onInstall:
   - if ('${settings.db_pass}'.length < 8):
       stopEvent:
