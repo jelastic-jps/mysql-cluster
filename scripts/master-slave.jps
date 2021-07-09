@@ -82,6 +82,7 @@ actions:
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
         bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
+      user: root
 
   setupUser:
     cmd[${this.id}]: |-
