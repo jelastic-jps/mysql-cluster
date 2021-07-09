@@ -4,9 +4,9 @@ name: Logic for scalable Database cluster
 skipNodeEmails: true
 
 description:
-  text: Ready-to-work scalable MySQL Cluster with master-slave asynchronous replication
+  text: Ready-to-work scalable MySQL Cluster with primary-secondary asynchronous replication
     and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator
-    GUI for convenient cluster management and provides even load distribution, slaves
+    GUI for convenient cluster management and provides even load distribution, secondaries
     healthcheck and autodiscovery of newly added DB nodes
   short: Logic for scalable Database cluster
 

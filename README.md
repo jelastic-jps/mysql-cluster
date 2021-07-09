@@ -14,8 +14,8 @@ The package includes Highly Available [*ProxySQL Load Balancer*](http://www.prox
 
 ## Simple MariaDB/MySQL Replication
 
-* *master-slave* - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon master failure. Slaves can be read without impact on master.
-* *master-master* - operates with two master nodes simultaneously, while other instances are configured as slaves.
+* *primary*-*secondary*(*source*-*replica*) - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon primary failure. Secondaries can be read without impact on primary. This topology is previously known as *master-slave*
+* *primary*-*primary*(*source*-*source*) - operates with two primary nodes simultaneously, while other instances are configured as secondaries. This topology is previously known as *master-master*
 
 ## MariaDB/MySQL Group Replication (MGR)
 
@@ -28,7 +28,7 @@ The package includes Highly Available [*ProxySQL Load Balancer*](http://www.prox
 
 [MariaDB Galera Cluster](https://mariadb.com/kb/en/library/what-is-mariadb-galera-cluster/) is a type of multi-master synchronous replication which is performed at a transaction commit time, by broadcasting transaction write set to all cluster nodes for applying with the following benefits:
 
-* No slave lag
+* No secondary lag
 * No lost transactions
 * Both read and write scalability
 * Smaller client latencies
