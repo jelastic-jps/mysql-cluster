@@ -68,6 +68,10 @@ onAfterSetCloudletCount[sqldb]:
         id: ${@i.id}
     - cmd [${@i.id}]: sudo jem service restart;
 
+onBeforeRedeployContainer[sqldb]:
+  redeployGalera:
+    targetDockerTag: ${event.params.tag}
+
 onInstall:
   - resetCluster
   - restartNodesInOrder
@@ -151,3 +155,25 @@ actions:
   restartNodesInOrder:
     - forEach(i:nodes.sqldb):
         cmd [${@i.id}]: sudo jem service restart
+
+  checkGaleraClusterSize:
+    # Ensure the cluster size match the node count
+    - cmd[${nodes.sqldb.first.id}]: |-
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -Nse "show global status like 'wsrep_cluster_size';" | awk '{print $NF}'
+    - if ("${response.out}" == "${nodes.sqldb.length}"):
+        setGlobals:
+          galeraClusterSizeOk: True
+    - else:
+        setGlobals:
+          galeraClusterSizeOk: False
+
+  redeployGalera:
+    - forEach(nodes.sqldb):
+        - log: "Redeploying MariaDB on node ${@i.id}..."
+        - cmd[${@i.id}]: sudo jem service stop
+        - api: environment.control.RedeployContainerById
+          nodeId: ${@i.id}
+          tag: ${this.targetDockerTag}
+          useExistingVolumes: true
+          skipReinstall: false
+          envName: ${env.envName}
