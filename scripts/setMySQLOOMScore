@@ -1,0 +1,27 @@
+#!/bin/bash
+
+oom_score_adj_level="-700"
+
+function set_oom_score_adj_level(){
+
+    if test ! -z "$(pgrep mysqld_safe)"; then
+        local DB_DAEMON="mysqld_safe";
+    elif test ! -z "$(pgrep mariadbd)"; then
+        local DB_DAEMON="mariadbd";
+    elif test ! -z "$(pgrep mysqld)"; then
+        local DB_DAEMON="mysqld";
+    else
+        return 0;
+    fi
+
+    echo $oom_score_adj_level > /proc/$(pgrep ${DB_DAEMON}|tail -n 1)/oom_score_adj 2>&1;
+}
+
+retries=60
+    while [ $retries -gt 0 ]; do
+        sleep 1;
+        [ -n "$(pgrep 'mysqld|mariadbd')" ] && break
+    let retries=${retries}-1
+done
+
+set_oom_score_adj_level
