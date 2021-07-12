@@ -68,13 +68,6 @@ onAfterSetCloudletCount[sqldb]:
         id: ${@i.id}
     - cmd [${@i.id}]: sudo jem service restart;
 
-onBeforeRedeployContainer[sqldb]:
-  - redeployGalera:
-      targetDockerTag: ${event.params.tag}
-  - stopEvent:
-      type: success
-      message: Galera cluster successfully redeployed to ${event.params.tag} tag.
-
 onInstall:
   - resetCluster
   - restartNodesInOrder
