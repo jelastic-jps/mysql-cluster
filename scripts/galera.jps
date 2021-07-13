@@ -17,6 +17,13 @@ globals:
   GALERA_CONF: /etc/mysql/conf.d/galera.cnf
   CUSTOM_CONF: ${settings.custom_conf}
 
+onBeforeScaleOut[sqldb]:
+  - checkGaleraClusterSize
+  - if (!${globals.galeraClusterSizeOk}):
+      return:
+        type: error
+        message: "Galera cluster size is wrong. Aborting"
+
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
       initialSetup:
@@ -30,9 +37,23 @@ onAfterScaleOut[sqldb]:
         id: ${@i.id}
     - cmd[${@i.id}]: jem service restart
 
+onBeforeScaleIn[sqldb]:
+  - checkGaleraClusterSize
+  - if (!${globals.galeraClusterSizeOk}):
+      return:
+        type: error
+        message: "Galera cluster size is wrong. Aborting"
+
 onAfterScaleIn[sqldb]:
   setupSeeds
   
+onBeforeMigrate[sqldb]:
+  - checkGaleraClusterSize
+  - if (!${globals.galeraClusterSizeOk}):
+      return:
+        type: error
+        message: "Galera cluster size is wrong. Aborting"
+
 onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
@@ -41,6 +62,13 @@ onAfterMigrate:
       db_user: jelastic-${fn.random}
       db_pass: ${fn.password(20)}
       path: ${globals.PATH}
+
+onBeforeClone:
+  - checkGaleraClusterSize
+  - if (!${globals.galeraClusterSizeOk}):
+      return:
+        type: error
+        message: "Galera cluster size is wrong. Aborting"
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
@@ -67,12 +95,14 @@ onBeforeRestartNode[sqldb]:
       type: success
       message: Galera cluster successfully restarted
 
-onAfterSetCloudletCount[sqldb]:
+onBeforeSetCloudletCount[sqldb]:
   - checkGaleraClusterSize
   - if (!${globals.galeraClusterSizeOk}):
       return:
         type: error
         message: "Galera cluster size is wrong. Aborting"
+
+onAfterSetCloudletCount[sqldb]:
   - forEach(i:nodes.sqldb):
     - wsrepSlaveThreads:
         id: ${@i.id}
