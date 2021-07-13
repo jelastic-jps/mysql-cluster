@@ -20,7 +20,7 @@ globals:
 onBeforeScaleOut[sqldb]:
   - checkGaleraClusterSize
   - if (!${globals.galeraClusterSizeOk}):
-      return:
+      stopEvent:
         type: error
         message: "Galera cluster size is wrong. Aborting"
 
@@ -40,7 +40,7 @@ onAfterScaleOut[sqldb]:
 onBeforeScaleIn[sqldb]:
   - checkGaleraClusterSize
   - if (!${globals.galeraClusterSizeOk}):
-      return:
+      stopEvent:
         type: error
         message: "Galera cluster size is wrong. Aborting"
 
@@ -50,7 +50,7 @@ onAfterScaleIn[sqldb]:
 onBeforeMigrate[sqldb]:
   - checkGaleraClusterSize
   - if (!${globals.galeraClusterSizeOk}):
-      return:
+      stopEvent:
         type: error
         message: "Galera cluster size is wrong. Aborting"
 
@@ -66,7 +66,7 @@ onAfterMigrate:
 onBeforeClone:
   - checkGaleraClusterSize
   - if (!${globals.galeraClusterSizeOk}):
-      return:
+      stopEvent:
         type: error
         message: "Galera cluster size is wrong. Aborting"
 
@@ -87,7 +87,7 @@ onBeforeStop:
 onBeforeRestartNode[sqldb]:
   - checkGaleraClusterSize
   - if (!${globals.galeraClusterSizeOk}):
-      return:
+      stopEvent:
         type: error
         message: "Galera cluster size is wrong. Aborting"
   - restartNodesInOrder
