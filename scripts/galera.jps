@@ -57,12 +57,22 @@ onBeforeStop:
       env.control.StopNode [${@i.id}]
 
 onBeforeRestartNode[sqldb]:
+  - checkGaleraClusterSize
+  - if (!${globals.galeraClusterSizeOk}):
+      return:
+        type: error
+        message: "Galera cluster size is wrong. Aborting"
   - restartNodesInOrder
   - stopEvent:
       type: success
       message: Galera cluster successfully restarted
 
 onAfterSetCloudletCount[sqldb]:
+  - checkGaleraClusterSize
+  - if (!${globals.galeraClusterSizeOk}):
+      return:
+        type: error
+        message: "Galera cluster size is wrong. Aborting"
   - forEach(i:nodes.sqldb):
     - wsrepSlaveThreads:
         id: ${@i.id}
