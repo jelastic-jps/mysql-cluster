@@ -75,9 +75,11 @@ onInstall:
       id: sqldb
   - setupSeeds
   - forEach(i:nodes.sqldb):
-      setupInstance:
-        id: ${@i.id}
-        ip: ${@i.intIP}
+      - setupInstance:
+          id: ${@i.id}
+          ip: ${@i.intIP}
+      - wsrepSlaveThreads:
+          id: ${@i.id}
   - cmd[${nodes.sqldb.master.id}]: jem service stop; sleep 5; pkill -9 mysql; pkill -9 mariadb; service httpd start; galera_new_cluster;
     user: root
   - forEach(n:nodes.sqldb):
