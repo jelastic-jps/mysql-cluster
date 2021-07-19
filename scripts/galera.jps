@@ -55,6 +55,10 @@ onAfterClone:
 onBeforeStop:
   - forEach(i:nodes.sqldb):
       env.control.StopNode [${@i.id}]
+      
+onAfterStart:   
+  - if (nodes.proxy):
+      cmd[proxy]: sudo service proxysql restart
 
 onBeforeRestartNode[sqldb]:
   - restartNodesInOrder
