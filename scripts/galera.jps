@@ -66,6 +66,10 @@ onBeforeRestartNode[sqldb]:
       type: success
       message: Galera cluster successfully restarted
 
+onAfterRestartNode[sqldb]:
+  - if (nodes.proxy):
+      cmd[proxy]: sudo service proxysql restart
+
 onAfterSetCloudletCount[sqldb]:
   - forEach(i:nodes.sqldb):
     - wsrepSlaveThreads:
