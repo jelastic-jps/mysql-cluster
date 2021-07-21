@@ -159,7 +159,7 @@ actions:
         sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf
     - setupUser:
         id: "${this.id}"
-    - setNodeDisplayName[${this.id}]: Master
+    - setNodeDisplayName[${this.id}]: Primary
 
   setupSlave:
     - addCustomConfig:
@@ -171,7 +171,7 @@ actions:
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
     - setupUser:
         id: "${this.id}"
-    - setNodeDisplayName[${this.id}]: Slave
+    - setNodeDisplayName[${this.id}]: Secondary
   
   addSlaves:
     - forEach(n:nodes.sqldb):
