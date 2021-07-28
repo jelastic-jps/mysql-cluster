@@ -60,7 +60,7 @@ onBeforeRestartNode[sqldb]:
   - stopEvent:
       type: success
       message: Galera cluster successfully restarted
-   
+
 onInstall:
   - resetCluster
   - initialSetup:
