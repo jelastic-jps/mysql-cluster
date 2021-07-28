@@ -1,7 +1,7 @@
 type: update
 id: mysql-master-master-replication-cluster
-name: MySQL/MariaDB Master-Master Replication Database Cluster
-description: 'DB Auto Clustering: 1 x Master + N x Slave'
+name: MySQL/MariaDB Primary-Primary Replication Database Cluster
+description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
 success:
   text: "../texts/phpmyadmin-credentials.md"
@@ -158,7 +158,7 @@ actions:
         sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf
     - setupUser:
         id: "${this.id}"
-    - setNodeDisplayName[${this.id}]: Master
+    - setNodeDisplayName[${this.id}]: Primary
 
   setupSlave:
     - addCustomConfig:
@@ -170,7 +170,7 @@ actions:
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
     - setupUser:
         id: "${this.id}"
-    - setNodeDisplayName[${this.id}]: Slave
+    - setNodeDisplayName[${this.id}]: Secondary
   
   addSlaves:
     - forEach(n:nodes.sqldb):
