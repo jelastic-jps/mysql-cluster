@@ -9,7 +9,8 @@ cmd="CREATE USER '$USER'@'localhost' IDENTIFIED BY '$PASSWORD'; CREATE USER '$US
 unset resp;
 resp=$(mysql -u$USER -p$PASSWORD mysql --execute="SHOW COLUMNS FROM user")
 [ -z "$resp" ] && {
-   $JEM passwd set -p $ADMIN_PASSWORD
+   encPass=$(echo $ADMIN_PASSWORD | openssl enc -e -a -A -aes-128-cbc -nosalt -pass "pass:TFVhBKDOSBspeSXesw8fElCcOzbJzYed")
+   $JEM passwd set -p static:$encPass
    $MYSQL -uroot -p${ADMIN_PASSWORD} --execute="$cmd"
 } || {
    echo "[Info] User $user has the required access to the database."
