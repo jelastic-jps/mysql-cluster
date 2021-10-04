@@ -2,7 +2,7 @@ jpsType: update
 id: mysql-proxy-galera-cluster
 name: MariaDB Galera Cluster with ProxySQL
 description: MariaDB Galera Cluster
-success: "../texts/proxy-entrypoint.md"
+success: ${globals.PATH}/texts/proxy-entrypoint.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
