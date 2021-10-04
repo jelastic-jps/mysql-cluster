@@ -4,7 +4,7 @@ name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
 
 success:
-  text: ../texts/phpmyadmin-credentials.md
+  text: ${globals.PATH}/texts/phpmyadmin-credentials.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
