@@ -4,7 +4,7 @@ name: MySQL/MariaDB Primary-Primary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
 success:
-  text: "../texts/phpmyadmin-credentials.md"
+   text: ${globals.PATH}/texts/phpmyadmin-credentials.md
 
 targetNodes: none
 nodeGroupAlias:
