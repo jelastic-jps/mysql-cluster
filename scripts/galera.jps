@@ -3,8 +3,10 @@ id: mysql-galera-cluster
 name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
 
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v2.4.1
+
 success:
-  text: ${globals.PATH}/texts/phpmyadmin-credentials.md
+  text: /texts/phpmyadmin-credentials.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
