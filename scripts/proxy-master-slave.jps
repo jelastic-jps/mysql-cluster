@@ -2,7 +2,10 @@ jpsType: update
 id: mysql-proxy-master-slave-cluster
 name: MySQL/MariaDB Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
-success: ${globals.PATH}/texts/proxy-entrypoint.md
+
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v2.4.1
+
+success: /texts/proxy-entrypoint.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
