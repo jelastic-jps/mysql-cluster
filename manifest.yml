@@ -16,7 +16,7 @@ logo: /images/icon.png?_r=1
 
 onBeforeInit: /scripts/settings.js?_r=${fn.random}
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v2.4.1
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-60417
 
 settings:
   fields:
@@ -91,6 +91,7 @@ settings:
 nodes:
   nodeType: "${settings.nodeType}"
   nodeGroup: sqldb
+  tag: 10.5.8
   skipNodeEmails: true
   count: "${settings.nodes}"
   cloudlets: 16
