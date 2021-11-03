@@ -93,6 +93,7 @@ nodes:
   nodeGroup: sqldb
   skipNodeEmails: true
   count: "${settings.nodes}"
+  tag: "10.5.8"
   cloudlets: 16
   fixedCloudlets: 1
   restartDelay: 30
