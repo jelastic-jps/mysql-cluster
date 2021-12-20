@@ -160,7 +160,7 @@ actions:
   restartNodesInOrder:
     - forEach(i:nodes.sqldb):
         - cmd[${@i.id}]: |-
-            [[ -f /usr/local/sbin/galeraHealthCheck.sh ]] && echo true; || echo false;
+            [[ -f /usr/local/sbin/galeraHealthCheck.sh ]] && echo true || echo false
         - if ("${response.out}" == "true"):
           - cmd[${@i.id}]: bash /usr/local/sbin/galeraHealthCheck.sh --db-user ${globals.DB_USER} --db-password ${globals.DB_PASS} --cluster-size ${nodes.sqldb.length}
           - if ("${response.out}" == "true"):
