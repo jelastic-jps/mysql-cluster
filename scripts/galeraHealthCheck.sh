@@ -1,6 +1,5 @@
 #!/bin/bash -e
 
-LOG=/var/log/run.log
 MYSQL=`which mysql`
 
 ARGUMENT_LIST=(
@@ -37,7 +36,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-message="Galera cluster is wrong"
+message="Galera cluster size is wrong"
 unset mysqlCheck;
 mysqlCheck=$(mysqladmin -u${dbUser} -p${dbPassword} ping)
 if [[ "${mysqlCheck}" == "mysqld is alive" ]]
