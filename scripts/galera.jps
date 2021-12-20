@@ -73,7 +73,7 @@ onBeforeRestartNode[sqldb]:
           - else:
               - stopEvent:
                   type: warning
-                  message: "node${@i.id}: ${response.out}"
+                  message: node${@i.id} ${response.out}"
         - else:
             cmd [${@i.id}]: sudo jem service restart
   - stopEvent:
