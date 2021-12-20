@@ -167,7 +167,7 @@ actions:
               cmd [${@i.id}]: sudo jem service restart;
           - else:
               - return:
-                  type: warning
+                  type: error
                   message: ${response.out}
         - else:
             cmd [${@i.id}]: sudo jem service restart
