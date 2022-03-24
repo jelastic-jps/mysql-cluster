@@ -49,10 +49,10 @@ then
 fi
 
 if [ "x${IS_MASTER}" == "xTRUE" ]; then
- 	echo "=> Configuring MySQL replicaiton as primary ..."
+ 	echo "=> Configuring MySQL replication as primary ..."
 else
 # Set MySQL REPLICATION - SLAVE
-	echo "=> Configuring MySQL replicaiton as secondary ..."
+	echo "=> Configuring MySQL replication as secondary ..."
 	if [ ! -f ~/save_repl_set ]; then
 		if [[ ! -z "$MYSQL_VERSION" && ${MYSQL_VERSION%.*} = "8.0" && {MARIADB_VERSION##*.} > 24 ]] || [[ ! -z "$MARIADB_VERSION" && ${MARIADB_VERSION%.*} = "10.6" && ${MARIADB_VERSION##*.} > 2 ]] ; then 
       			sed -i '/charset = options.get/s/None/"utf8mb4"/' /usr/lib/python2.7/site-packages/mysql/utilities/common/server.py; 
@@ -65,6 +65,6 @@ else
 		echo "=> Done!"
 		touch ~/save_repl_set
 	else
-		echo "=> MySQL replicaiton secondary already configured, skip"
+		echo "=> MySQL replication secondary already configured, skip"
 	fi
 fi
