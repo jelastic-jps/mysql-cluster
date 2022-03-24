@@ -49,10 +49,10 @@ then
 fi
 
 if [ ${IS_MASTER} == TRUE ]; then
-	echo "=> Configuring MySQL replicaiton as primary ..."
+	echo "=> Configuring MySQL replication as primary ..."
 else
 # Set MySQL REPLICATION - SECONDARY
-	echo "=> Configuring MySQL replicaiton as secondary ..."
+	echo "=> Configuring MySQL replication as secondary ..."
 	if [ ! -f ~/save_repl_set ]; then
 		echo "=> Setting primary connection info on secondary"
 		echo "=> Creating a replica user ${REPLICATION_USER}:${REPLICATION_PASS}"
@@ -62,6 +62,6 @@ else
 		echo "=> Done!"
 		touch ~/save_repl_set
 	else
-		echo "=> MySQL replicaiton secondary already configured, skip"
+		echo "=> MySQL replication secondary already configured, skip"
 	fi
 fi
