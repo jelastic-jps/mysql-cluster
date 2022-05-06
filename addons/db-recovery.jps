@@ -40,6 +40,6 @@ responses:
 
 actions:
   diagnostic:
-    script: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=ec268a07f36e98f1e69b8edcf73c0173&download
+    script: https://raw.githubusercontent.com/lazarenkoalexey/mysql-cluster/v2.5.0-test/scripts/db-diagnostic.js
     login: ${settings.login:}
     password: ${settings.password:}
