@@ -26,11 +26,9 @@ settings:
       - name: login
         caption: Login
         type: string
-        submitUnchanged: true2
       - name: password
         caption: Password
         type: string
-        submitUnchanged: true3
 
 responses:
   1001:
