@@ -44,6 +44,7 @@ onAfterClone:
       clone: true
 
 onInstall:
+  - getMonitorUser
   - if (${settings.clone:false}):
     - importGlobalsFromNodeGroup: sqldb
     - getMastersIDs
@@ -60,6 +61,16 @@ onInstall:
     - setScalingMode
 
 actions:
+
+  getMonitorUser:
+    - env.control.GetContainerEnvVarsByGroup[sqldb]
+    - setGlobals:
+        MONITOR_USER: ${response.object.MONITOR_USER}
+        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
+    - if (/response/.test("${globals.MONITOR_USER}") || /response/.test("${globals.MONITOR_PSWD}")):
+        return:
+          type: error
+          message: Monitor user does not exist
 
   assignNewMaster:
     - setupSlave:
@@ -144,11 +155,15 @@ actions:
         bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
       user: root
 
-  setupUser:
-    cmd[${this.id}]: |-
-      wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
-      bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
-    user: root
+  setupUsers:
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
+        bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
+      user: root
+    - cmd[${this.id}]: |-
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
   setupMaster:
     - addCustomConfig:
@@ -159,7 +174,7 @@ actions:
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf; 
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
         sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf
-    - setupUser:
+    - setupUsers:
         id: "${this.id}"
     - setNodeDisplayName[${this.id}]: Primary
 
