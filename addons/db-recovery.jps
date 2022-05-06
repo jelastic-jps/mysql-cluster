@@ -1,0 +1,47 @@
+type: update
+name: Galera cluster recovery solution
+id: galera-al
+targetNodes:
+  nodeGroup: sqldb
+
+buttons:
+  - name: diagnostic
+    caption: Cluster Diagnostic
+    confirmText: Make cluster diagnostic?
+    loadingText: Diagnostic is in progress...
+    logsPath: /var/log/db_recovery.log
+    settings: diagnostic
+    action: diagnostic
+    
+  - name: recovery
+    caption: Automated Recovery
+    loadingText: Automated Recovery is in progress...
+    successText: Automated Recovery finished successfully!
+    action: recovery
+
+settings:
+  diagnostic:
+    submitUnchanged: true
+    fields:
+      - name: login
+        caption: Login
+        type: string
+        submitUnchanged: true2
+      - name: password
+        caption: Password
+        type: string
+        submitUnchanged: true3
+
+responses:
+  1001:
+    type: success
+    message: |
+      An error occuers while diagnostic the Galera Cluster.  
+      Please check the **/var/log/db_recovery.log** log file for details.  For **automatic recovery** please click the 'Automated Recovery' in add-ons tab  
+      For **manual recovery** please folow the link - [Galera Cluster Recover – Multi-Cloud PaaS and CaaS for Business.pdf](https://jelastic.team/secure/attachment/106222/106222_Galera+Cluster+Recover+%E2%80%93+Multi-Cloud+PaaS+and+CaaS+for+Business.pdf)
+
+actions:
+  diagnostic:
+    script: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=ec268a07f36e98f1e69b8edcf73c0173&download
+    login: ${settings.login:}
+    password: ${settings.password:}
