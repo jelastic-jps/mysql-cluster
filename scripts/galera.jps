@@ -205,7 +205,7 @@ actions:
     - setGlobals:
         MONITOR_USER: ${response.object.MONITOR_USER}
         MONITOR_PSWD: ${response.object.MONITOR_PSWD}
-    - if (/response/.test("${globals.MONITOR_USER}") || /response/.test("${globals.MONITOR_PSWD}")):
+    - if (/response/.test("${globals.MONITOR_USER}") && /response/.test("${globals.MONITOR_PSWD}")):
         return:
           type: error
           message: Monitor user does not exist
