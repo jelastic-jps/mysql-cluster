@@ -87,6 +87,7 @@ onAfterSetCloudletCount[sqldb]:
     - cmd [${@i.id}]: sudo jem service restart;
 
 onInstall:
+  - getMonitorUser
   - resetCluster
   - restartNodesInOrder
   - initialSetup:
@@ -112,7 +113,7 @@ onInstall:
         
 actions:
   initialSetup:
-    - setupUser:
+    - setupUsers:
         id: ${this.id}
     - setNodeDisplayName[${this.id}]: Galera
       if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
@@ -129,7 +130,7 @@ actions:
         wget ${globals.PATH}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
         chmod 700 /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
         
-  setupUser:
+  setupUsers:
     cmd[${this.id}]: |-
       wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
       bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
@@ -194,3 +195,13 @@ actions:
           useExistingVolumes: true
           skipReinstall: false
           envName: ${env.envName}
+
+  getMonitorUser:
+    - env.control.GetContainerEnvVarsByGroup[sqldb]
+    - setGlobals:
+        MONITOR_USER: ${response.object.MONITOR_USER}
+        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
+    - if (/response/.test("${globals.MONITOR_USER}") || /response/.test("${globals.MONITOR_PSWD}")):
+        return:
+          type: error
+          message: Monitor user does not exist
