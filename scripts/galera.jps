@@ -131,10 +131,14 @@ actions:
         chmod 700 /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
         
   setupUsers:
-    cmd[${this.id}]: |-
-      wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
-      bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
-    user: root
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
+        bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
+      user: root
+    - cmd[${this.id}]: |-
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';"
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
   setupSeeds:
     script: |
