@@ -11,6 +11,9 @@ success:
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
+mixins:
+  - /common.yml
+
 globals:
   PATH: ${settings.path}
   DB_USER: ${settings.db_user}
@@ -199,13 +202,3 @@ actions:
           useExistingVolumes: true
           skipReinstall: false
           envName: ${env.envName}
-
-  getMonitorUser:
-    - env.control.GetContainerEnvVarsByGroup[sqldb]
-    - setGlobals:
-        MONITOR_USER: ${response.object.MONITOR_USER}
-        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
-    - if (/response/.test("${globals.MONITOR_USER}") && /response/.test("${globals.MONITOR_PSWD}")):
-        return:
-          type: error
-          message: Monitor user does not exist
