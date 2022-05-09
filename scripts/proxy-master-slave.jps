@@ -3,12 +3,15 @@ id: mysql-proxy-master-slave-cluster
 name: MySQL/MariaDB Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.4.1
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640
 
 success: /texts/proxy-entrypoint.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
+
+mixins:
+  - /scripts/common.yml
 
 globals:
   PATH: "${settings.path}"
@@ -86,15 +89,6 @@ onInstall:
             id: "${@l.id}"
 
 actions:
-  getMonitorUser:
-    - env.control.GetContainerEnvVarsByGroup[sqldb]
-    - setGlobals:
-        MONITOR_USER: ${response.object.MONITOR_USER}
-        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
-    - if (/response/.test("${globals.MONITOR_USER}") || /response/.test("${globals.MONITOR_PSWD}")):
-        return:
-          type: error
-          message: Monitor user does not exist
 
   setupOrchestrator:
     - log: Orchestrator configuration
