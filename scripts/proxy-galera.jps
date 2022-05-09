@@ -3,12 +3,15 @@ id: mysql-proxy-galera-cluster
 name: MariaDB Galera Cluster with ProxySQL
 description: MariaDB Galera Cluster
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.4.1
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640
 
 success: /texts/proxy-entrypoint.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
+
+mixins:
+  - /scripts/common.yml
 
 globals:
   PATH: "${settings.path}"
@@ -82,15 +85,6 @@ onInstall:
         id: "${@i.id}"
          
 actions:
-  getMonitorUser:
-    - env.control.GetContainerEnvVarsByGroup[sqldb]
-    - setGlobals:
-        MONITOR_USER: ${response.object.MONITOR_USER}
-        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
-    - if (/response/.test("${globals.MONITOR_USER}") || /response/.test("${globals.MONITOR_PSWD}")):
-        return:
-          type: error
-          message: Monitor user does not exist
 
   initGaleraForProxy1:
     - cmd[proxy]: |-
