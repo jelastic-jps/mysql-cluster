@@ -10,7 +10,6 @@ buttons:
     confirmText: Make cluster diagnostic?
     loadingText: Diagnostic is in progress...
     logsPath: /var/log/db_recovery.log
-    settings: diagnostic
     action: diagnostic
     
   - name: recovery
@@ -20,17 +19,21 @@ buttons:
     action: recovery
 
 settings:
-  diagnostic:
+  recovery:
     submitUnchanged: true
     fields:
       - name: login
         caption: Login
-        type: string
+        type: string        
       - name: password
         caption: Password
         type: string
 
 responses:
+  1000:
+    type: success
+    message: Congratulations! There are no errors have been found
+    
   1001:
     type: success
     message: |
@@ -40,6 +43,9 @@ responses:
 
 actions:
   diagnostic:
+    script: https://raw.githubusercontent.com/lazarenkoalexey/mysql-cluster/v2.5.0-test/scripts/db-diagnostic.js
+
+  recovery:
     script: https://raw.githubusercontent.com/lazarenkoalexey/mysql-cluster/v2.5.0-test/scripts/db-diagnostic.js
     login: ${settings.login:}
     password: ${settings.password:}
