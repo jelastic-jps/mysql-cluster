@@ -17,6 +17,7 @@ buttons:
     loadingText: Automated Recovery is in progress...
     successText: Automated Recovery finished successfully!
     action: recovery
+    settings: recovery
 
 settings:
   recovery:
