@@ -3,25 +3,24 @@
 nodes_length=$1;
 USER=$2;
 PASS=$3;
+is_recovery=0;
 SERVICE_STATUS=0;
 GALERA_CLUSTER_SIZE="";
 GALERA_CLUSTER_STATUS="";
 PRIMARY="Primary";
 SECONDARY="Secondary";
-# BOOTSTRAP_NODE=""
-# SEQUENCE_NUMBER="";
 LOG_FILE="/var/log/db_recovery.log";
 AUTH_ERROR="ERROR: Authentication check failed. Please specify correct credentials."
-# SEQUENCE="Sequence number";
 MYSQL_STATUS="Mysql service status";
 GALERA_SIZE="Galera cluster size";
 GALERA_STATUS="Galera cluster status";
-# BOOTSTRAP="Bootstrap";
+BOOTSTRAP="Bootstrap";
 OK="OK";
 ERRORS_FOUND_CODE=1;
 error_found=0;
 
 [[ -z $USER ]] && USER=$MONITOR_USER;
+#|| is_recovery=1;
 [[ -z $PASS ]] && PASS=$MONITOR_PSWD;
 
 writeLog () {
@@ -49,15 +48,15 @@ resp=$(mysqladmin -u${USER} -p${PASS} ping 2>&1);
 
 
 #Galera cluster size:
-resp=$(mysql -u${USER} -p${PASS} -e "show global status like 'wsrep_cluster_size';" | grep 'cluster_size' | awk '{print $2}' 2>&1)
-echo $resp;
-echo $nodes_length;
+resp=$(mysql -u${USER} -p${PASS} -e "show global status like 'wsrep_cluster_size';" | grep 'cluster_size' | awk '{print $2}' 2>&1);
 [[ $resp == $nodes_length ]] && {
     #GALERA_CLUSTER_SIZE="All nodes are in the Galera cluster";
     writeLog "$GALERA_SIZE" "All nodes are in the Galera cluster";
+    GALERA_SIZE_VALUE=1;
 } || {
     #GALERA_CLUSTER_SIZE="There are nodes out from the Galera cluster";
     writeLog "$GALERA_SIZE" "ERROR: There are nodes out from the Galera cluster";
+    GALERA_SIZE_VALUE=0;
     error_found=1;
 }
 
@@ -73,13 +72,15 @@ resp=$(mysql -u${USER} -p${PASS} -e "show global status like 'wsrep_cluster_stat
 }
 
 #Bootstrap:
-# resp=$(grep safe_to_bootstrap /var/lib/mysql/grastate.dat | awk '{print $2}');
-# [[ $resp == 0 ]] && {
-#     writeLog "$BOOTSTRAP" 1;
-# } || {
-#     writeLog "$BOOTSTRAP" 0;
-#     error_found=1;
-# }
+resp=$(grep safe_to_bootstrap /var/lib/mysql/grastate.dat | awk '{print $2}');
+[[ $resp == 0 ]] && {
+    writeLog "$BOOTSTRAP" 1;
+    BOOTSTRAP=1;
+} || {
+    writeLog "$BOOTSTRAP" 0;
+    BOOTSTRAP=0;
+    error_found=1;
+}
 
 #Sequence number:
 # SEQUENCE_NUMBER=$(cat /var/lib/mysql/grastate.dat | grep seqno | awk '{print $2}');
@@ -87,7 +88,8 @@ resp=$(mysql -u${USER} -p${PASS} -e "show global status like 'wsrep_cluster_stat
 # [[ $SEQUENCE_NUMBER == -1 ]] && { writeLog "$SEQUENCE" "$SEQUENCE_NUMBER"; } || { writeLog "$SEQUENCE" "$SEQUENCE_NUMBER"; error_found=1; }
 
 [[ $error_found == 1 ]] && {
-    exit $ERRORS_FOUND_CODE;
+    echo "{\"service_status\": $SERVICE_STATUS, \"size\": \"$GALERA_SIZE_VALUE\", \"status\": \"$GALERA_CLUSTER_STATUS\", \"bootstrap\": $BOOTSTRAP}"
+    exit $ERRORS_FOUND_CODE; #1
 }
 
 exit 0;
