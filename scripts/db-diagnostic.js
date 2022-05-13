@@ -23,8 +23,6 @@ resp = cmd({
 });
 if (resp.result != 0) return resp;
 
-//return resp.responses;
-api.marketplace.console.WriteLog("resp.responses->" + resp.responses);
 if (resp.responses.length) {
     for (var i = 0, n = resp.responses.length; i < n; i++) {
         item = resp.responses[i].out;
