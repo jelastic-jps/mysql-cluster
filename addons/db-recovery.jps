@@ -1,8 +1,12 @@
 type: update
 name: Galera cluster recovery solution
 id: galera-al
+
 targetNodes:
   nodeGroup: sqldb
+
+globals:
+  ssh-key: /root/.ssh/id_rsa_db_monitoring
 
 buttons:
   - name: diagnostic
@@ -34,6 +38,10 @@ responses:
   200:
     type: success
     message: Congratulations! There are no errors have been found
+    
+  201:
+    type: success
+    message: Congratulations! Database Cluster revovering has been finished successfully!
 
   99:
     type: success
@@ -44,11 +52,21 @@ responses:
 
 actions:
   diagnostic:
-    script: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=eb68411aaf667265a916a89fe4124966&download
+    script: https://raw.githubusercontent.com/lazarenkoalexey/mysql-cluster/v2.5.0-test/scripts/db-diagnostic.js
     exec: ' --diagnostic'
 
   recovery:
-    script: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=eb68411aaf667265a916a89fe4124966&download
+    script: https://raw.githubusercontent.com/lazarenkoalexey/mysql-cluster/v2.5.0-test/scripts/db-diagnostic.js
     user: ${settings.user:}
     password: ${settings.password:}
-    action: ' --scenario restore_galera'
+    exec: ' --donor-ip galera --scenario restore_galera'
+    
+  generate-share-keys:
+    - cmd[${nodes.sqldb.master.id}]: |-
+        ssh-keygen -t rsa -b 4098 -f ${globals.ssh-key} -q -N '' <<<y >/dev/null 2>&1
+        cat ${globals.ssh-key}.pub
+      user: root
+    - cmd[sqldb]: |-
+        echo ${response.out} >> /root/.ssh/authorized_keys 2>&1 1>>/dev/null
+        echo ${response.out} >> ${globals.ssh-key}.pub
+      user: root
