@@ -63,10 +63,47 @@ actions:
     
   generate-share-keys:
     - cmd[${nodes.sqldb.master.id}]: |-
-        ssh-keygen -t rsa -b 4098 -f ${globals.ssh-key} -q -N '' <<<y >/dev/null 2>&1
-        cat ${globals.ssh-key}.pub
+        ssh-keygen -t rsa -b 4098 -f ${globals.tmp}${globals.ssh-key} -q -N '' -C 'db cluster monitoring' <<<y >/dev/null 2>&1
+        chown mysql:mysql ${globals.tmp}${globals.ssh-key}
       user: root
-    - cmd[sqldb]: |-
-        echo ${response.out} >> /root/.ssh/authorized_keys 2>&1 1>>/dev/null
-        echo ${response.out} >> ${globals.ssh-key}.pub
+    - script: |
+        var resp;
+        
+        resp = api.environment.file.Read({
+          envName: "${env.name}",
+          session: session,
+          path: "${globals.tmp}${globals.ssh-key}.pub",
+          nodeid: "${nodes.sqldb.master.id}" 
+        });
+        if (resp.result != 0) return resp;
+        
+        resp =  api.environment.file.Write({
+          envName: "${env.name}",
+          session: session,
+          path: "${globals.tmp}${globals.ssh-key}.pub",
+          nodeGroup: "sqldb",
+          nodeid: "-1",
+          body: resp.body
+        });
+        if (resp.result != 0) return resp;
+        
+        resp = api.environment.file.Read({
+          envName: "${env.name}",
+          session: session,
+          path: "${globals.tmp}${globals.ssh-key}",
+          nodeid: "${nodes.sqldb.master.id}" 
+        });
+        if (resp.result != 0) return resp;
+        
+        return api.environment.file.Write({
+          envName: "${env.name}",
+          session: session,
+          path: "${globals.tmp}${globals.ssh-key}",
+          nodeGroup: "sqldb",
+          nodeid: "-1",
+          body: resp.body
+        });
+    - cmd [sqldb]: |-
+        mv ${globals.tmp}${globals.ssh-key}* ${globals.ssh_root}
+        cat ${globals.ssh_root}${globals.ssh-key}.pub >> ${globals.ssh_root}authorized_keys
       user: root
