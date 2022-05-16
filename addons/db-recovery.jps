@@ -6,7 +6,9 @@ targetNodes:
   nodeGroup: sqldb
 
 globals:
-  ssh-key: /root/.ssh/id_rsa_db_monitoring
+  ssh_root: /root/.ssh/
+  ssh-key: id_rsa_db_monitoring
+  tmp: /tmp/
 
 buttons:
   - name: diagnostic
@@ -33,6 +35,8 @@ settings:
       - name: password
         caption: Password
         type: string
+
+onInstall: generate-share-keys
 
 responses:
   200:
