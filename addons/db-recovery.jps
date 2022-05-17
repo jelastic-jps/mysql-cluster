@@ -1,6 +1,6 @@
 type: update
 name: Galera cluster recovery solution
-id: galera-al
+id: galera
 
 targetNodes:
   nodeGroup: sqldb
@@ -52,11 +52,11 @@ responses:
 
 actions:
   diagnostic:
-    script: https://raw.githubusercontent.com/lazarenkoalexey/mysql-cluster/v2.5.0-test/scripts/db-diagnostic.js
+    script: https://github.com/jelastic-jps/mysql-cluster/raw/v2.5.0/addons/recovery/scripts/db-diagnostic.js
     exec: ' --diagnostic'
 
   recovery:
-    script: https://raw.githubusercontent.com/lazarenkoalexey/mysql-cluster/v2.5.0-test/scripts/db-diagnostic.js
+    script: https://github.com/jelastic-jps/mysql-cluster/raw/v2.5.0/addons/recovery/scripts/db-diagnostic.js
     user: ${settings.user:}
     password: ${settings.password:}
     exec: ' --donor-ip galera --scenario restore_galera'
