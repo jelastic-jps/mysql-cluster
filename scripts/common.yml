@@ -1,0 +1,20 @@
+actions:
+  getMonitorUser:
+    - env.control.GetContainerEnvVarsByGroup[sqldb]
+    - setGlobals:
+        MONITOR_USER: ${response.object.MONITOR_USER}
+        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
+    - if (/response/.test("${globals.MONITOR_USER}") && /response/.test("${globals.MONITOR_PSWD}")):
+        return:
+          type: error
+          message: Monitor user does not exist
+
+  setupUsers:
+    - cmd[${this.id}]: |-
+        wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
+        bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
+      user: root
+    - cmd[${this.id}]: |-
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE,SLAVE MONITOR,BINLOG MONITOR ON *.* TO '${globals.MONITOR_USER}'@'%';"
+        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"

@@ -3,20 +3,21 @@ id: mysql-proxy-master-slave-cluster
 name: MySQL/MariaDB Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.4.1
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640
 
 success: /texts/proxy-entrypoint.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
+mixins:
+  - /scripts/common.yml
+
 globals:
   PATH: "${settings.path}"
   DB_USER: "${settings.db_user}"
   DB_PASS: "${settings.db_pass}"
   SCHEME: "${settings.scheme}"
-  MONITOR_USER: monitor-${fn.random}
-  MONITOR_PASS: "${fn.password(10)}"
   ORCH_PASS: "${fn.password(10)}"
   MAX_REPL_LAG: 20
   
@@ -62,12 +63,10 @@ onAfterMigrate:
     path: "${globals.PATH}"
 
 onInstall:
+  - getMonitorUser
   - resetProxyNodes
   - setupOrchestrator
   - setupProxySQL
-  - forEach(nodes.sqldb):
-      addMonitorUser:
-        filter: "${@i.id}"
 
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - setGlobals:
@@ -90,6 +89,7 @@ onInstall:
             id: "${@l.id}"
 
 actions:
+
   setupOrchestrator:
     - log: Orchestrator configuration
     - cmd [proxy]: |-
@@ -115,18 +115,12 @@ actions:
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PSWD}' WHERE variable_name='mysql-monitor_password';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${nodes.sqldb.version}' WHERE variable_name='mysql-server_version';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL QUERY RULES TO RUNTIME; SAVE MYSQL QUERY RULES TO DISK;"
-
-  addMonitorUser:
-    cmd[${this.filter}]: |-
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
   addMaster:
     cmd [proxy]: |-

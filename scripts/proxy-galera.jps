@@ -3,19 +3,20 @@ id: mysql-proxy-galera-cluster
 name: MariaDB Galera Cluster with ProxySQL
 description: MariaDB Galera Cluster
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.4.1
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640
 
 success: /texts/proxy-entrypoint.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
+mixins:
+  - /scripts/common.yml
+
 globals:
   PATH: "${settings.path}"
   DB_USER: "${settings.db_user}"
   DB_PASS: "${settings.db_pass}"
-  MONITOR_USER: monitor-${fn.random}
-  MONITOR_PASS: "${fn.password(10)}"
   ORCH_PASS: "${fn.password(10)}"
   
 onAfterScaleOut[sqldb]:
@@ -58,6 +59,8 @@ onBeforeAddNode[proxy]:
 
 onInstall:
 
+  - getMonitorUser
+
   - resetProxyNodes
 
   - cmd[proxy]: |-
@@ -78,19 +81,17 @@ onInstall:
   - if(${fn.compare([nodes.proxy.master.version], 2.0)} < 0): initGaleraForProxy1
  
   - forEach(nodes.sqldb):
-    - if (${@i.ismaster}):
-        addMonitorUser:
-          filter: "${@i.id}"
     - addNode:
         id: "${@i.id}"
          
 actions:
+
   initGaleraForProxy1:
     - cmd[proxy]: |-
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_replication_hostgroups VALUES (2,3,'Group setup');"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PSWD}' WHERE variable_name='mysql-monitor_password';"
         wget ${globals.PATH}/scripts/proxysql_galera_checker.sh -O /var/lib/proxysql/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO scheduler(id,interval_ms,filename,arg1,arg2,arg3,arg4) VALUES
         (1,'2000','/var/lib/proxysql/proxysql_galera_checker.sh','127.0.0.1','6032','2', '/var/lib/proxysql/proxysql_galera_checker.log');"
@@ -104,18 +105,11 @@ actions:
         VALUES (2,4,3,1,1,3,1,100);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PASS}' WHERE variable_name='mysql-monitor_password';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PSWD}' WHERE variable_name='mysql-monitor_password';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD SCHEDULER TO RUNTIME; SAVE SCHEDULER TO DISK;"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
-
-
-  addMonitorUser:
-    cmd[${this.filter}]: |-
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PASS}';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT SUPER,REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
-
+        
   addNode:
     cmd[proxy]: |-
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_servers (hostgroup_id,hostname, port) VALUES (2, 'node${this.id}', 3306);"

@@ -3,7 +3,7 @@ id: mysql-master-master-replication-cluster
 name: MySQL/MariaDB Primary-Primary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.4.1
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640
 
 success:
    text: /texts/phpmyadmin-credentials.md
@@ -11,6 +11,9 @@ success:
 targetNodes: none
 nodeGroupAlias:
   ${settings.nodeGroup}: sqldb
+
+mixins:
+  - /scripts/common.yml
 
 globals:
   PATH: "${settings.path}"
@@ -44,6 +47,7 @@ onAfterClone:
       clone: true
 
 onInstall:
+  - getMonitorUser
   - if (${settings.clone:false}):
     - importGlobalsFromNodeGroup: sqldb
     - getMastersIDs
@@ -144,12 +148,6 @@ actions:
         bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
       user: root
 
-  setupUser:
-    cmd[${this.id}]: |-
-      wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
-      bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
-    user: root
-
   setupMaster:
     - addCustomConfig:
         id: "${this.id}"
@@ -159,7 +157,7 @@ actions:
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf; 
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
         sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf
-    - setupUser:
+    - setupUsers:
         id: "${this.id}"
     - setNodeDisplayName[${this.id}]: Primary
 
