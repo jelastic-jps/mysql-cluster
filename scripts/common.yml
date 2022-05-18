@@ -14,13 +14,19 @@ actions:
         cmd[${this}]: |-
           MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
           MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
-          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"      
+          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
     - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
-        cmd[${this}]: |-
-          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
-          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE,SLAVE MONITOR,BINLOG MONITOR ON *.* TO '${globals.MONITOR_USER}'@'%';"
-          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"      
+      - if ('${fn.compare([nodes.sqldb.version], 10.5)}' == -1):
+          cmd[${this}]: |-
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
+      - else:
+          cmd[${this}]: |-
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE,SLAVE MONITOR,BINLOG MONITOR ON *.* TO '${globals.MONITOR_USER}'@'%';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
   setupUsers:
     - cmd[${this.id}]: |-
@@ -28,3 +34,4 @@ actions:
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
     - setupMonitorUser: ${this.id}
+ 
