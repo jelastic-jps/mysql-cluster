@@ -80,7 +80,8 @@ fi
 
 
 RUN_LOG="/var/log/db_recovery.log"
-SSH='timeout 300 ssh -T -o StrictHostKeyChecking=no'
+PRIVATE_KEY='/root/.ssh/id_rsa_db_monitoring'
+SSH="timeout 300 ssh -i ${PRIVATE_KEY} -T -o StrictHostKeyChecking=no"
 MASTER_CONF='/etc/mysql/conf.d/master.cnf'
 SLAVE_CONF='/etc/mysql/conf.d/slave.cnf'
 GALERA_CONF='/etc/mysql/conf.d/galera.cnf'
@@ -108,7 +109,7 @@ log(){
 
 cleanSyncData(){
   local mysql_src_ip=$1
-  rsync -e "ssh -o StrictHostKeyChecking=no" -Sa \
+  rsync -e "ssh -i ${PRIVATE_KEY} -o StrictHostKeyChecking=no" -Sa \
     --progress \
     --delete  \
     --exclude=master.info \
@@ -126,7 +127,7 @@ cleanSyncData(){
 
 resyncData(){
   local mysql_src_ip=$1
-  rsync -e "ssh -o StrictHostKeyChecking=no" -Sa \
+  rsync -e "ssh -i ${PRIVATE_KEY} -o StrictHostKeyChecking=no" -Sa \
     --progress \
     --exclude=master.info \
     --exclude=relay-log.info \
