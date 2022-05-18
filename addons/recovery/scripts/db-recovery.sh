@@ -80,7 +80,7 @@ fi
 
 
 RUN_LOG="/var/log/db_recovery.log"
-SSH='timeout 300 ssh -T -o StrictHostKeyChecking=no'
+SSH='timeout 300 ssh -i /root/.ssh/id_rsa_db_monitoring -T -o StrictHostKeyChecking=no'
 MASTER_CONF='/etc/mysql/conf.d/master.cnf'
 SLAVE_CONF='/etc/mysql/conf.d/slave.cnf'
 GALERA_CONF='/etc/mysql/conf.d/galera.cnf'
