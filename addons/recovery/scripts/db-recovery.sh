@@ -88,7 +88,7 @@ GALERA_CONF='/etc/mysql/conf.d/galera.cnf'
 SUCCESS_CODE=0
 FAIL_CODE=99
 AUTHORIZATION_ERROR_CODE=701
-
+NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
 
 
 mysqlCommandExec(){
@@ -169,7 +169,7 @@ execResponse(){
   local result=$1
   local scenario=$2
   local error=$3
-  response=$(jq -cn --argjson  result "$result" --arg scenario "$scenario" --arg error "$error" '{result: $result, scenario: $scenario, error: $error}')
+  response=$(jq -cn --argjson  result "$result" --arg scenario "$scenario" --arg address "${NODE_ADDRESS}" --arg error "$error" '{result: $result, scenario: $scenario, address: $address, error: $error}')
   echo "${response}"
 }
 
@@ -452,11 +452,12 @@ diagnosticResponse(){
   response=$( jq -cn \
                   --argjson  result "$result" \
                   --arg node_type "$node_type" \
+                  --arg address "${NODE_ADDRESS}" \
                   --arg service_status "$service_status" \
                   --arg status "$status" \
                   --arg galera_size "$galera_size_status" \
                   --arg error "$error" \
-                  '{result: $result, node_type: $node_type, service_status: $service_status, status: $status, galera_size: $galera_size, error: $error}' )
+                  '{result: $result, node_type: $node_type, address: $address, service_status: $service_status, status: $status, galera_size: $galera_size, error: $error}' )
   echo "${response}"
 }
 
