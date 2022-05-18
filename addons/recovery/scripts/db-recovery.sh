@@ -112,6 +112,8 @@ cleanSyncData(){
   rsync -e "ssh -i ${PRIVATE_KEY} -o StrictHostKeyChecking=no" -Sa \
     --progress \
     --delete  \
+    --exclude=auto.cnf \
+    --exclude=mysql.ibd \
     --exclude=master.info \
     --exclude=relay-log.info \
     --exclude=mysql-bin.* \
@@ -129,6 +131,8 @@ resyncData(){
   local mysql_src_ip=$1
   rsync -e "ssh -i ${PRIVATE_KEY} -o StrictHostKeyChecking=no" -Sa \
     --progress \
+    --exclude=auto.cnf \
+    --exclude=mysql.ibd \
     --exclude=master.info \
     --exclude=relay-log.info \
     --exclude=mysql-bin.* \
@@ -349,6 +353,15 @@ startMysqlService(){
   execSshAction "$command" "$message"
 }
 
+checkMysqlOperable(){
+  local node=$1
+  for retry in $(seq 1 10)
+  do
+    mysqlCommandExec "exit" "localhost" > /dev/null 2>&1 && return ${SUCCESS_CODE}
+    sleep 5
+  done
+  return $(FAIL_CODE)
+}
 
 galeraSetBootstrap(){
   local node=$1
@@ -505,6 +518,7 @@ restore_slave_from_master(){
   execAction "resyncData ${donor_ip}" "[Node: localhost] Resync data after donor ${donor_ip} lock"
   execAction "setMasterWriteMode ${donor_ip}" "[Node: ${donor_ip}] Set donor to read write mode"
   startMysqlService "localhost"
+  execAction "checkMysqlOperable localhost" "Mysql service operable check"
   execAction 'restoreSlavePosition localhost' '[Node: localhost] Restore master position on self node'
 }
 
@@ -515,7 +529,9 @@ restore_master_from_slave(){
   stopMysqlService "${donor_ip}"
   execAction "resyncData ${donor_ip}" "[Node: localhost] Resync data after donor ${donor_ip} service stop"
   startMysqlService "localhost"
+  execAction "checkMysqlOperable localhost" "Mysql service operable check"
   startMysqlService "${donor_ip}"
+  execAction "checkMysqlOperable ${donor_ip}" "Mysql service operable check"
   execAction "getMasterPosition localhost" '[Node: localhost] Get master possition'
   execAction "restoreSlavePosition ${donor_ip}" "[Node: ${donor_ip}] Restore master position on donor"
 }
@@ -523,7 +539,7 @@ restore_master_from_slave(){
 restore_master_from_master(){
   restore_slave_from_master
   execAction "getMasterPosition localhost" '[Node: localhost] Get self master possition'
-  execAction "restore_slave_position ${donor_ip}" "[Node: ${donor_ip}] Restore master position on donor"
+  execAction "restoreSlavePosition ${donor_ip}" "[Node: ${donor_ip}] Restore master position on donor"
 }
 
 restore_galera(){
