@@ -40,7 +40,9 @@ onInstall:
         MONITOR_PSWD: ${fn.password(20)}
         SCHEME: ${settings.scheme}
 
-  - install: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/manifest.yml?_r=${fn.random}
+  - install: 
+      jps: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/manifest.yml?_r=${fn.random}
+      nodeGroup: sqldb
 
   - if (nodes.proxy):
       setupCluster
