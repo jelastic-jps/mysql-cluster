@@ -29,16 +29,19 @@ onAfterResetNodePassword[sqldb]:
     user: root
 
 onInstall:
+  - if ('${settings.db_pass}'.length < 8):
+      stopEvent:
+        type: warning
+        message: Password must be at least 8 characters long.
+        
   - env.control.AddContainerEnvVars[sqldb]:
       vars:
         MONITOR_USER: monitor-${fn.random}
         MONITOR_PSWD: ${fn.password(20)}
         SCHEME: ${settings.scheme}
 
-  - if ('${settings.db_pass}'.length < 8):
-      stopEvent:
-        type: warning
-        message: Password must be at least 8 characters long. 
+  - install: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/manifest.yml?_r=${fn.random}
+
   - if (nodes.proxy):
       setupCluster
   - if (!nodes.proxy):
