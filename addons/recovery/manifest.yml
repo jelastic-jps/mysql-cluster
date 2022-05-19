@@ -46,7 +46,7 @@ responses:
     
   201:
     type: success
-    message: Congratulations! Database Cluster revovering has been finished successfully!
+    message: Congratulations! Database Cluster recovering has been finished successfully!
 
   98:
     type: success
