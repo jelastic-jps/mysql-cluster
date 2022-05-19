@@ -57,6 +57,13 @@ api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
 
 if (isRestore) {
     
+    if (!failedNodesAddresses.length) {
+        return {
+            result: !isRestore ? 200 : 201,
+            type: SUCCESS
+        }; 
+    }
+    
     if (!scenario || !donorIps[scheme]) {
         return {
             result: UNABLE_RESTORE_CODE,
@@ -156,9 +163,9 @@ function parseOut(data) {
         }
         
         return {
-                result: !isRestore ? 200 : 201,
-                type: SUCCESS
-            }; 
+            result: !isRestore ? 200 : 201,
+            type: SUCCESS
+        }; 
     }
 };
 
