@@ -22,7 +22,7 @@ buttons:
     action: diagnostic
     
   - name: recovery
-	    caption: Cluster Recovery
+    caption: Cluster Recovery
     loadingText: Cluster recovery is in progress...
     successText: Cluster recovery is finished successfully!
     action: recovery
