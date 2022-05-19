@@ -42,7 +42,7 @@ onInstall:
 
   - install: 
       jps: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/manifest.yml?_r=${fn.random}
-      nodeGroup: sqldb
+      targetNodes: sqldb
 
   - if (nodes.proxy):
       setupCluster
