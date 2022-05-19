@@ -66,11 +66,11 @@ responses:
 
 actions:
   diagnostic:
-    script: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/db-diagnostic.js
+    script: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-diagnostic.js
     exec: ' --diagnostic'
 
   recovery:
-    script: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/db-diagnostic.js
+    script: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-diagnostic.js
     user: ${settings.user:}
     password: ${settings.password:}
     
