@@ -7,22 +7,27 @@ key="$1"
 
 case $key in
     --mysql-user)
-    mysql_user=$2
+    MYSQL_USER=$2
     shift
     shift
     ;;
     --mysql-password)
-    mysql_password=$2
+    MYSQL_PASSWORD=$2
     shift
     shift
     ;;
     --donor-ip)
-    donor_ip=$2
+    DONOR_IP=$2
+    shift
+    shift
+    ;;
+    --replica-password)
+    REPLICA_PASSWORD=$2
     shift
     shift
     ;;
     --scenario)
-    scenario=$2
+    SCENARIO=$2
     shift
     shift
     ;;
@@ -42,12 +47,13 @@ usage() {
 SCRIPTNAME=$(basename "$BASH_SOURCE")
 echo "    USAGE:"
 echo "        COMMAND RUN:  "
-echo "             $SCRIPTNAME --mysql-user 'MYSQL USER NAME' --mysql-password 'MYSQL USER PASSWORD' --donor-ip 'MYSQL MASTER IP ADDRESS' --scenario [SCENARIO NAME]"
-echo "             Example Restore Run: $SCRIPTNAME --mysql-user 'jelastic-12445' --mysql-password 'password123' --donor-ip '192.168.0.1' --scenario restore_master_from_master"
+echo "             $SCRIPTNAME --mysql-user 'MYSQL USER NAME' --mysql-password 'MYSQL USER PASSWORD' --replica-password 'PASSWORD FOR SET' --donor-ip 'MYSQL MASTER IP ADDRESS' --scenario [SCENARIO NAME]"
+echo "             Example Restore Run: $SCRIPTNAME --mysql-user 'jelastic-12445' --mysql-password 'password123' --replica-password 'replica123' --donor-ip '192.168.0.1' --scenario restore_master_from_master"
 echo "             Example Diagnostic Run: $SCRIPTNAME --mysql-user 'jelastic-12445' --mysql-password 'password123' --diagnostic"
 echo "        ARGUMENTS:    "
 echo "              --mysql-user - MySQL user with LOCK TABLES priveleges"
 echo "              --mysql-password - MySQL user password"
+echo "              --replica-password - MySQL replica user password which will be set during recovery"
 echo "              --donor-ip - Operable MySQL server ip address from which will be restored failed node."
 echo "                           In case of galera recover, need to specify 'galera' as value"
 echo "              --scenario - restoration scenario supported arguments:"
@@ -64,14 +70,14 @@ echo "              - For galera scenario there are no restrictions, restoration
 echo
 }
 
-if [ -z "$mysql_user" ] || [ -z "$mysql_password" ]; then
+if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
   echo "Not all arguments passed!"
   usage
   exit 1;
 fi
 
 if [[ "${diagnostic}" != "YES" ]]; then
-  if [ -z "$donor_ip" ] || [ -z "$scenario" ]; then
+  if [ -z "${DONOR_IP}" ] || [ -z "${REPLICA_PASSWORD}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
       exit 1;
@@ -85,6 +91,7 @@ SSH="timeout 300 ssh -i ${PRIVATE_KEY} -T -o StrictHostKeyChecking=no"
 MASTER_CONF='/etc/mysql/conf.d/master.cnf'
 SLAVE_CONF='/etc/mysql/conf.d/slave.cnf'
 GALERA_CONF='/etc/mysql/conf.d/galera.cnf'
+REPLICATION_INFO='/var/lib/mysql/master-position.info'
 
 SUCCESS_CODE=0
 FAIL_CODE=99
@@ -95,7 +102,7 @@ NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|
 mysqlCommandExec(){
   command="$1"
   server_ip=$2
-  mysql -u${mysql_user} -p${mysql_password} -h${server_ip} -e "$command"
+  MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -e "$command"
 }
 
 
@@ -113,14 +120,6 @@ cleanSyncData(){
     --progress \
     --delete  \
     --exclude=auto.cnf \
-    --exclude=mysql.ibd \
-    --exclude=master.info \
-    --exclude=relay-log.info \
-    --exclude=mysql-bin.* \
-    --exclude=mysql-relay-bin.* \
-    --exclude=mysql \
-    --exclude=sys \
-    --exclude=performance_schema \
     --exclude=mysqld.pid \
     --exclude=mysql.sock \
     root@${mysql_src_ip}:/var/lib/mysql/ /var/lib/mysql/
@@ -132,14 +131,6 @@ resyncData(){
   rsync -e "ssh -i ${PRIVATE_KEY} -o StrictHostKeyChecking=no" -Sa \
     --progress \
     --exclude=auto.cnf \
-    --exclude=mysql.ibd \
-    --exclude=master.info \
-    --exclude=relay-log.info \
-    --exclude=mysql-bin.* \
-    --exclude=mysql-relay-bin.* \
-    --exclude=mysql \
-    --exclude=sys \
-    --exclude=performance_schema \
     --exclude=mysqld.pid \
     --exclude=mysql.sock \
     root@${mysql_src_ip}:/var/lib/mysql/ /var/lib/mysql/
@@ -172,9 +163,8 @@ checkAuth(){
 
 execResponse(){
   local result=$1
-  local scenario=$2
   local error=$3
-  response=$(jq -cn --argjson  result "$result" --arg scenario "$scenario" --arg address "${NODE_ADDRESS}" --arg error "$error" '{result: $result, scenario: $scenario, address: $address, error: $error}')
+  response=$(jq -cn --argjson  result "$result" --arg scenario "${SCENARIO}" --arg address "${NODE_ADDRESS}" --arg error "$error" '{result: $result, scenario: $scenario, address: $address, error: $error}')
   echo "${response}"
 }
 
@@ -187,7 +177,7 @@ execSshAction(){
   action_to_base64=$(echo $action|base64 -w 0)
   stderr=$( { sh -c "$(echo ${action_to_base64}|base64 -d)"; } 2>&1 ) && { log "${message}...done"; } || {
     error="${message} failed, please check ${RUN_LOG} for details"
-    execResponse "${result}" "${scenario}" "${error}"
+    execResponse "${result}" "${error}"
     log "${message}...failed\n==============ERROR==================\n${stderr}\n============END ERROR================";
     exit 0
   }
@@ -202,7 +192,7 @@ execSshReturn(){
   action_to_base64=$(echo $action|base64 -w 0)
   stdout=$( { sh -c "$(echo ${action_to_base64}|base64 -d)"; } 2>&1 ) && { echo ${stdout}; log "${message}...done"; } || {
     error="${message} failed, please check ${RUN_LOG} for details"
-    execResponse "${result}" "${scenario}" "${error}"
+    execResponse "${result}" "${error}"
     log "${message}...failed\n==============ERROR==================\n${stdout}\n============END ERROR================";
     exit 0
   }
@@ -217,7 +207,7 @@ execAction(){
   [[ "${action}" == 'checkAuth' ]] && result=${AUTHORIZATION_ERROR_CODE}
   stderr=$( { ${action}; } 2>&1 ) && { log "${message}...done"; } || {
     error="${message} failed, please check ${RUN_LOG} for details"
-    execResponse "${result}" "${scenario}" "${error}"
+    execResponse "${result}" "${error}"
     log "${message}...failed\n==============ERROR==================\n${stderr}\n============END ERROR================";
     exit 0
   }
@@ -226,14 +216,30 @@ execAction(){
 
 setMasterReadonly(){
   local mysql_src_ip=$1
-  mysql -u${mysql_user} -p${mysql_password} -h${mysql_src_ip} -e "flush tables with read lock;"
+  mysqlCommandExec 'flush tables with read lock;' "${mysql_src_ip}"
 }
+
+resetReplicaPassword(){
+  local mysql_src_ip=$1
+  local replica_user
+  replica_user=$(mysqlCommandExec 'select User from mysql.user where User like "repl-%" \G;' ${mysql_src_ip}|grep 'User'|cut -d ':' -f2|sed 's/ //g')
+
+  stderr=$( { MYSQL_PWD=${REPLICA_PASSWORD} mysql -u${replica_user} -h${mysql_src_ip} -e 'exit'; } 2>&1 ) || {
+    mysqlCommandExec "ALTER USER '${replica_user}'@'%' IDENTIFIED BY '${REPLICA_PASSWORD}';" "${mysql_src_ip}"
+    return ${SUCCESS_CODE}
+  }
+  log "[Node: ${mysql_src_ip}] Replica password matched...skip"
+}
+
 
 
 getMasterPosition(){
   local mysql_src_ip=$1
-  echo "File=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > /var/lib/mysql/master-position.info
-  echo "Position=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> /var/lib/mysql/master-position.info
+  echo "File=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
+  echo "Position=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  echo "ReportHost=$(mysqlCommandExec 'show variables like "report_host" \G;' ${mysql_src_ip}|grep 'Value'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  echo "ReplicaUser=$(mysqlCommandExec 'select User from mysql.user where User like "repl-%" \G;' ${mysql_src_ip}|grep 'User'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  echo "ReplicaPassword=${REPLICA_PASSWORD}" >> ${REPLICATION_INFO}
 }
 
 
@@ -244,11 +250,16 @@ getSlaveStatus(){
   slave_running_values=$(mysqlCommandExec "SHOW SLAVE STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
   if [[ ${slave_running_values} != 2 ]]; then
     echo "failed"
-    log "[Node: ${node}] Slave is not running...failed\n ${slave_status}"
+    log "[Node: ${node}] Slave is not running...failed\n ${slave_running_values}"
     return ${FAIL_CODE}
   fi
   echo "ok"
   log "[Node: ${node}] Slave is running...done"
+}
+
+removeSlaveFromMaster(){
+  local node=$1
+  mysqlCommandExec "stop slave; reset slave all;" ${node}
 }
 
 
@@ -299,14 +310,15 @@ setMasterWriteMode(){
 
 restoreSlavePosition(){
   local slave_ip=$1
-  source /var/lib/mysql/master-position.info;
-  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${slave_ip}
+  source ${REPLICATION_INFO};
+  rm -f ${REPLICATION_INFO}
+  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${REPLICA_PASSWORD}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${slave_ip}
 }
 
 
 checkMysqlServiceStatus(){
   local node=$1
-  stderr=$( { timeout 20 mysqladmin -u${mysql_user} -p${mysql_password} -h ${node} status; } 2>&1 ) || {
+  stderr=$( { timeout 20 mysqladmin -u${MYSQL_USER} -p${MYSQL_PASSWORD} -h ${node} status; } 2>&1 ) || {
     log "[Node: ${node}] MySQL Service down...failed\n==============ERROR==================\n${stderr}\n============END ERROR================";
     echo "down"
     return ${FAIL_CODE}
@@ -357,10 +369,12 @@ checkMysqlOperable(){
   local node=$1
   for retry in $(seq 1 10)
   do
-    mysqlCommandExec "exit" "localhost" > /dev/null 2>&1 && return ${SUCCESS_CODE}
+    stderr=$( { mysqlCommandExec "exit" "${node}"; } 2>&1 ) && return ${SUCCESS_CODE}
+    log "[Node: ${node}] [Retry: ${retry}/10] MySQL service operable check...waiting"
     sleep 5
   done
-  return $(FAIL_CODE)
+  echo -e ${stderr}
+  return ${FAIL_CODE}
 }
 
 galeraSetBootstrap(){
@@ -512,34 +526,37 @@ nodeDiagnostic(){
 restore_slave_from_master(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
-  execAction "cleanSyncData ${donor_ip}" "[Node: localhost] Sync data from donor ${donor_ip} with delete flag"
-  execAction "setMasterReadonly ${donor_ip}" "[Node: ${donor_ip}] Set master readonly"
-  execAction "getMasterPosition ${donor_ip}" "[Node: ${donor_ip}] Get master possition"
-  execAction "resyncData ${donor_ip}" "[Node: localhost] Resync data after donor ${donor_ip} lock"
-  execAction "setMasterWriteMode ${donor_ip}" "[Node: ${donor_ip}] Set donor to read write mode"
+  execAction "resetReplicaPassword ${DONOR_IP}" "[Node: ${DONOR_IP}] Reset replica user password"
+  execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
+  execAction "setMasterReadonly ${DONOR_IP}" "[Node: ${DONOR_IP}] Set master readonly"
+  execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} lock"
+  execAction "getMasterPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Get master possition"
+  execAction "setMasterWriteMode ${DONOR_IP}" "[Node: ${DONOR_IP}] Set donor to read write mode"
   startMysqlService "localhost"
-  execAction "checkMysqlOperable localhost" "Mysql service operable check"
+  execAction "checkMysqlOperable localhost" "[Node: localhost] Mysql service operable check"
   execAction 'restoreSlavePosition localhost' '[Node: localhost] Restore master position on self node'
 }
 
 restore_master_from_slave(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
-  execAction "cleanSyncData ${donor_ip}" "[Node: localhost] Sync data from donor ${donor_ip} with delete flag"
-  stopMysqlService "${donor_ip}"
-  execAction "resyncData ${donor_ip}" "[Node: localhost] Resync data after donor ${donor_ip} service stop"
+  execAction "resetReplicaPassword ${DONOR_IP}"
+  execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
+  stopMysqlService "${DONOR_IP}"
+  execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} service stop"
   startMysqlService "localhost"
-  execAction "checkMysqlOperable localhost" "Mysql service operable check"
-  startMysqlService "${donor_ip}"
-  execAction "checkMysqlOperable ${donor_ip}" "Mysql service operable check"
+  execAction "checkMysqlOperable localhost" "[Node: localhost] Mysql service operable check"
+  startMysqlService "${DONOR_IP}"
+  execAction "checkMysqlOperable ${DONOR_IP}" "[Node: ${DONOR_IP}] Mysql service operable check"
   execAction "getMasterPosition localhost" '[Node: localhost] Get master possition'
-  execAction "restoreSlavePosition ${donor_ip}" "[Node: ${donor_ip}] Restore master position on donor"
+  execAction "removeSlaveFromMaster localhost" '[Node: localhost] Disable slave'
+  execAction "restoreSlavePosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Restore master position on donor"
 }
 
 restore_master_from_master(){
   restore_slave_from_master
   execAction "getMasterPosition localhost" '[Node: localhost] Get self master possition'
-  execAction "restoreSlavePosition ${donor_ip}" "[Node: ${donor_ip}] Restore master position on donor"
+  execAction "restoreSlavePosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Restore master position on donor"
 }
 
 restore_galera(){
@@ -547,15 +564,14 @@ restore_galera(){
   galeraFix
 }
 
-
 if [[ "${diagnostic}" == "YES" ]]; then
   log ">>>BEGIN DIAGNOSTIC"
   execAction "checkAuth" 'Authentication check'
   nodeDiagnostic
   log ">>>END DIAGNOSTIC"
 else
-  log ">>>BEGIN RESTORE SCENARIO [${scenario}]"
-  $scenario
+  log ">>>BEGIN RESTORE SCENARIO [${SCENARIO}]"
+  $SCENARIO
   nodeDiagnostic
-  log ">>>END RESTORE SCENARIO [${scenario}]"
+  log ">>>END RESTORE SCENARIO [${SCENARIO}]"
 fi
