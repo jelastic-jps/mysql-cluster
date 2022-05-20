@@ -106,6 +106,16 @@ function parseOut(data) {
                             scenario = " --scenario restore_galera";
                             donorIps[GALERA] = " --donor-ip " + GALERA;
                         };
+                        
+                        if (failedNodesAddresses.indexOf(item.address) == -1) {
+                                failedNodesAddresses.push(item.address);
+                            }
+                            if (!isRestore) {
+                                return {
+                                    result: FAILED_CLUSTER_CODE,
+                                    type: SUCCESS
+                                };
+                            }
                         break;
                         
                     case MASTER:
