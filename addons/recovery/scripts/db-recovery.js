@@ -202,7 +202,7 @@ function execRecovery(scenario, donor, nodeid) {
     var action = "";
     
     if (scenario && donor) {
-        action = scenario + donor;
+        action = scenario + donor + " --replica-password ${fn.password}";
     } else {
         action = exec;
     }
