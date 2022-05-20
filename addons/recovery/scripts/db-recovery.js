@@ -97,12 +97,15 @@ function parseOut(data) {
             item = JSON.parse(item);
 
             if (item.result == 0) {
+                
+                api.marketplace.console.WriteLog("item->" + item);
                 switch(String(scheme)) {
                     case GALERA:
                         if (item.service_status == DOWN || item.status == FAILED || item.galera_size != "ok") {
                             scenario = " --scenario restore_galera";
                             donorIps[GALERA] = " --donor-ip " + GALERA;
                         };
+                        break;
                         
                     case MASTER:
                         if (item.service_status == DOWN && item.status == FAILED) {
