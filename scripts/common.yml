@@ -28,10 +28,17 @@ actions:
             MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE,SLAVE MONITOR,BINLOG MONITOR ON *.* TO '${globals.MONITOR_USER}'@'%';"
             MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
+  setupReplicaUser:
+    cmd[${this}]: |-
+      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.REPLICATION_USER}'@'%' IDENTIFIED BY '${globals.REPLICATION_PASS}';"
+      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT REPLICATION CLIENT,REPLICATION SLAVE *.* TO '${globals.REPLICATION_USER}'@'%';"
+      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
+
   setupUsers:
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
     - setupMonitorUser: ${this.id}
+    - setupReplicaUser: ${this.id}
  
