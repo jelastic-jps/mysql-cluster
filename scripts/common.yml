@@ -9,34 +9,39 @@ actions:
           type: error
           message: Monitor user does not exist
 
-  setupMonitorUser:
+  setupUser:
     - if (/mysql/.test("${nodes.sqldb.nodeType}")):
-        cmd[${this}]: |-
-          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
-          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
+        cmd[${this.id}]: |-
+          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
+          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"
           MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
     - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
       - if ('${fn.compare([nodes.sqldb.version], 10.5)}' == -1):
-          cmd[${this}]: |-
-            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
-            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION CLIENT ON *.* TO '${globals.MONITOR_USER}'@'%';"
+          cmd[${this.id}]: |-
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"
             MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
       - else:
-          cmd[${this}]: |-
-            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.MONITOR_USER}'@'%' IDENTIFIED BY '${globals.MONITOR_PSWD}';"
-            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE,SLAVE MONITOR,BINLOG MONITOR ON *.* TO '${globals.MONITOR_USER}'@'%';"
+          cmd[${this.id}]: |-
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE,SLAVE MONITOR,BINLOG MONITOR ON *.* TO '${this.user}'@'%';"
             MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
-  setupReplicaUser:
-    cmd[${this}]: |-
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${globals.REPLICATION_USER}'@'%' IDENTIFIED BY '${globals.REPLICATION_PASS}';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT REPLICATION CLIENT,REPLICATION SLAVE *.* TO '${globals.REPLICATION_USER}'@'%';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
-
-  setupUsers:
-    - cmd[${this.id}]: |-
+  setupAdminUser:
+    - cmd[${this.id]: |-
         wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
-    - setupMonitorUser: ${this.id}
+
+  setupUsers:
+    - setupAdminUser: 
+        id: ${this.id}
+    - setupUser: 
+        id: ${this.id}
+        user: ${globals.MONITOR_USER}
+        pswd: ${globals.MONITOR_PSWD}
+    - setupUser: 
+        id: ${this.id}
+        user: ${globals.REPLICATION_USER}
+        pswd: ${globals.REPLICATION_PASS}
