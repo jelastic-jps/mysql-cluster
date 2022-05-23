@@ -40,5 +40,3 @@ actions:
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
     - setupMonitorUser: ${this.id}
-    - setupReplicaUser: ${this.id}
- 
