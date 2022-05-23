@@ -29,7 +29,7 @@ actions:
             MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
   setupAdminUser:
-    - cmd[${this.id]: |-
+    - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
