@@ -119,10 +119,10 @@ function parseOut(data) {
                         break;
                         
                     case MASTER:
-                        if (item.service_status == DOWN && item.status == FAILED) {
+                        if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_master_from_master";
                             
-                            if (failedNodesAddresses.indexOf(item.address) == -1) {
+                            if (item.status == FAILED && failedNodesAddresses.indexOf(item.address) == -1) {
                                 failedNodesAddresses.push(item.address);
                             }
                             if (!isRestore) {
@@ -131,19 +131,22 @@ function parseOut(data) {
                                     type: SUCCESS
                                 };
                             }
-                        } else if (item.service_status == UP) {
+                        }
+                        
+                        if (item.service_status == UP && item.status == OK) {
                             donorIps[MASTER] = " --donor-ip " + item.address;
                         };
                         break;
                         
                     case SLAVE:
-                        if (item.service_status == DOWN && item.status == FAILED) {
+                        if (item.service_status == DOWN || item.status == FAILED) {
                             if (item.node_type == MASTER) {
                                 scenario = " --scenario restore_master_from_slave";
                             } else {
                                 scenario = " --scenario restore_slave_from_master";
                             }
-                            if (failedNodesAddresses.indexOf(item.address) == -1) {
+                            
+                            if (item.status == FAILED && failedNodesAddresses.indexOf(item.address) == -1) {
                                 failedNodesAddresses.push(item.address);
                             }
                             
@@ -153,7 +156,9 @@ function parseOut(data) {
                                     type: SUCCESS
                                 };
                             }
-                        } else if (item.service_status == UP) {
+                        }
+                        
+                        if (item.service_status == UP && item.status == OK) {
                             donorIps[SLAVE] = " --donor-ip " + item.address;
                         };
                         
