@@ -1,0 +1,16 @@
+type: update
+id: db-recovery-events
+name: Database Cluster Recovery Events
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640
+
+onAfterScaleOut[sqldb]: diagnostic
+onAfterScaleIn[sqldb]: diagnostic
+onAfterStart: diagnostic
+onAfterRestartNode[sqldb]: diagnostic
+onAfterSetCloudletCount[sqldb]: diagnostic
+onAfterRedeployContainer[sqldb]: diagnostic
+
+actions:
+  diagnostic:
+    script: /scripts/db-recovery.js
+    exec: ' --diagnostic'
