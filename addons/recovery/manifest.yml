@@ -5,7 +5,7 @@ description:
   text: The Database Cluster Recovery add-on performs a comprehensive diagnostic of your MySQL/MariaDB Cluster (Galera, Primary-Primary, Primary-Secondary) to detect any disruptions of the provisioned service. In case of errors, the automatic Cluster Recovery functionality can restore the cluster operability after most of the problems.
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640/addons/recovery
 
 targetNodes:
   nodeGroup: sqldb
