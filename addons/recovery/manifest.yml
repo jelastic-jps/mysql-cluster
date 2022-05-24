@@ -44,7 +44,9 @@ settings:
         caption: Password
         type: string
 
-onInstall: generate-share-keys
+onInstall: 
+  - getMonitorUser
+  - generate-share-keys
 
 responses:
   200:
