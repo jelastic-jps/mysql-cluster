@@ -15,12 +15,12 @@ actions:
   
   setMonitorUser:
     - setGlobals:
-        MONITOR_USER: ${response.object.MONITOR_USER}
-        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
+        MONITOR_USER: monitor-${fn.random}
+        MONITOR_PSWD: ${fn.password(20)}
     - env.control.AddContainerEnvVars[sqldb]:
         vars:
-          MONITOR_USER: monitor-${fn.random}
-          MONITOR_PSWD: ${fn.password(20)}
+          MONITOR_USER: ${globals.MONITOR_USER}
+          MONITOR_PSWD: ${globals.MONITOR_PSWD}
 
   setupUser:
     cmd[${this.id}]: |-
