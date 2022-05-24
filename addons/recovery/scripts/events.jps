@@ -10,6 +10,9 @@ onAfterRestartNode[sqldb]: diagnostic
 onAfterSetCloudletCount[sqldb]: diagnostic
 onAfterRedeployContainer[sqldb]: diagnostic
 
+onInstall:
+  log: Database Cluster Recovery Events
+
 actions:
   diagnostic:
     script: /scripts/db-recovery.js
