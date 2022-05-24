@@ -41,9 +41,14 @@ settings:
         caption: Password
         type: string
 
-onInstall:
-  - install: /scripts/events.jps
-  - generate-share-keys
+onAfterScaleOut[sqldb]: diagnostic
+onAfterScaleIn[sqldb]: diagnostic
+onAfterStart: diagnostic
+onAfterRestartNode[sqldb]: diagnostic
+onAfterSetCloudletCount[sqldb]: diagnostic
+onAfterRedeployContainer[sqldb]: diagnostic
+
+onInstall: generate-share-keys
 
 responses:
   200:
