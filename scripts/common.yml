@@ -5,9 +5,20 @@ actions:
         MONITOR_USER: ${response.object.MONITOR_USER}
         MONITOR_PSWD: ${response.object.MONITOR_PSWD}
     - if (/response/.test("${globals.MONITOR_USER}") && /response/.test("${globals.MONITOR_PSWD}")):
-        return:
-          type: error
-          message: Monitor user does not exist
+        - setMonitorUser
+        - setupUser:
+            user: ${globals.MONITOR_USER}
+            pswd: ${globals.MONITOR_PSWD}
+            id: sqldb
+  
+  setMonitorUser:
+    - setGlobals:
+        MONITOR_USER: ${response.object.MONITOR_USER}
+        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
+    - env.control.AddContainerEnvVars[sqldb]:
+        vars:
+          MONITOR_USER: monitor-${fn.random}
+          MONITOR_PSWD: ${fn.password(20)}
 
   setupUser:
     cmd[${this.id}]: |-
