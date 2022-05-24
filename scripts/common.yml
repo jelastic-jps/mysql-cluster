@@ -7,6 +7,8 @@ actions:
     - if (/response/.test("${globals.MONITOR_USER}") && /response/.test("${globals.MONITOR_PSWD}")):
         - setMonitorUser
         - setupUser:
+            DB_USER: ${settings.DB_USER}
+            DB_PASS: ${settings.DB_PASS}
             user: ${globals.MONITOR_USER}
             pswd: ${globals.MONITOR_PSWD}
             id: sqldb
@@ -22,9 +24,9 @@ actions:
 
   setupUser:
     cmd[${this.id}]: |-
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
+      MYSQL_PWD=${globals.DB_PASS:this.DB_PASS} mysql -u${globals.DB_USER:this.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
+      MYSQL_PWD=${globals.DB_PASS:this.DB_PASS} mysql -u${globals.DB_USER:this.DB_USER} -e "GRANT USAGE, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"
+      MYSQL_PWD=${globals.DB_PASS:this.DB_PASS} mysql -u${globals.DB_USER:this.DB_USER} -e "FLUSH PRIVILEGES;"
 
   setupAdminUser:
     - cmd[${this.id}]: |-
