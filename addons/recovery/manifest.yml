@@ -31,18 +31,19 @@ buttons:
     loadingText: Cluster recovery is in progress...
     successText: Cluster recovery is finished successfully!
     action: recovery
-    settings: recovery
+    settings: main
 
 settings:
-  recovery:
-    submitUnchanged: true
-    fields:
-      - name: user
-        caption: User
-        type: string        
-      - name: password
-        caption: Password
-        type: string
+  submitUnchanged: true
+  fields:
+    - name: user
+      caption: User
+      type: string
+      required: true
+    - name: password
+      caption: Password
+      type: string
+      required: true
 
 onInstall: 
   - getMonitorUser
