@@ -7,8 +7,8 @@ actions:
     - if (/response/.test("${globals.MONITOR_USER}") && /response/.test("${globals.MONITOR_PSWD}")):
         - setMonitorUser
         - setupUser:
-            DB_USER: ${settings.DB_USER}
-            DB_PASS: ${settings.DB_PASS}
+            DB_USER: ${settings.user}
+            DB_PASS: ${settings.password}
             user: ${globals.MONITOR_USER}
             pswd: ${globals.MONITOR_PSWD}
             id: sqldb
