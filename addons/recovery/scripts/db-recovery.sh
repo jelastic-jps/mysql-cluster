@@ -77,6 +77,7 @@ if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
 fi
 
 if [[ "${diagnostic}" != "YES" ]]; then
+  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='pass'; REPLICA_PASSWORD='pass'; }
   if [ -z "${DONOR_IP}" ] || [ -z "${REPLICA_PASSWORD}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
@@ -390,6 +391,7 @@ galeraFixWithActivePrimary(){
   local nodes_to_fix=("$@")
   for node in "${nodes_to_fix[@]}"
   do
+      [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
       stopMysqlService "${node}"
       galeraSetBootstrap "${node}" 0
       startMysqlService "${node}"
@@ -421,6 +423,7 @@ galeraGetPrimaryNode(){
 
   for node in "${nodes_to_fix[@]}"
   do
+      [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
       command="${SSH} ${node} 'grep safe_to_bootstrap /var/lib/mysql/grastate.dat'"
       safe_bootstrap=$(execSshReturn "$command" "[Node: ${node}] Get safe_to_bootstrap"|awk -F : '{print $2}'|xargs )
       log "[Node: ${node}] safe_to_bootstrap=${safe_bootstrap}"
@@ -446,6 +449,19 @@ galeraGetPrimaryNode(){
   echo "${master_node}"
 }
 
+galeraMyisamCheck(){
+  local node=$1
+  local sql="SELECT CONCAT(table_schema,'.',table_name) as MyISAM_Db_Tables FROM information_schema.tables WHERE engine='MyISAM' AND table_schema NOT IN ('information_schema','mysql','performance_schema');"
+  stdout=$( { mysqlCommandExec "${sql}" "${node}"; } 2>&1 ) || { log "${stdout}"; return ${FAIL_CODE}; }
+  if [[ -z ${stdout} ]]; then
+    log "[Node: ${node}] MyISAM tables not found...ok"
+    echo "ok"
+  else
+    log "[Node: ${node}] MyISAM tables exist...warning\n==============WARNING==================\n${stdout}\n============END WARNING================";
+    echo "warning"
+  fi
+  return ${SUCCESS_CODE}
+}
 
 galeraFix(){
   local list_nodes=''
@@ -456,6 +472,7 @@ galeraFix(){
   list_nodes=$(grep wsrep_cluster_address ${GALERA_CONF} |awk -F '/' '{print $3}'|xargs -d ',')
   [[ -z "${list_nodes}" ]] && { log "Can't detect galera hosts in ${GALERA_CONF}"; return ${FAIL_CODE}; }
   for node in ${list_nodes}; do
+    [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
     wsrep_cluster_status=$(galeraGetClusterStatus ${node})
     [[ ${wsrep_cluster_status} == "Primary" ]] && primary_nodes+=("${node}") || nodes_to_fix+=("${node}")
   done
@@ -476,7 +493,8 @@ diagnosticResponse(){
   local service_status=$3
   local status=$4
   local galera_size_status=$5
-  local error=$6
+  local galera_myisam=$6
+  local error=$7
   response=$( jq -cn \
                   --argjson  result "$result" \
                   --arg node_type "$node_type" \
@@ -484,8 +502,9 @@ diagnosticResponse(){
                   --arg service_status "$service_status" \
                   --arg status "$status" \
                   --arg galera_size "$galera_size_status" \
+                  --arg galera_myisam "$galera_myisam" \
                   --arg error "$error" \
-                  '{result: $result, node_type: $node_type, address: $address, service_status: $service_status, status: $status, galera_size: $galera_size, error: $error}' )
+                  '{result: $result, node_type: $node_type, address: $address, service_status: $service_status, status: $status, galera_size: $galera_size, galera_myisam: $galera_myisam, error: $error}' )
   echo "${response}"
 }
 
@@ -494,13 +513,14 @@ nodeDiagnostic(){
   local service_status=''
   local status='failed'
   local galera_size_status=''
+  local galera_myisam=''
   local result=0
   local error=''
 
   node_type=$(getNodeType) || {
     error='Current node does not have master.cnf,slave.cnf or galera.cnf'
     result=${FAIL_CODE}
-    diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$error"
+    diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"
     log "${error}"
     return ${SUCCESS_CODE}
   }
@@ -508,7 +528,7 @@ nodeDiagnostic(){
 
 
   service_status=$(checkMysqlServiceStatus 'localhost') || {
-      diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$error"
+      diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"
       return ${SUCCESS_CODE};
   }
 
@@ -519,8 +539,9 @@ nodeDiagnostic(){
   elif [[ "${node_type}" == "galera" ]] && [[ "${service_status}" == "up" ]]; then
     galera_size_status=$(galeraCheckClusterSize) || { result=${FAIL_CODE}; error="Can't detect galera hosts in ${GALERA_CONF}"; }
     status=$(getGaleraStatus "localhost")
+    galera_myisam=$(galeraMyisamCheck "localhost")
   fi
-  diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$error"
+  diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"
 }
 
 restore_slave_from_master(){
