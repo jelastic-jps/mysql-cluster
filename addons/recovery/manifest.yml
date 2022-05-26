@@ -127,4 +127,5 @@ actions:
     - cmd [sqldb]: |-
         mv ${globals.tmp}${globals.ssh-key}* ${globals.ssh_root}
         cat ${globals.ssh_root}${globals.ssh-key}.pub >> ${globals.ssh_root}authorized_keys
+        echo "${globals.ssh_root}" >> /etc/jelastic/redeploy.conf
       user: root
