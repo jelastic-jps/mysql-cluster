@@ -38,10 +38,14 @@ The add-on can be installed from [Marketplace](https://www.virtuozzo.com/applica
 In the opened confirmation window, choose Database Environment and respective database nodes, and click on **Install**.
 
 <p align="left">
-<img src="images/install.png" width="500">
+<img src="../../images/install-recovery-addon.png" width="500">
 </p>
 
-After successful installation, the add-on will appear in the list of add-ons of sqldb layer. Now it is ready for employment.
+After successful installation, the add-on will appear in the list of add-ons of sqldb layer. Now it is ready for utilization.
+
+<p align="left">
+<img src="../../images/add-ons.png" width="700">
+</p>
 
 ## Database recovery How To
 
