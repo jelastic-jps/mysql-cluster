@@ -1,5 +1,5 @@
 <p align="center"> 
-<img style="padding: 0 15px; float: left;" src="../../images/mysql-mariadb-recovery-no-bg.png" width="70">
+<img style="padding: 0 15px; float: left;" src="../../images/mysql-mariadb-recovery-white-bg.png" width="70">
 </p>
 
 ## Restore and Recovery Add-On for MariaDB/MySQL Clusters
