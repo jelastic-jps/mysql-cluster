@@ -17,7 +17,7 @@ The list of supported DB clusters for recovering:
 
 With help of the add-on you can carry out cluster diagnostic and take a decision how to get database cluster back into operation. The diagnostic flow is based on:
 
- - getting the topology scheme (slave, master, galera)  
+ - getting the topology scheme (Primary-Secondary, Primary-Primary, Galera)  
 
  - getting the status of each node  
 
@@ -26,10 +26,10 @@ With help of the add-on you can carry out cluster diagnostic and take a decision
 
 ### Add-On Installtion 
 
-The add-on can be installed from [Marketplace](https://www.virtuozzo.com/application-platform-docs/marketplace/) of Virtuozzo Application Platform. It is considered that you have already an account on one of [Hosting Service Providers](https://www.virtuozzo.com/application-platform-partners/). So, sing in to the platform, open Add-On section in the Marketplace and pick **Database Cluster Recovery Add-On**.
+The add-on can be installed from [Marketplace](https://www.virtuozzo.com/application-platform-docs/marketplace/) of Virtuozzo Application Platform. It is considered that you have already an account on one of [Hosting Service Providers](https://www.virtuozzo.com/application-platform-partners/). So, sing in to the platform, open **Add-Ons** section in the Marketplace and pick **MySQL/MariaDB Cluster Recovery Add-On**.
 
 <p align="left">
-<img src="images/ADDON-MP.png" width="500">
+<img src="../../images/marketplace.png" width="650">
 </p>
 
 
@@ -47,18 +47,16 @@ After successful installation, the add-on will appear in the list of add-ons of 
 <img src="../../images/add-ons.png" width="700">
 </p>
 
-## Database recovery How To
+## Database Recovery How To
 
 Add-on allows to do two actions:
 
- - **database diagnostic** - with this action add-on automatically scans all nodes in the cluster in order to identify where the nodes are accessible and databases are consistent. If during diagnostic the database corruption or even node failure will be detected, the add-on will warn you with respective popup window
- - **automatic database recovery** - once some failure has been detected you can either do manual database recovery or try to do automatic database recovery by pressing the Recovery button. The best practice is to use automatic recovery scenario
+ - **Cluster Diagnostic** - with this action the add-on automatically scans all nodes in the cluster in order to identify where the nodes are accessible and databases are consistent. If during diagnostic the database corruption or even node failure will be detected, the add-on will warn you with respective popup window
+ - **Cluster Recovery** - once some failure has been detected you can either to do manual database recovery or try to do automatic database recovery by pressing the **Cluster Recovery** button. The best practice is to use automatic recovery scenario
  
-<p align="left">
-<img src="images/addon-buttons.png" width="500">
-</p>
+To perform automatic recovery, provide database user credentials either you got upon database cluster installation or the credentials of another priviledged user you created.
 
- 
+If you chose manual recovery flow, you can either do it yourself or follow our tutorials. 
 
 
 
