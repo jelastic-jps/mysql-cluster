@@ -4,7 +4,7 @@
 
 ## Restore and Recovery Add-On for MariaDB/MySQL Clusters
 
-MariaDB/MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates. Once the database failed and becomes inaccessible you can use this automated solution for database restoration and/or even recovery of fully corrupted node.
+MariaDB/MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates. Once the database failed and becomes inaccessible you can use this automated solution for database restoration and even recovery of fully corrupted node.
 
 The list of supported DB clusters for recovering:
 
@@ -26,7 +26,7 @@ With help of the add-on you can carry out cluster diagnostic and take a decision
 
 ### Add-On Installtion 
 
-The add-on can be installed from [Marketplace](https://www.virtuozzo.com/application-platform-docs/marketplace/) of Virtuozzo Application Platform. It is considered that you have already an account on one of [Hosting Service Providers](https://www.virtuozzo.com/application-platform-partners/). So, sing in to the platform, open **Add-Ons** section in the Marketplace and pick **MySQL/MariaDB Cluster Recovery Add-On**.
+The add-on can be installed either automatically along with database cluster installation or manually from [Marketplace](https://www.virtuozzo.com/application-platform-docs/marketplace/) of Virtuozzo Application Platform. It is considered that you have already an account on one of [Hosting Service Providers](https://www.virtuozzo.com/application-platform-partners/). So, if you have no add-on installed, sing in to the platform, open **Add-Ons** section in the Marketplace and pick **MySQL/MariaDB Cluster Recovery** add-On.
 
 <p align="left">
 <img src="../../images/marketplace.png" width="650">
@@ -51,12 +51,18 @@ After successful installation, the add-on will appear in the list of add-ons of 
 
 Add-on allows to do two actions:
 
- - **Cluster Diagnostic** - with this action the add-on automatically scans all nodes in the cluster in order to identify where the nodes are accessible and databases are consistent. If during diagnostic the database corruption or even node failure will be detected, the add-on will warn you with respective popup window
- - **Cluster Recovery** - once some failure has been detected you can either to do manual database recovery or try to do automatic database recovery by pressing the **Cluster Recovery** button. The best practice is to use automatic recovery scenario
+ - **Cluster Diagnostic** - with this action the add-on automatically scans all nodes in the cluster in order to identify whether the nodes are accessible and databases are consistent or not. If during diagnostic the database corruption or even node failure will be detected, the add-on will warn you with respective popup window  
+ 
+<p align="left">
+<img src="../../images/diagnostic-failure.png" width="350">
+</p>
+
+ 
+ - **Cluster Recovery** - once any failure has been detected you can either try to do automatic database recovery by pressing the **Cluster Recovery** button or to do manual database recovery following the link to the recovery guide. The best practice is to use automatic recovery scenario
  
 To perform automatic recovery, provide database user credentials either you got upon database cluster installation or the credentials of another priviledged user you created.
 
-If you chose manual recovery flow, you can either do it yourself or follow our tut 
+In case the automatic recovery failed and you go with manual recovery flow, first take a look at **/var/log/db_recovery.log** file to get better understanding of a nature of detected error. Then you can try to do recovery yourself using our guide following the link in the **Information** window and official documentation from [MySQL](https://mysql.org)/[MariaDB](https://mariadb.org) teams. 
 
 
 
