@@ -4,7 +4,7 @@
 
 ## Restore and Recovery Add-On for MariaDB/MySQL Clusters
 
-MariaDB/MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates. Once the database failed and becomes inaccessible you can use this automated solution for database restoration and even recovery of fully corrupted node.
+The [MariaDB/MySQL Auto-Clustering](https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/) solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates. Once the database failed and becomes inaccessible you can use this automated solution for database restoration and even recovery of fully corrupted node.
 
 The list of supported DB clusters for recovering:
 
