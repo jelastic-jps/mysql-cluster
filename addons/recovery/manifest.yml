@@ -10,10 +10,8 @@ baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/add
 targetNodes:
   nodeGroup: sqldb
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery
-
 mixins:
-  - /scripts/common.yml
+  - /../../scripts/common.yml
 
 globals:
   ssh_root: /root/.ssh/
