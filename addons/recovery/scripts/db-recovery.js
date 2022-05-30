@@ -55,6 +55,7 @@ api.marketplace.console.WriteLog("isRestore->" + isRestore);
 api.marketplace.console.WriteLog("scenario->" + scenario);
 api.marketplace.console.WriteLog("donorIps->" + donorIps);
 api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
+api.marketplace.console.WriteLog("failedNodesAddresses->" + failedNodesAddresses);
 
 if (isRestore) {
     
@@ -110,7 +111,9 @@ function parseOut(data) {
                         }
                         if (item.service_status == DOWN || item.status == FAILED || item.galera_size != OK) {
                             scenario = " --scenario restore_galera";
-                            donorIps[GALERA] = " --donor-ip " + GALERA;
+                            if (!donorIps[scheme]) {
+                                donorIps[GALERA] = " --donor-ip " + GALERA;
+                            }
                         };
                         
                         if (failedNodesAddresses.indexOf(item.address) == -1) {
@@ -139,7 +142,7 @@ function parseOut(data) {
                             }
                         }
                         
-                        if (item.service_status == UP && item.status == OK) {
+                        if (!donorIps[scheme] && item.service_status == UP && item.status == OK) {
                             donorIps[MASTER] = " --donor-ip " + item.address;
                         };
                         break;
@@ -164,7 +167,7 @@ function parseOut(data) {
                             }
                         }
                         
-                        if (item.service_status == UP && item.status == OK) {
+                        if (!donorIps[scheme] && item.service_status == UP && item.status == OK) {
                             donorIps[SLAVE] = " --donor-ip " + item.address;
                         };
                         
