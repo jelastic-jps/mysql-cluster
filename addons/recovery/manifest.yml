@@ -45,6 +45,8 @@ settings:
       type: string
       required: true
 
+onAfterScaleOut[sqldb]: generate-share-keys
+
 onInstall: 
   - getMonitorUser
   - generate-share-keys
@@ -84,6 +86,9 @@ actions:
     
   generate-share-keys:
     - cmd[${nodes.sqldb.master.id}]: |-
+        [ -f ${globals.ssh_root}${globals.ssh-key} ] && rm -f ${globals.ssh_root}${globals.ssh-key};
+        [ -f ${globals.ssh_root}${globals.ssh-key}.pub ] && rm -f ${globals.ssh_root}${globals.ssh-key}.pub;
+        sed -i '/db_monitoring/d' ${globals.ssh_root}authorized_keys;
         ssh-keygen -t rsa -b 4098 -f ${globals.tmp}${globals.ssh-key} -q -N '' -C 'db_monitoring' <<<y >/dev/null 2>&1
         chown mysql:mysql ${globals.tmp}${globals.ssh-key}*
       user: root
@@ -127,5 +132,4 @@ actions:
     - cmd [sqldb]: |-
         mv ${globals.tmp}${globals.ssh-key}* ${globals.ssh_root}
         cat ${globals.ssh_root}${globals.ssh-key}.pub >> ${globals.ssh_root}authorized_keys
-        echo "${globals.ssh_root}" >> /etc/jelastic/redeploy.conf
       user: root
