@@ -55,6 +55,7 @@ api.marketplace.console.WriteLog("isRestore->" + isRestore);
 api.marketplace.console.WriteLog("scenario->" + scenario);
 api.marketplace.console.WriteLog("donorIps->" + donorIps);
 api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
+api.marketplace.console.WriteLog("failedNodesAddresses->" + failedNodesAddresses);
 
 if (isRestore) {
     
