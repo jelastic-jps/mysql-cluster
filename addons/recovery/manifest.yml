@@ -5,7 +5,7 @@ description:
   text: The Database Cluster Recovery add-on performs a comprehensive diagnostic of your MySQL/MariaDB Cluster (Galera, Primary-Primary, Primary-Secondary) to detect any disruptions of the provisioned service. In case of errors, the automatic Cluster Recovery functionality can restore the cluster operability after most of the problems.
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640/addons/recovery
 
 targetNodes:
   nodeGroup: sqldb
@@ -44,6 +44,8 @@ settings:
       caption: Password
       type: string
       required: true
+
+onAfterScaleOut[sqldb]: generate-share-keys
 
 onInstall: 
   - getMonitorUser
@@ -84,7 +86,10 @@ actions:
     
   generate-share-keys:
     - cmd[${nodes.sqldb.master.id}]: |-
-        ssh-keygen -t rsa -b 4098 -f ${globals.tmp}${globals.ssh-key} -q -N '' -C 'db cluster monitoring' <<<y >/dev/null 2>&1
+        [ -f ${globals.ssh_root}${globals.ssh-key} ] && rm -f ${globals.ssh_root}${globals.ssh-key};
+        [ -f ${globals.ssh_root}${globals.ssh-key}.pub ] && rm -f ${globals.ssh_root}${globals.ssh-key}.pub;
+        sed -i '/db_monitoring/d' ${globals.ssh_root}authorized_keys;
+        ssh-keygen -t rsa -b 4098 -f ${globals.tmp}${globals.ssh-key} -q -N '' -C 'db_monitoring' <<<y >/dev/null 2>&1
         chown mysql:mysql ${globals.tmp}${globals.ssh-key}*
       user: root
     - script: |
@@ -127,5 +132,4 @@ actions:
     - cmd [sqldb]: |-
         mv ${globals.tmp}${globals.ssh-key}* ${globals.ssh_root}
         cat ${globals.ssh_root}${globals.ssh-key}.pub >> ${globals.ssh_root}authorized_keys
-        echo "${globals.ssh_root}" >> /etc/jelastic/redeploy.conf
       user: root

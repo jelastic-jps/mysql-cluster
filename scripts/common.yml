@@ -24,10 +24,23 @@ actions:
           MONITOR_PSWD: ${globals.MONITOR_PSWD}
 
   setupUser:
-    cmd[${this.id}]: |-
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
+    - if (/mysql/.test("${nodes.sqldb.nodeType}")):
+        cmd[${this.id}]: |-
+          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
+          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"
+          MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
+
+    - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
+      - if ('${fn.compare([nodes.sqldb.version], 10.5)}' == -1):
+          cmd[${this.id}]: |-
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
+      - else:
+          cmd[${this.id}]: |-
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SLAVE MONITOR, BINLOG MONITOR ON *.* TO '${this.user}'@'%';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
   setupAdminUser:
     - cmd[${this.id}]: |-
