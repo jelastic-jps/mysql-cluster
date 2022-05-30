@@ -46,6 +46,7 @@ settings:
       required: true
 
 onAfterScaleOut[sqldb]: generate-share-keys
+onAfterRedeployContainer[sqldb]: generate-share-keys
 
 onInstall: 
   - getMonitorUser
