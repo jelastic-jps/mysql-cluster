@@ -80,7 +80,7 @@ actions:
     exec: ' --diagnostic'
 
   recovery:
-    script: scripts/db-recovery.js
+    script: /scripts/db-recovery.js
     user: ${settings.user:}
     password: ${settings.password:}
     
