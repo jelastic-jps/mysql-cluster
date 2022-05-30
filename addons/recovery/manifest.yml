@@ -8,7 +8,7 @@ description:
 targetNodes:
   nodeGroup: sqldb
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery
 
 mixins:
   - /scripts/common.yml
@@ -74,11 +74,11 @@ responses:
 
 actions:
   diagnostic:
-    script: ${baseUrl}/addons/recovery/scripts/db-recovery.js
+    script: scripts/db-recovery.js
     exec: ' --diagnostic'
 
   recovery:
-    script: ${baseUrl}/addons/recovery/scripts/db-recovery.js
+    script: scripts/db-recovery.js
     user: ${settings.user:}
     password: ${settings.password:}
     
