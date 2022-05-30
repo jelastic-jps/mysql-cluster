@@ -41,14 +41,13 @@ case $key in
     ;;
 esac
 done
-set -- "${POSITIONAL[@]}" # restore positional parameters
 
 usage() {
 SCRIPTNAME=$(basename "$BASH_SOURCE")
 echo "    USAGE:"
 echo "        COMMAND RUN:  "
-echo "             $SCRIPTNAME --mysql-user 'MYSQL USER NAME' --mysql-password 'MYSQL USER PASSWORD' --replica-password 'PASSWORD FOR SET' --donor-ip 'MYSQL MASTER IP ADDRESS' --scenario [SCENARIO NAME]"
-echo "             Example Restore Run: $SCRIPTNAME --mysql-user 'jelastic-12445' --mysql-password 'password123' --replica-password 'replica123' --donor-ip '192.168.0.1' --scenario restore_master_from_master"
+echo "             $SCRIPTNAME --mysql-user 'MYSQL USER NAME' --mysql-password 'MYSQL USER PASSWORD' --replica-password 'PASSWORD FOR SET' --donor-ip 'MYSQL PRIMARY IP ADDRESS' --scenario [SCENARIO NAME]"
+echo "             Example Restore Run: $SCRIPTNAME --mysql-user 'jelastic-12445' --mysql-password 'password123' --replica-password 'replica123' --donor-ip '192.168.0.1' --scenario restore_primary_from_primary"
 echo "             Example Diagnostic Run: $SCRIPTNAME --mysql-user 'jelastic-12445' --mysql-password 'password123' --diagnostic"
 echo "        ARGUMENTS:    "
 echo "              --mysql-user - MySQL user with LOCK TABLES priveleges"
@@ -57,15 +56,15 @@ echo "              --replica-password - MySQL replica user password which will 
 echo "              --donor-ip - Operable MySQL server ip address from which will be restored failed node."
 echo "                           In case of galera recover, need to specify 'galera' as value"
 echo "              --scenario - restoration scenario supported arguments:"
-echo "                           restore_master_from_master - restore failed master node from another master"
-echo "                           restore_slave_from_master - restore slave node from master"
-echo "                           restore_master_from_slave - restore master node from slave"
+echo "                           restore_primary_from_primary - restore failed primary node from another primary"
+echo "                           restore_secondary_from_primary - restore secondary node from primary"
+echo "                           restore_primary_from_secondary - restore primary node from secondary"
 echo "                           restore_galera - restore galera cluster"
 echo "              --diagnostic - Run only node diagnostic"
 echo "        NOTICE:"
-echo "              - Scenarios restore_master_from_master, restore_slave_from_master, restore_master_from_slave should be run from node which should be restored."
-echo "                As example in topology master slave we run script in diagnostic mode and it return result that slave replication is broken."
-echo "                We run restoration scenario from slave node and set parameter --donor-ip with mysql master node ip"
+echo "              - Scenarios restore_primary_from_primary, restore_secondary_from_primary, restore_primary_from_secondary should be run from node which should be restored."
+echo "                As example in topology primary secondary we run script in diagnostic mode and it return result that secondary replication is broken."
+echo "                We run restoration scenario from secondary node and set parameter --donor-ip with mysql primary node ip"
 echo "              - For galera scenario there are no restrictions, restoration can be executed from any node."
 echo
 }
@@ -77,6 +76,7 @@ if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
 fi
 
 if [[ "${diagnostic}" != "YES" ]]; then
+  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='pass'; REPLICA_PASSWORD='pass'; }
   if [ -z "${DONOR_IP}" ] || [ -z "${REPLICA_PASSWORD}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
@@ -88,10 +88,10 @@ fi
 RUN_LOG="/var/log/db_recovery.log"
 PRIVATE_KEY='/root/.ssh/id_rsa_db_monitoring'
 SSH="timeout 300 ssh -i ${PRIVATE_KEY} -T -o StrictHostKeyChecking=no"
-MASTER_CONF='/etc/mysql/conf.d/master.cnf'
-SLAVE_CONF='/etc/mysql/conf.d/slave.cnf'
+PRIMARY_CONF='/etc/mysql/conf.d/master.cnf'
+SECONDARY_CONF='/etc/mysql/conf.d/slave.cnf'
 GALERA_CONF='/etc/mysql/conf.d/galera.cnf'
-REPLICATION_INFO='/var/lib/mysql/master-position.info'
+REPLICATION_INFO='/var/lib/mysql/primary-position.info'
 
 SUCCESS_CODE=0
 FAIL_CODE=99
@@ -138,8 +138,8 @@ resyncData(){
 
 
 getNodeType(){
-  [[ -f ${MASTER_CONF} ]] && { echo "master"; return ${SUCCESS_CODE}; }
-  [[ -f ${SLAVE_CONF} ]] && { echo "slave"; return ${SUCCESS_CODE}; }
+  [[ -f ${PRIMARY_CONF} ]] && { echo "primary"; return ${SUCCESS_CODE}; }
+  [[ -f ${SECONDARY_CONF} ]] && { echo "secondary"; return ${SUCCESS_CODE}; }
   [[ -f ${GALERA_CONF} ]] && { echo "galera"; return ${SUCCESS_CODE}; }
   echo "undefined"
   return ${FAIL_CODE}
@@ -163,7 +163,7 @@ checkAuth(){
 
 execResponse(){
   local result=$1
-  local error=$3
+  local error=$2
   response=$(jq -cn --argjson  result "$result" --arg scenario "${SCENARIO}" --arg address "${NODE_ADDRESS}" --arg error "$error" '{result: $result, scenario: $scenario, address: $address, error: $error}')
   echo "${response}"
 }
@@ -214,7 +214,7 @@ execAction(){
 }
 
 
-setMasterReadonly(){
+setPrimaryReadonly(){
   local mysql_src_ip=$1
   mysqlCommandExec 'flush tables with read lock;' "${mysql_src_ip}"
 }
@@ -233,7 +233,7 @@ resetReplicaPassword(){
 
 
 
-getMasterPosition(){
+getPrimaryPosition(){
   local mysql_src_ip=$1
   echo "File=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
   echo "Position=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
@@ -243,45 +243,45 @@ getMasterPosition(){
 }
 
 
-getSlaveStatus(){
+getSecondaryStatus(){
   local node=$1
-  local slave_running_values
+  local secondary_running_values
 
-  slave_running_values=$(mysqlCommandExec "SHOW SLAVE STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
-  if [[ ${slave_running_values} != 2 ]]; then
+  secondary_running_values=$(mysqlCommandExec "SHOW SLAVE STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
+  if [[ ${secondary_running_values} != 2 ]]; then
     echo "failed"
-    log "[Node: ${node}] Slave is not running...failed\n ${slave_running_values}"
+    log "[Node: ${node}] Secondary is not running...failed\n ${secondary_running_values}"
     return ${FAIL_CODE}
   fi
   echo "ok"
-  log "[Node: ${node}] Slave is running...done"
+  log "[Node: ${node}] Secondary is running...done"
 }
 
-removeSlaveFromMaster(){
+removeSecondaryFromPrimary(){
   local node=$1
   mysqlCommandExec "stop slave; reset slave all;" ${node}
 }
 
 
-getMasterStatus(){
+getPrimaryStatus(){
   local node=$1
-  local is_master_have_binlog
-  local is_master_have_slave
+  local is_primary_have_binlog
+  local is_primary_have_secondary
   local status="failed"
 
-  is_master_have_binlog=$(mysqlCommandExec "SHOW MASTER STATUS \G" "${node}" |grep -E 'File|Position'|wc -l)
-  is_master_have_slave=$(mysqlCommandExec "SHOW SLAVE STATUS \G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
-  if [[ ${is_master_have_binlog} == 2 ]] && [[ ${is_master_have_slave} == 0 ]]; then
+  is_primary_have_binlog=$(mysqlCommandExec "SHOW MASTER STATUS \G" "${node}" |grep -E 'File|Position'|wc -l)
+  is_primary_have_secondary=$(mysqlCommandExec "SHOW SLAVE STATUS \G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
+  if [[ ${is_primary_have_binlog} == 2 ]] && [[ ${is_primary_have_secondary} == 0 ]]; then
     echo 'ok'
-    log "[Node: ${node}] Master status...ok"
+    log "[Node: ${node}] Primary status...ok"
     return ${SUCCESS_CODE}
-  elif [[ ${is_master_have_binlog} == 2 ]] && [[ ${is_master_have_slave} == 2 ]]; then
-    status=$(getSlaveStatus "${node}")
+  elif [[ ${is_primary_have_binlog} == 2 ]] && [[ ${is_primary_have_secondary} == 2 ]]; then
+    status=$(getSecondaryStatus "${node}")
     echo "${status}"
     return ${SUCCESS_CODE}
   fi
   echo "${status}"
-  log "[Node: ${node}] Looks like master not configured, SHOW MASTER STATUS command returned empty result...failed"
+  log "[Node: ${node}] Looks like primary not configured, SHOW MASTER STATUS command returned empty result...failed"
 }
 
 
@@ -302,17 +302,17 @@ getGaleraStatus(){
 }
 
 
-setMasterWriteMode(){
-  local master_ip=$1
-  mysqlCommandExec "unlock tables;" ${master_ip}
+setPrimaryWriteMode(){
+  local node=$1
+  mysqlCommandExec "unlock tables;" ${node}
 }
 
 
-restoreSlavePosition(){
-  local slave_ip=$1
+restoreSecondaryPosition(){
+  local node=$1
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
-  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${REPLICA_PASSWORD}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${slave_ip}
+  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${REPLICA_PASSWORD}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
 }
 
 
@@ -390,6 +390,7 @@ galeraFixWithActivePrimary(){
   local nodes_to_fix=("$@")
   for node in "${nodes_to_fix[@]}"
   do
+      [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
       stopMysqlService "${node}"
       galeraSetBootstrap "${node}" 0
       startMysqlService "${node}"
@@ -416,55 +417,70 @@ galeraGetClusterStatus(){
 galeraGetPrimaryNode(){
   local nodes_to_fix=("$@")
   local seq_num=0
-  local master_node='undefined'
-  local master_node_by_seq
+  local primary_node='undefined'
+  local primary_node_by_seq
 
   for node in "${nodes_to_fix[@]}"
   do
+      [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
       command="${SSH} ${node} 'grep safe_to_bootstrap /var/lib/mysql/grastate.dat'"
       safe_bootstrap=$(execSshReturn "$command" "[Node: ${node}] Get safe_to_bootstrap"|awk -F : '{print $2}'|xargs )
       log "[Node: ${node}] safe_to_bootstrap=${safe_bootstrap}"
       if [[ ${safe_bootstrap} == 1 ]]; then
-        master_node="${node}"
+        primary_node="${node}"
         stopMysqlService "${node}"
       else
         stopMysqlService "${node}"
-        [[ ${master_node} == 'undefined' ]] || continue
+        [[ ${primary_node} == 'undefined' ]] || continue
         command="${SSH} ${node} 'mysqld --wsrep-recover > /dev/null 2>&1 && tail -2 /var/log/mysql/mysqld.log |grep \"Recovered position\"'"
         cur_seq_num=$(execSshReturn "$command" "[Node: ${node}] Get seqno"|awk -F 'Recovered position:' '{print $2}'|awk -F : '{print $2}' )
         log "[Node: ${node}] seqno=${cur_seq_num}"
       fi
 
       if [ "${seq_num}" -lt "${cur_seq_num}" ]; then
-        master_node_by_seq=${node}
+        primary_node_by_seq=${node}
         seq_num=${cur_seq_num}
       fi
   done
 
-  [[ ${master_node} == 'undefined' ]] && master_node=${master_node_by_seq}
-  log "[Node: ${master_node}] Set as primary...done"
-  echo "${master_node}"
+  [[ ${primary_node} == 'undefined' ]] && primary_node=${primary_node_by_seq}
+  log "[Node: ${primary_node}] Set as primary...done"
+  echo "${primary_node}"
 }
 
+galeraMyisamCheck(){
+  local node=$1
+  local sql="SELECT CONCAT(table_schema,'.',table_name) as MyISAM_Db_Tables FROM information_schema.tables WHERE engine='MyISAM' AND table_schema NOT IN ('information_schema','mysql','performance_schema');"
+  stdout=$( { mysqlCommandExec "${sql}" "${node}"; } 2>&1 ) || { log "${stdout}"; return ${FAIL_CODE}; }
+  if [[ -z ${stdout} ]]; then
+    log "[Node: ${node}] MyISAM tables not found...ok"
+    echo "ok"
+  else
+    log "[Node: ${node}] MyISAM tables exist...warning\n==============WARNING==================\n${stdout}\n============END WARNING================";
+    echo "warning"
+  fi
+  return ${SUCCESS_CODE}
+}
 
 galeraFix(){
   local list_nodes=''
   local primary_nodes=()
   local nodes_to_fix=()
-  local master_node
+  local primary_node
 
   list_nodes=$(grep wsrep_cluster_address ${GALERA_CONF} |awk -F '/' '{print $3}'|xargs -d ',')
   [[ -z "${list_nodes}" ]] && { log "Can't detect galera hosts in ${GALERA_CONF}"; return ${FAIL_CODE}; }
   for node in ${list_nodes}; do
+    [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
     wsrep_cluster_status=$(galeraGetClusterStatus ${node})
     [[ ${wsrep_cluster_status} == "Primary" ]] && primary_nodes+=("${node}") || nodes_to_fix+=("${node}")
   done
 
   if [[ ${#primary_nodes[@]} == 0 ]]; then
-    master_node=$(galeraGetPrimaryNode "${nodes_to_fix[@]}")
-    galeraSetBootstrap "${master_node}" 1
-    startMysqlService ${master_node}
-    galeraFixWithActivePrimary ${nodes_to_fix[@]/$master_node}
+    primary_node=$(galeraGetPrimaryNode "${nodes_to_fix[@]}")
+    galeraSetBootstrap "${primary_node}" 1
+    startMysqlService ${primary_node}
+    galeraFixWithActivePrimary ${nodes_to_fix[@]/$primary_node}
   else
     galeraFixWithActivePrimary ${nodes_to_fix[@]}
   fi
@@ -476,7 +492,8 @@ diagnosticResponse(){
   local service_status=$3
   local status=$4
   local galera_size_status=$5
-  local error=$6
+  local galera_myisam=$6
+  local error=$7
   response=$( jq -cn \
                   --argjson  result "$result" \
                   --arg node_type "$node_type" \
@@ -484,8 +501,9 @@ diagnosticResponse(){
                   --arg service_status "$service_status" \
                   --arg status "$status" \
                   --arg galera_size "$galera_size_status" \
+                  --arg galera_myisam "$galera_myisam" \
                   --arg error "$error" \
-                  '{result: $result, node_type: $node_type, address: $address, service_status: $service_status, status: $status, galera_size: $galera_size, error: $error}' )
+                  '{result: $result, node_type: $node_type, address: $address, service_status: $service_status, status: $status, galera_size: $galera_size, galera_myisam: $galera_myisam, error: $error}' )
   echo "${response}"
 }
 
@@ -494,13 +512,14 @@ nodeDiagnostic(){
   local service_status=''
   local status='failed'
   local galera_size_status=''
+  local galera_myisam=''
   local result=0
   local error=''
 
   node_type=$(getNodeType) || {
     error='Current node does not have master.cnf,slave.cnf or galera.cnf'
     result=${FAIL_CODE}
-    diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$error"
+    diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"
     log "${error}"
     return ${SUCCESS_CODE}
   }
@@ -508,36 +527,37 @@ nodeDiagnostic(){
 
 
   service_status=$(checkMysqlServiceStatus 'localhost') || {
-      diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$error"
+      diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"
       return ${SUCCESS_CODE};
   }
 
-  if [[ "${node_type}" == "slave" ]] && [[ "${service_status}" == "up" ]]; then
-    status=$(getSlaveStatus "localhost")
-  elif [[ "${node_type}" == "master" ]] && [[ "${service_status}" == "up" ]]; then
-    status=$(getMasterStatus "localhost")
+  if [[ "${node_type}" == "secondary" ]] && [[ "${service_status}" == "up" ]]; then
+    status=$(getSecondaryStatus "localhost")
+  elif [[ "${node_type}" == "primary" ]] && [[ "${service_status}" == "up" ]]; then
+    status=$(getPrimaryStatus "localhost")
   elif [[ "${node_type}" == "galera" ]] && [[ "${service_status}" == "up" ]]; then
     galera_size_status=$(galeraCheckClusterSize) || { result=${FAIL_CODE}; error="Can't detect galera hosts in ${GALERA_CONF}"; }
     status=$(getGaleraStatus "localhost")
+    galera_myisam=$(galeraMyisamCheck "localhost")
   fi
-  diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$error"
+  diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"
 }
 
-restore_slave_from_master(){
+restore_secondary_from_primary(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
   execAction "resetReplicaPassword ${DONOR_IP}" "[Node: ${DONOR_IP}] Reset replica user password"
   execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
-  execAction "setMasterReadonly ${DONOR_IP}" "[Node: ${DONOR_IP}] Set master readonly"
+  execAction "setPrimaryReadonly ${DONOR_IP}" "[Node: ${DONOR_IP}] Set primary readonly"
   execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} lock"
-  execAction "getMasterPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Get master possition"
-  execAction "setMasterWriteMode ${DONOR_IP}" "[Node: ${DONOR_IP}] Set donor to read write mode"
+  execAction "getPrimaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Get primary position"
+  execAction "setPrimaryWriteMode ${DONOR_IP}" "[Node: ${DONOR_IP}] Set donor to read write mode"
   startMysqlService "localhost"
   execAction "checkMysqlOperable localhost" "[Node: localhost] Mysql service operable check"
-  execAction 'restoreSlavePosition localhost' '[Node: localhost] Restore master position on self node'
+  execAction 'restoreSecondaryPosition localhost' '[Node: localhost] Restore primary position on self node'
 }
 
-restore_master_from_slave(){
+restore_primary_from_secondary(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
   execAction "resetReplicaPassword ${DONOR_IP}"
@@ -548,15 +568,15 @@ restore_master_from_slave(){
   execAction "checkMysqlOperable localhost" "[Node: localhost] Mysql service operable check"
   startMysqlService "${DONOR_IP}"
   execAction "checkMysqlOperable ${DONOR_IP}" "[Node: ${DONOR_IP}] Mysql service operable check"
-  execAction "getMasterPosition localhost" '[Node: localhost] Get master possition'
-  execAction "removeSlaveFromMaster localhost" '[Node: localhost] Disable slave'
-  execAction "restoreSlavePosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Restore master position on donor"
+  execAction "getPrimaryPosition localhost" '[Node: localhost] Get primary position'
+  execAction "removeSecondaryFromPrimary localhost" '[Node: localhost] Disable secondary'
+  execAction "restoreSecondaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Restore primary position on donor"
 }
 
-restore_master_from_master(){
-  restore_slave_from_master
-  execAction "getMasterPosition localhost" '[Node: localhost] Get self master possition'
-  execAction "restoreSlavePosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Restore master position on donor"
+restore_primary_from_primary(){
+  restore_secondary_from_primary
+  execAction "getPrimaryPosition localhost" '[Node: localhost] Get self primary position'
+  execAction "restoreSecondaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Restore primary position on donor"
 }
 
 restore_galera(){
