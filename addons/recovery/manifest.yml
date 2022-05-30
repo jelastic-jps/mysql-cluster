@@ -84,7 +84,7 @@ actions:
     
   generate-share-keys:
     - cmd[${nodes.sqldb.master.id}]: |-
-        ssh-keygen -t rsa -b 4098 -f ${globals.tmp}${globals.ssh-key} -q -N '' -C 'db cluster monitoring' <<<y >/dev/null 2>&1
+        ssh-keygen -t rsa -b 4098 -f ${globals.tmp}${globals.ssh-key} -q -N '' -C 'db_monitoring' <<<y >/dev/null 2>&1
         chown mysql:mysql ${globals.tmp}${globals.ssh-key}*
       user: root
     - script: |
