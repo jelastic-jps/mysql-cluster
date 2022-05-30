@@ -10,6 +10,11 @@ baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/add
 targetNodes:
   nodeGroup: sqldb
 
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery
+
+mixins:
+  - /scripts/common.yml
+
 globals:
   ssh_root: /root/.ssh/
   ssh-key: id_rsa_db_monitoring
@@ -28,20 +33,23 @@ buttons:
     loadingText: Cluster recovery is in progress...
     successText: Cluster recovery is finished successfully!
     action: recovery
-    settings: recovery
+    settings: main
 
 settings:
-  recovery:
-    submitUnchanged: true
-    fields:
-      - name: user
-        caption: User
-        type: string        
-      - name: password
-        caption: Password
-        type: string
+  submitUnchanged: true
+  fields:
+    - name: user
+      caption: User
+      type: string
+      required: true
+    - name: password
+      caption: Password
+      type: string
+      required: true
 
-onInstall: generate-share-keys
+onInstall: 
+  - getMonitorUser
+  - generate-share-keys
 
 responses:
   200:

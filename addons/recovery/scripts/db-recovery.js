@@ -102,7 +102,13 @@ function parseOut(data) {
                 api.marketplace.console.WriteLog("item->" + item);
                 switch(String(scheme)) {
                     case GALERA:
-                        if (item.service_status == DOWN || item.status == FAILED || item.galera_size != "ok") {
+                        if (item.galera_myisam != OK) {
+                            return {
+                                type: WARNING,
+                                message: "There are MyISAM tables in the Galera Cluster. These tables should be converted in InnoDB type"
+                            }
+                        }
+                        if (item.service_status == DOWN || item.status == FAILED || item.galera_size != OK) {
                             scenario = " --scenario restore_galera";
                             donorIps[GALERA] = " --donor-ip " + GALERA;
                         };
