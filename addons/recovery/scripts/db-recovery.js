@@ -103,7 +103,7 @@ function parseOut(data) {
                 api.marketplace.console.WriteLog("item->" + item);
                 switch(String(scheme)) {
                     case GALERA:
-                        if (item.galera_myisam == OK) {
+                        if (item.galera_myisam != OK) {
                             return {
                                 result: MYISAM_TABLES,
                                 type: WARNING,
