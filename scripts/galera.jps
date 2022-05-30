@@ -37,8 +37,7 @@ onAfterScaleOut[sqldb]:
         id: ${@i.id}
     - cmd[${@i.id}]: jem service restart
 
-onAfterScaleIn[sqldb]:
-  setupSeeds
+onAfterScaleIn[sqldb]: setupSeeds
   
 onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
@@ -69,18 +68,7 @@ onAfterStart:
 
 onBeforeRestartNode[sqldb]:
   - forEach(i:nodes.sqldb):
-        - cmd[${@i.id}]: |-
-            [[ -f /usr/local/sbin/galeraHealthCheck.sh ]] && echo true || echo false
-        - if ("${response.out}" == "true"):
-          - cmd[${@i.id}]: bash /usr/local/sbin/galeraHealthCheck.sh --db-user ${globals.DB_USER} --db-password ${globals.DB_PASS} --cluster-size ${nodes.sqldb.length}
-          - if ("${response.out}" == "true"):
-              cmd [${@i.id}]: sudo jem service restart;
-          - else:
-              - stopEvent:
-                  type: warning
-                  message: ${response.out}
-        - else:
-            cmd [${@i.id}]: sudo jem service restart
+      cmd [${@i.id}]: sudo jem service restart
   - stopEvent:
       type: success
       message: Galera cluster successfully restarted
@@ -126,14 +114,10 @@ actions:
         user: root
     - cmd[${this.id}]: |-
         [ -e /etc/systemd/system/mariadb.service.d ] && wget ${globals.PATH}/scripts/mariadb-systemd-override.conf -O /etc/systemd/system/mariadb.service.d/bootstrap.conf || wget ${globals.PATH}/scripts/mysql -O /etc/init.d/mysql;
-        wget ${globals.PATH}/configs/galera-myisam.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log; wget ${globals.PATH}/scripts/setMySQLOOMScore -O /usr/local/sbin/setMySQLOOMScore; 
         chmod +x /usr/local/sbin/setMySQLOOMScore; echo '/etc/systemd/system/mariadb.service.d/bootstrap.conf' >> /etc/jelastic/redeploy.conf; systemctl daemon-reload
-        wget ${globals.PATH}/scripts/galeraHealthCheck.sh -O /usr/local/sbin/galeraHealthCheck.sh;
       user: root
     - cmd[${this.id}]: |-
-        wget ${globals.PATH}/scripts/wsrep-notify.sh -O /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
         wget ${globals.PATH}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
-        chmod 700 /var/lib/jelastic/bin/wsrep-notify.sh &>> /var/log/run.log
  
   setupSeeds:
     script: |
@@ -172,17 +156,6 @@ actions:
   restartNodesInOrder:
     - forEach(i:nodes.sqldb):
         cmd [${@i.id}]: sudo jem service restart
-
-  checkGaleraClusterSize:
-    # Ensure the cluster size match the node count
-    - cmd[${nodes.sqldb.first.id}]: |-
-        MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -Nse "show global status like 'wsrep_cluster_size';" | awk '{print $NF}'
-    - if ("${response.out}" == "${nodes.sqldb.length}"):
-        setGlobals:
-          galeraClusterSizeOk: True
-    - else:
-        setGlobals:
-          galeraClusterSizeOk: False
 
   redeployGalera:
     - forEach(nodes.sqldb):
