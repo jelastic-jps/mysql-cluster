@@ -41,13 +41,6 @@ settings:
         caption: Password
         type: string
 
-onAfterScaleOut[sqldb]: diagnostic
-onAfterScaleIn[sqldb]: diagnostic
-onAfterStart: diagnostic
-onAfterRestartNode[sqldb]: diagnostic
-onAfterSetCloudletCount[sqldb]: diagnostic
-onAfterRedeployContainer[sqldb]: diagnostic
-
 onInstall: generate-share-keys
 
 responses:
