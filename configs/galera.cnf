@@ -17,7 +17,6 @@ wsrep_slave_threads =
 # Galera Cluster Configuration
 wsrep_cluster_name = 
 wsrep_cluster_address = gcomm://
-wsrep-replicate-myisam = 1
 # wsrep_notify_cmd=/var/lib/jelastic/bin/wsrep-notify.sh
 
 # Galera Node Configuration
