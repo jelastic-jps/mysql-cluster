@@ -8,8 +8,8 @@ var SQLDB = "sqldb",
     exec = getParam('exec', ''),
     failedNodesAddresses = [],
     GALERA = "galera",
-    MASTER = "master",
-    SLAVE = "slave",
+    PRIMARY = "primary",
+    SECONDARY = "secondary",
     FAILED = "failed",
     SUCCESS = "success",
     WARNING = "warning",
@@ -26,7 +26,7 @@ var SQLDB = "sqldb",
     scheme,
     item,
     resp;
-    
+
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
 user = user || "$MONITOR_USER";
@@ -58,32 +58,32 @@ api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
 api.marketplace.console.WriteLog("failedNodesAddresses->" + failedNodesAddresses);
 
 if (isRestore) {
-    
+
     if (!failedNodesAddresses.length) {
         return {
             result: !isRestore ? 200 : 201,
             type: SUCCESS
-        }; 
+        };
     }
-    
+
     if (!scenario || !donorIps[scheme]) {
         return {
             result: UNABLE_RESTORE_CODE,
             type: SUCCESS
         }
     }
-    
+
     for (var k = 0, l = failedNodesAddresses.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodesAddresses[k]);
         if (resp.result != 0) return resp;
-    
+
         resp = execRecovery(scenario, donorIps[scheme], resp.nodeid);
         if (resp.result != 0) return resp;
-        
+
         resp = parseOut(resp.responses);
         if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
     }
-    
+
 } else {
     return resp;
 }
@@ -91,7 +91,7 @@ if (isRestore) {
 function parseOut(data) {
     var result,
         nodeid;
-    
+
     if (data.length) {
         for (var i = 0, n = data.length; i < n; i++) {
             nodeid = data[i].nodeid;
@@ -99,7 +99,7 @@ function parseOut(data) {
             item = JSON.parse(item);
 
             if (item.result == 0) {
-                
+
                 api.marketplace.console.WriteLog("item->" + item);
                 switch(String(scheme)) {
                     case GALERA:
@@ -115,22 +115,22 @@ function parseOut(data) {
                                 donorIps[GALERA] = " --donor-ip " + GALERA;
                             }
                         };
-                        
+
                         if (failedNodesAddresses.indexOf(item.address) == -1) {
-                                failedNodesAddresses.push(item.address);
-                            }
-                            if (!isRestore) {
-                                return {
-                                    result: FAILED_CLUSTER_CODE,
-                                    type: SUCCESS
-                                };
-                            }
+                            failedNodesAddresses.push(item.address);
+                        }
+                        if (!isRestore) {
+                            return {
+                                result: FAILED_CLUSTER_CODE,
+                                type: SUCCESS
+                            };
+                        }
                         break;
-                        
-                    case MASTER:
+
+                    case PRIMARY:
                         if (item.service_status == DOWN || item.status == FAILED) {
-                            scenario = " --scenario restore_master_from_master";
-                            
+                            scenario = " --scenario restore_primary_from_primary";
+
                             if (item.status == FAILED && failedNodesAddresses.indexOf(item.address) == -1) {
                                 failedNodesAddresses.push(item.address);
                             }
@@ -141,37 +141,37 @@ function parseOut(data) {
                                 };
                             }
                         }
-                        
+
                         if (!donorIps[scheme] && item.service_status == UP && item.status == OK) {
-                            donorIps[MASTER] = " --donor-ip " + item.address;
+                            donorIps[PRIMARY] = " --donor-ip " + item.address;
                         };
                         break;
-                        
-                    case SLAVE:
+
+                    case SECONDARY:
                         if (item.service_status == DOWN || item.status == FAILED) {
-                            if (item.node_type == MASTER) {
-                                scenario = " --scenario restore_master_from_slave";
+                            if (item.node_type == PRIMARY) {
+                                scenario = " --scenario restore_primary_from_secondary";
                             } else {
-                                scenario = " --scenario restore_slave_from_master";
+                                scenario = " --scenario restore_secondary_from_primary";
                             }
-                            
+
                             if (item.status == FAILED && failedNodesAddresses.indexOf(item.address) == -1) {
                                 failedNodesAddresses.push(item.address);
                             }
-                            
-                             if (!isRestore) {
+
+                            if (!isRestore) {
                                 return {
                                     result: FAILED_CLUSTER_CODE,
                                     type: SUCCESS
                                 };
                             }
                         }
-                        
+
                         if (!donorIps[scheme] && item.service_status == UP && item.status == OK) {
-                            donorIps[SLAVE] = " --donor-ip " + item.address;
+                            donorIps[SECONDARY] = " --donor-ip " + item.address;
                         };
-                        
-                        break;                        
+
+                        break;
                 }
             } else {
                 return {
@@ -179,21 +179,21 @@ function parseOut(data) {
                     type: SUCCESS
                 };
             }
-            
+
             if (item.result == AUTH_ERROR_CODE) {
                 return {
                     type: WARNING,
                     message: item.error
                 };
-                
+
             }
-            
+
         }
-        
+
         return {
             result: !isRestore ? 200 : 201,
             type: SUCCESS
-        }; 
+        };
     }
 };
 
@@ -207,19 +207,19 @@ function getNodeIdByIp(address) {
         nodes,
         resp,
         id = "";
-        
+
     envInfo = getEnvInfo();
     if (envInfo.result != 0) return envInfo;
-    
+
     nodes = envInfo.nodes;
-        
+
     for (var i = 0, n = nodes.length; i < n; i++) {
         if (nodes[i].address == address) {
             id = nodes[i].id;
             break;
         }
     }
-    
+
     return {
         result: 0,
         nodeid : id
@@ -228,27 +228,27 @@ function getNodeIdByIp(address) {
 
 function execRecovery(scenario, donor, nodeid) {
     var action = "";
-    
+
     if (scenario && donor) {
         action = scenario + donor + " --replica-password ${fn.password}";
     } else {
         action = exec;
     }
-    
-    api.marketplace.console.WriteLog("curl --silent https://github.com/jelastic-jps/mysql-cluster/raw/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user " + user + " --mysql-password " + password + action);
+
+    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user " + user + " --mysql-password " + password + action);
     return cmd({
-        command: "curl --silent https://dot.jelastic.com/download/misc/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user " + user + " --mysql-password " + password + action,
+        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user " + user + " --mysql-password " + password + action,
         nodeid: nodeid || ""
     });
 };
 
 function getEnvInfo() {
     var resp;
-    
+
     if (!envInfo) {
         envInfo = api.env.control.GetEnvInfo(envName, session);
     }
-    
+
     return envInfo;
 };
 
@@ -258,7 +258,7 @@ function getNodeGroups() {
 
     envInfo = getEnvInfo();
     if (envInfo.result != 0) return envInfo;
-    
+
     return {
         result: 0,
         nodeGroups: envInfo.nodeGroups
@@ -267,14 +267,14 @@ function getNodeGroups() {
 
 function cmd(values) {
     var resp;
-                
+
     values = values || {};
-    
+
     if (values.nodeid) {
         resp = api.env.control.ExecCmdById(envName, session, values.nodeid, toJSON([{ command: values.command }]), true, ROOT);
     } else {
         resp = api.env.control.ExecCmdByGroup(envName, session, values.nodeGroup || SQLDB, toJSON([{ command: values.command }]), true, false, ROOT);
     }
-    
+
     return resp;
 };
