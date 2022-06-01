@@ -39,7 +39,7 @@ actions:
       - else:
           cmd[${this.id}]: |-
             MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"
-            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SLAVE MONITOR, BINLOG MONITOR ON *.* TO '${this.user}'@'%';"
+            MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, REPLICATION SLAVE, SLAVE MONITOR, BINLOG MONITOR ON *.* TO '${this.user}'@'%';"
             MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"
 
   setupAdminUser:
