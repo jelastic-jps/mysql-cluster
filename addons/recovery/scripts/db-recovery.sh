@@ -1,6 +1,5 @@
 #!/bin/bash
 
-POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -46,26 +45,26 @@ usage() {
 SCRIPTNAME=$(basename "$BASH_SOURCE")
 echo "    USAGE:"
 echo "        COMMAND RUN:  "
-echo "             $SCRIPTNAME --mysql-user 'MYSQL USER NAME' --mysql-password 'MYSQL USER PASSWORD' --replica-password 'PASSWORD FOR SET' --donor-ip 'MYSQL PRIMARY IP ADDRESS' --scenario [SCENARIO NAME]"
-echo "             Example Restore Run: $SCRIPTNAME --mysql-user 'jelastic-12445' --mysql-password 'password123' --replica-password 'replica123' --donor-ip '192.168.0.1' --scenario restore_primary_from_primary"
-echo "             Example Diagnostic Run: $SCRIPTNAME --mysql-user 'jelastic-12445' --mysql-password 'password123' --diagnostic"
+echo "             $SCRIPTNAME --mysql-user 'MYSQL USER NAME' --mysql-password 'MYSQL USER PASSWORD' --replica-password 'PASSWORD FOR REPLICA' --donor-ip 'MYSQL PRIMARY IP ADDRESS' --scenario [SCENARIO NAME]"
+echo "             Diagnostic Run Example: $SCRIPTNAME --mysql-user 'mysql-12445' --mysql-password 'password123' --diagnostic"
+echo "             Restore Run Example: $SCRIPTNAME --mysql-user 'mysql-12445' --mysql-password 'password123' --replica-password 'replica123' --donor-ip '192.168.0.1' --scenario restore_primary_from_primary"
 echo "        ARGUMENTS:    "
-echo "              --mysql-user - MySQL user with LOCK TABLES priveleges"
+echo "              --mysql-user - MySQL user with the LOCK TABLES privileges"
 echo "              --mysql-password - MySQL user password"
-echo "              --replica-password - MySQL replica user password which will be set during recovery"
-echo "              --donor-ip - Operable MySQL server ip address from which will be restored failed node."
-echo "                           In case of galera recover, need to specify 'galera' as value"
-echo "              --scenario - restoration scenario supported arguments:"
+echo "              --replica-password - User password for MySQL replica that will be set during recovery"
+echo "              --donor-ip - IP address of the operable MySQL server from which the failed node will be restored"
+echo "                           In the case of Galera cluster recovery, provide 'galera' as a value"
+echo "              --scenario - Restoration scenario; the following arguments are supported:"
 echo "                           restore_primary_from_primary - restore failed primary node from another primary"
 echo "                           restore_secondary_from_primary - restore secondary node from primary"
 echo "                           restore_primary_from_secondary - restore primary node from secondary"
-echo "                           restore_galera - restore galera cluster"
-echo "              --diagnostic - Run only node diagnostic"
+echo "                           restore_galera - restore Galera cluster"
+echo "              --diagnostic - Run node diagnostic only (without recovery)"
 echo "        NOTICE:"
-echo "              - Scenarios restore_primary_from_primary, restore_secondary_from_primary, restore_primary_from_secondary should be run from node which should be restored."
-echo "                As example in topology primary secondary we run script in diagnostic mode and it return result that secondary replication is broken."
-echo "                We run restoration scenario from secondary node and set parameter --donor-ip with mysql primary node ip"
-echo "              - For galera scenario there are no restrictions, restoration can be executed from any node."
+echo "              - The restore_primary_from_primary, restore_secondary_from_primary, and restore_primary_from_secondary scenarios should be run from a node that should be restored."
+echo "                For example, we run the script in the diagnostic mode for the primary-secondary topology, and it returns a result that secondary replication is broken."
+echo "                We run a restoration scenario from the secondary node and set the --donor-ip parameter as the MySQL primary node IP."
+echo "              - There are no such restrictions for the Galera scenario - the restoration can be run from any node."
 echo
 }
 
