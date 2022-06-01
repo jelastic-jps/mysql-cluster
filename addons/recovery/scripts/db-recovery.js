@@ -228,7 +228,7 @@ function parseOut(data, restoreAll) {
 
         api.marketplace.console.WriteLog("primaryDonorIp->" + primaryDonorIp);
 
-        api.marketplace.console.WriteLog("failedPrimary.length11->" + failedPrimary.length);
+        api.marketplace.console.WriteLog("failedPrimary.length111->" + failedPrimary.length);
         if (isRestore && restoreAll && failedPrimary.length) {
             resp = getNodeIdByIp(failedPrimary[0].address);
             api.marketplace.console.WriteLog("getNodeIdByIp resp->" + resp);
@@ -245,6 +245,8 @@ function parseOut(data, restoreAll) {
             donorIps[scheme] = primaryDonorIp;
         }
         
+        failedNodes = failedPrimary;
+
         if (!donorIps[scheme]) {
             donorIps[scheme] = primaryDonorIp;
         }
