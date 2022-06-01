@@ -36,7 +36,6 @@ exec = exec || " --diagnostic";
 user = user || "$MONITOR_USER";
 password = password || "$MONITOR_PSWD";
 
-api.marketplace.console.WriteLog("debug" + 1);
 resp = getNodeGroups();
 if (resp.result != 0) return resp;
 
@@ -52,8 +51,6 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-
-api.marketplace.console.WriteLog("debug" + 2);
 
 resp = execRecovery();
 
@@ -245,6 +242,10 @@ function parseOut(data, restoreAll) {
             resp = parseOut(resp.responses);
             if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
             failedPrimary = [];
+            donorIps[scheme] = primaryDonorIp;
+        }
+        
+        if (!donorIps[scheme]) {
             donorIps[scheme] = primaryDonorIp;
         }
 
