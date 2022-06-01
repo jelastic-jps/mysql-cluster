@@ -104,11 +104,9 @@ function parseOut(data, restoreAll) {
             item = data[i].out;
             item = JSON.parse(item);
 
-            api.marketplace.console.WriteLog("debug" + 3);
             if (item.result == 0) {
 
                 api.marketplace.console.WriteLog("item->" + item);
-                api.marketplace.console.WriteLog("restoreAll->" + restoreAll);
                 switch(String(scheme)) {
                     case GALERA:
                         if (item.galera_myisam != OK) {
@@ -124,12 +122,11 @@ function parseOut(data, restoreAll) {
                             }
                         };
 
-                        //if (failedNodes.indexOf(item.address) == -1) {
                         failedNodes.push({
                             address: item.address,
                             scenario: scenario
                         });
-                        //}
+                        
                         if (!isRestore) {
                             return {
                                 result: FAILED_CLUSTER_CODE,
@@ -142,8 +139,7 @@ function parseOut(data, restoreAll) {
                         if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_primary_from_primary";
 
-                            if (item.status == FAILED) { //&& failedNodes.indexOf(item.address) == -1
-                                //failedNodes.push(item.address);
+                            if (item.status == FAILED) {
                                 failedNodes.push({
                                     address: item.address,
                                     scenario: scenario
@@ -168,8 +164,6 @@ function parseOut(data, restoreAll) {
                             continue;
                         }
 
-                        api.marketplace.console.WriteLog("debug" + 4);
-
                         if (item.service_status == DOWN && item.status == FAILED) {
                             if (item.node_type == PRIMARY) {
                                 scenario = " --scenario restore_primary_from_secondary";
@@ -186,8 +180,6 @@ function parseOut(data, restoreAll) {
                             }
                         }
 
-                        api.marketplace.console.WriteLog("debug" + 5);
-
                         if (item.service_status == DOWN || item.status == FAILED) {
                             if (!isRestore) {
                                 return {
@@ -203,7 +195,6 @@ function parseOut(data, restoreAll) {
                         else if (item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = " --donor-ip " + item.address;
                         }
-                        api.marketplace.console.WriteLog("debug" + 6);
 
                         api.marketplace.console.WriteLog("failedPrimary->" + failedPrimary);
                         api.marketplace.console.WriteLog("failedNodes->" + failedNodes);
