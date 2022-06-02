@@ -20,8 +20,6 @@ globals:
   DB_USER: "${settings.db_user}"
   DB_PASS: "${settings.db_pass}"
   SCHEME: "${settings.scheme}"
-  REPLICATION_USER: repl-${fn.random}
-  REPLICATION_PASS: "${fn.password(20)}"
   CUSTOM_CONF: "${settings.custom_conf}"
 
 onBeforeCloneNodes[sqldb]:
@@ -49,7 +47,7 @@ onAfterClone:
       clone: true    
 
 onInstall:
-  - getMonitorUser
+  - getReplicaUser
   - if (${settings.clone:false}):
     - importGlobalsFromNodeGroup: sqldb
     - forEach(i:nodes.sqldb):
@@ -87,7 +85,7 @@ actions:
         user: root
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
-        bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICATION_USER} ${globals.REPLICATION_PASS} &>> /var/log/run.log
+        bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICA_USER} ${globals.REPLICA_PSWD} &>> /var/log/run.log
       user: root
 
   setupMaster:
@@ -173,7 +171,7 @@ actions:
     cmd[${this.id}]: |-
       sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
       sudo /etc/init.d/mysql restart;
-      mysqlreplicate --master=${globals.DB_USER}:${globals.DB_PASS}@node${this.master_id}:3306 --slave=${globals.DB_USER}:${globals.DB_PASS}@node${this.id}:3306 --rpl-user=${globals.REPLICATION_USER}:${globals.REPLICATION_PASS}
+      mysqlreplicate --master=${globals.DB_USER}:${globals.DB_PASS}@node${this.master_id}:3306 --slave=${globals.DB_USER}:${globals.DB_PASS}@node${this.id}:3306 --rpl-user=${globals.REPLICA_USER}:${globals.REPLICA_PSWD}
 
   importGlobalsFromNodeGroup:
     - script: |
