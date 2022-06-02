@@ -1,27 +1,27 @@
 actions:
-  getMonitorUser:
+  getReplicaUser:
     - env.control.GetContainerEnvVarsByGroup[sqldb]
     - setGlobals:
-        MONITOR_USER: ${response.object.MONITOR_USER}
-        MONITOR_PSWD: ${response.object.MONITOR_PSWD}
-    - if (/response/.test("${globals.MONITOR_USER}") && /response/.test("${globals.MONITOR_PSWD}")):
-        - setMonitorUser
+        REPLICA_USER: ${response.object.REPLICA_USER}
+        REPLICA_PSWD: ${response.object.REPLICA_PSWD}
+    - if (/response/.test("${globals.REPLICA_USER}") && /response/.test("${globals.REPLICA_PSWD}")):
+        - setReplicaUser
         - setGlobals:
             DB_USER: ${settings.user}
             DB_PASS:  ${settings.password}
         - setupUser:
-            user: ${globals.MONITOR_USER}
-            pswd: ${globals.MONITOR_PSWD}
+            user: ${globals.REPLICA_USER}
+            pswd: ${globals.REPLICA_PSWD}
             id: sqldb
   
-  setMonitorUser:
+  setReplicaUser:
     - setGlobals:
-        MONITOR_USER: monitor-${fn.random}
-        MONITOR_PSWD: ${fn.password(20)}
+        REPLICA_USER: repl-${fn.random}
+        REPLICA_PSWD: ${fn.password(20)}
     - env.control.AddContainerEnvVars[sqldb]:
         vars:
-          MONITOR_USER: ${globals.MONITOR_USER}
-          MONITOR_PSWD: ${globals.MONITOR_PSWD}
+          REPLICA_USER: ${globals.REPLICA_USER}
+          REPLICA_PSWD: ${globals.REPLICA_PSWD}
 
   setupUser:
     - if (/mysql/.test("${nodes.sqldb.nodeType}")):
@@ -53,9 +53,5 @@ actions:
         id: ${this.id}
     - setupUser: 
         id: ${this.id}
-        user: ${globals.MONITOR_USER}
-        pswd: ${globals.MONITOR_PSWD}
-    - setupUser: 
-        id: ${this.id}
-        user: ${globals.REPLICATION_USER}
-        pswd: ${globals.REPLICATION_PASS}
+        user: ${globals.REPLICA_USER}
+        pswd: ${globals.REPLICA_PSWD}
