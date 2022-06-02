@@ -49,7 +49,7 @@ onAfterScaleOut[sqldb]: generate-share-keys
 onAfterRedeployContainer[sqldb]: generate-share-keys
 
 onInstall: 
-  - getMonitorUser
+  - getReplicaUser
   - generate-share-keys
 
 responses:
