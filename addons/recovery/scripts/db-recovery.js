@@ -33,8 +33,8 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-user = user || "$MONITOR_USER";
-password = password || "$MONITOR_PSWD";
+user = user || "$REPLICA_USER";
+password = password || "$REPLICA_PSWD";
 
 resp = getNodeGroups();
 if (resp.result != 0) return resp;
@@ -59,9 +59,8 @@ resp = parseOut(resp.responses);
 api.marketplace.console.WriteLog("scheme->" + scheme);
 api.marketplace.console.WriteLog("isRestore->" + isRestore);
 api.marketplace.console.WriteLog("scenario->" + scenario);
-api.marketplace.console.WriteLog("donorIps->" + donorIps);
 api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
-api.marketplace.console.WriteLog("failedNodes->" + failedNodes);
+api.marketplace.console.WriteLog("failedNodes0->" + failedNodes);
 
 if (isRestore) {
 
@@ -80,9 +79,10 @@ if (isRestore) {
     }
 
     for (var k = 0, l = failedNodes.length; k < l; k++) {
-        resp = getNodeIdByIp(failedNodes[k]);
+        resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
 
+        api.marketplace.console.WriteLog("before execRecovery resp.nodeid1->" + resp.nodeid);
         resp = execRecovery(scenario, donorIps[scheme], resp.nodeid);
         if (resp.result != 0) return resp;
 
@@ -98,6 +98,10 @@ function parseOut(data, restoreAll) {
     var resp,
         nodeid;
 
+    failedNodes = [];
+    failedPrimary = [];
+    donorIps = {};
+
     if (data.length) {
         for (var i = 0, n = data.length; i < n; i++) {
             nodeid = data[i].nodeid;
@@ -105,8 +109,6 @@ function parseOut(data, restoreAll) {
             item = JSON.parse(item);
 
             if (item.result == 0) {
-
-                api.marketplace.console.WriteLog("item->" + item);
                 switch(String(scheme)) {
                     case GALERA:
                         if (item.galera_myisam != OK) {
@@ -120,13 +122,13 @@ function parseOut(data, restoreAll) {
                             if (!donorIps[scheme]) {
                                 donorIps[GALERA] = " --donor-ip " + GALERA;
                             }
-                        };
+                        }
 
                         failedNodes.push({
                             address: item.address,
                             scenario: scenario
                         });
-                        
+
                         if (!isRestore) {
                             return {
                                 result: FAILED_CLUSTER_CODE,
@@ -195,11 +197,6 @@ function parseOut(data, restoreAll) {
                         else if (item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = " --donor-ip " + item.address;
                         }
-
-                        api.marketplace.console.WriteLog("failedPrimary->" + failedPrimary);
-                        api.marketplace.console.WriteLog("failedNodes->" + failedNodes);
-                        api.marketplace.console.WriteLog("donorIps->" + donorIps);
-
                         break;
                 }
             } else {
@@ -217,26 +214,24 @@ function parseOut(data, restoreAll) {
             }
         }
 
-        api.marketplace.console.WriteLog("primaryDonorIp->" + primaryDonorIp);
-
-        api.marketplace.console.WriteLog("failedPrimary.length111->" + failedPrimary.length);
         if (isRestore && restoreAll && failedPrimary.length) {
             resp = getNodeIdByIp(failedPrimary[0].address);
-            api.marketplace.console.WriteLog("getNodeIdByIp resp->" + resp);
             if (resp.result != 0) return resp;
-            api.marketplace.console.WriteLog("failedPrimary.length failedPrimary[0].scenario->" + failedPrimary[0].scenario);
-            api.marketplace.console.WriteLog("failedPrimary.length donorIps[scheme]->" + donorIps[scheme]);
-            api.marketplace.console.WriteLog("failedPrimary.length failedPrimary[0].address->" + failedPrimary[0].address);
+            api.marketplace.console.WriteLog("failedPrimary.length failedPrimary[0].scenario->");
             resp = execRecovery(failedPrimary[0].scenario, donorIps[scheme], resp.nodeid);
-            api.marketplace.console.WriteLog("execRecovery resp->" + resp);
             if (resp.result != 0) return resp;
             resp = parseOut(resp.responses);
             if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
             failedPrimary = [];
             donorIps[scheme] = primaryDonorIp;
         }
-        
-        failedNodes = failedPrimary;
+
+        if (!failedNodes.length && failedPrimary.length) {
+            api.marketplace.console.WriteLog("in if failedNodes = failedPrimary;");
+            api.marketplace.console.WriteLog("in if failedNodes->" + failedNodes);
+            api.marketplace.console.WriteLog("in if failedPrimary->" + failedPrimary);
+            failedNodes = failedPrimary;
+        }
 
         if (!donorIps[scheme]) {
             donorIps[scheme] = primaryDonorIp;
@@ -257,7 +252,6 @@ return {
 function getNodeIdByIp(address) {
     var envInfo,
         nodes,
-        resp,
         id = "";
 
     envInfo = getEnvInfo();
@@ -282,7 +276,7 @@ function execRecovery(scenario, donor, nodeid) {
     var action = "";
 
     if (scenario && donor) {
-        action = scenario + donor + " --replica-password ${fn.password}";
+        action = scenario + donor;
     } else {
         action = exec;
     }
@@ -304,6 +298,27 @@ function getEnvInfo() {
     return envInfo;
 }
 
+function getNodesByGroup() {
+    var resp,
+        sqlNodes = [],
+        nodes;
+
+    resp = getEnvInfo();
+    if (resp.result != 0) return resp;
+    nodes = resp.nodes;
+
+    for (var i = 0, n = nodes.length; i < n; i++) {
+        if (nodes[i].nodeGroup == SQLDB) {
+            sqlNodes.push(nodes[i]);
+        }
+    }
+
+    return {
+        result: 0,
+        nodes: sqlNodes
+    }
+}
+
 function getNodeGroups() {
     var envInfo,
         nodeGroups;
@@ -323,6 +338,7 @@ function cmd(values) {
     values = values || {};
 
     if (values.nodeid) {
+        api.marketplace.console.WriteLog("ExecCmdById->" + values.nodeid);
         resp = api.env.control.ExecCmdById(envName, session, values.nodeid, toJSON([{ command: values.command }]), true, ROOT);
     } else {
         resp = api.env.control.ExecCmdByGroup(envName, session, values.nodeGroup || SQLDB, toJSON([{ command: values.command }]), true, false, ROOT);
