@@ -33,8 +33,8 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-user = user || "$MONITOR_USER";
-password = password || "$MONITOR_PSWD";
+user = user || "$REPLICA_USER";
+password = password || "$REPLICA_PSWD";
 
 resp = getNodeGroups();
 if (resp.result != 0) return resp;
@@ -276,7 +276,7 @@ function execRecovery(scenario, donor, nodeid) {
     var action = "";
 
     if (scenario && donor) {
-        action = scenario + donor + " --replica-password ${fn.password}";
+        action = scenario + donor;
     } else {
         action = exec;
     }
