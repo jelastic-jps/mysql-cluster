@@ -36,8 +36,8 @@ onInstall:
         
   - env.control.AddContainerEnvVars[sqldb]:
       vars:
-        MONITOR_USER: monitor-${fn.random}
-        MONITOR_PSWD: ${fn.password(20)}
+        REPLICA_USER: repl-${fn.random}
+        REPLICA_PSWD: ${fn.password(20)}
         SCHEME: ${settings.scheme}
 
   - install: 
