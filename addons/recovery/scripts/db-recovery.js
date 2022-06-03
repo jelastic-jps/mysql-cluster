@@ -33,8 +33,12 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-user = user || "$REPLICA_USER";
-password = password || "$REPLICA_PSWD";
+api.marketplace.console.WriteLog("exec->" + exec);
+if (exec) {
+    api.marketplace.console.WriteLog("in exec->");
+    user = "$REPLICA_USER";
+    password = "$REPLICA_PSWD";
+}
 
 resp = getNodeGroups();
 if (resp.result != 0) return resp;
@@ -56,13 +60,15 @@ resp = execRecovery();
 
 resp = parseOut(resp.responses);
 
-api.marketplace.console.WriteLog("scheme->" + scheme);
+api.marketplace.console.WriteLog("schem1e->" + scheme);
 api.marketplace.console.WriteLog("isRestore->" + isRestore);
 api.marketplace.console.WriteLog("scenario->" + scenario);
 api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
-api.marketplace.console.WriteLog("failedNodes0->" + failedNodes);
+api.marketplace.console.WriteLog("failedNodes000->" + failedNodes);
 
 if (isRestore) {
+    user = getParam('user', '');
+    password = getParam('password', '');
 
     if (!failedNodes.length) {
         return {
@@ -78,6 +84,7 @@ if (isRestore) {
         }
     }
 
+    api.marketplace.console.WriteLog("before loop failedNodes->" + failedNodes);
     for (var k = 0, l = failedNodes.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
@@ -98,9 +105,11 @@ function parseOut(data, restoreAll) {
     var resp,
         nodeid;
 
-    failedNodes = [];
-    failedPrimary = [];
-    donorIps = {};
+    if (scheme != GALERA) {
+        failedNodes = [];
+        failedPrimary = [];
+        donorIps = {};
+    }
 
     if (data.length) {
         for (var i = 0, n = data.length; i < n; i++) {
@@ -108,28 +117,30 @@ function parseOut(data, restoreAll) {
             item = data[i].out;
             item = JSON.parse(item);
 
+            api.marketplace.console.WriteLog("item111->" + item);
             if (item.result == 0) {
                 switch(String(scheme)) {
                     case GALERA:
-                        if (item.galera_myisam != OK) {
+                        if ((item.service_status == UP || item.status == OK) && item.galera_myisam != OK) {
                             return {
                                 type: WARNING,
                                 message: "There are MyISAM tables in the Galera Cluster. These tables should be converted in InnoDB type"
                             }
                         }
-                        if (item.service_status == DOWN || item.status == FAILED || item.galera_size != OK) {
+                        if (item.service_status == DOWN || item.status == FAILED) { // || item.galera_size != OK
                             scenario = " --scenario restore_galera";
                             if (!donorIps[scheme]) {
                                 donorIps[GALERA] = " --donor-ip " + GALERA;
                             }
+
+                            failedNodes.push({
+                                address: item.address,
+                                scenario: scenario
+                            });
+
                         }
 
-                        failedNodes.push({
-                            address: item.address,
-                            scenario: scenario
-                        });
-
-                        if (!isRestore) {
+                        if (!isRestore && failedNodes.length) {
                             return {
                                 result: FAILED_CLUSTER_CODE,
                                 type: SUCCESS
@@ -206,13 +217,18 @@ function parseOut(data, restoreAll) {
                 };
             }
 
+            api.marketplace.console.WriteLog("item.result->" + item.result);
             if (item.result == AUTH_ERROR_CODE) {
+                api.marketplace.console.WriteLog("in auth return->");
                 return {
                     type: WARNING,
                     message: item.error
                 };
             }
         }
+
+        api.marketplace.console.WriteLog("failedNodes->" + failedNodes);
+        api.marketplace.console.WriteLog("failedPrimary->" + failedPrimary);
 
         if (isRestore && restoreAll && failedPrimary.length) {
             resp = getNodeIdByIp(failedPrimary[0].address);
