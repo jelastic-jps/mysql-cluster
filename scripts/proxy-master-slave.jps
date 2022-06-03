@@ -63,7 +63,7 @@ onAfterMigrate:
     path: "${globals.PATH}"
 
 onInstall:
-  - getMonitorUser
+  - getReplicaUser
   - resetProxyNodes
   - setupOrchestrator
   - setupProxySQL
@@ -114,8 +114,8 @@ actions:
           VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 1, 10, 1000);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*', 11, 1);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_query_rules (active, match_pattern, destination_hostgroup, apply) VALUES (1, '^SELECT.*FOR UPDATE', 10, 1);"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PSWD}' WHERE variable_name='mysql-monitor_password';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_USER}' WHERE variable_name='mysql-monitor_username';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_PSWD}' WHERE variable_name='mysql-monitor_password';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${nodes.sqldb.version}' WHERE variable_name='mysql-server_version';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"

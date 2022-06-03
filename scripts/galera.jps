@@ -18,8 +18,6 @@ globals:
   PATH: ${settings.path}
   DB_USER: ${settings.db_user}
   DB_PASS: ${settings.db_pass}
-  REPLICATION_USER: repl-${fn.random}
-  REPLICATION_PASS: "${fn.password(20)}"
   CLUSTER_NAME: galera-${env.name}
   GALERA_CONF: /etc/mysql/conf.d/galera.cnf
   CUSTOM_CONF: ${settings.custom_conf}
@@ -80,7 +78,7 @@ onAfterSetCloudletCount[sqldb]:
     - cmd [${@i.id}]: sudo jem service restart;
 
 onInstall:
-  - getMonitorUser
+  - getReplicaUser
   - resetCluster
   - restartNodesInOrder
   - initialSetup:

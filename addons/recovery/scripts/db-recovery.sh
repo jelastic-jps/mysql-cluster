@@ -20,11 +20,6 @@ case $key in
     shift
     shift
     ;;
-    --replica-password)
-    REPLICA_PASSWORD=$2
-    shift
-    shift
-    ;;
     --scenario)
     SCENARIO=$2
     shift
@@ -75,8 +70,8 @@ if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
 fi
 
 if [[ "${diagnostic}" != "YES" ]]; then
-  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='pass'; REPLICA_PASSWORD='pass'; }
-  if [ -z "${DONOR_IP}" ] || [ -z "${REPLICA_PASSWORD}" ] || [ -z "${SCENARIO}" ]; then
+  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='pass'; }
+  if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
       exit 1;
@@ -219,15 +214,26 @@ setPrimaryReadonly(){
 }
 
 resetReplicaPassword(){
-  local mysql_src_ip=$1
-  local replica_user
-  replica_user=$(mysqlCommandExec 'select User from mysql.user where User like "repl-%" \G;' ${mysql_src_ip}|grep 'User'|cut -d ':' -f2|sed 's/ //g')
+  local node=$1
+  local replica_data
+  local rep_user
+  local rep_host
+  if [[ -z "${REPLICA_PSWD}" ]]; then
+    echo "Environment variable REPLICA_PSWD do not set"
+    return ${FAIL_CODE}
+  fi
+  replica_data=$(mysqlCommandExec 'select CONCAT(User, "=>", Host) AS replicaUser from mysql.user where User like "repl-%" and Host="%" \G;' ${node}|grep replicaUser|awk -F: '{print $2}'|xargs)
+  for user_info in $replica_data
+  do
+    rep_user=$(echo $user_info|awk -F '=>' '{print $1}');
+    rep_host=$(echo $user_info|awk -F '=>' '{print $2}');
 
-  stderr=$( { MYSQL_PWD=${REPLICA_PASSWORD} mysql -u${replica_user} -h${mysql_src_ip} -e 'exit'; } 2>&1 ) || {
-    mysqlCommandExec "ALTER USER '${replica_user}'@'%' IDENTIFIED BY '${REPLICA_PASSWORD}';" "${mysql_src_ip}"
-    return ${SUCCESS_CODE}
-  }
-  log "[Node: ${mysql_src_ip}] Replica password matched...skip"
+    stderr=$( { mysqlCommandExec "ALTER USER '${rep_user}'@'${rep_host}' IDENTIFIED BY '${REPLICA_PSWD}';" "${node}"; } 2>&1 ) || {
+      log "[Node: ${node}] Reset password for '${rep_user}'@'${rep_host}'...failed\n${stderr}"
+      return ${FAIL_CODE}
+    }
+    log "[Node: ${node}] Reset password for '${rep_user}'@'${rep_host}'...ok"
+  done
 }
 
 
@@ -238,7 +244,7 @@ getPrimaryPosition(){
   echo "Position=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
   echo "ReportHost=$(mysqlCommandExec 'show variables like "report_host" \G;' ${mysql_src_ip}|grep 'Value'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
   echo "ReplicaUser=$(mysqlCommandExec 'select User from mysql.user where User like "repl-%" \G;' ${mysql_src_ip}|grep 'User'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
-  echo "ReplicaPassword=${REPLICA_PASSWORD}" >> ${REPLICATION_INFO}
+  echo "ReplicaPassword=${REPLICA_PSWD}" >> ${REPLICATION_INFO}
 }
 
 
@@ -311,7 +317,7 @@ restoreSecondaryPosition(){
   local node=$1
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
-  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${REPLICA_PASSWORD}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
+  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
 }
 
 

@@ -59,7 +59,7 @@ onBeforeAddNode[proxy]:
 
 onInstall:
 
-  - getMonitorUser
+  - getReplicaUser
 
   - resetProxyNodes
 
@@ -90,8 +90,8 @@ actions:
     - cmd[proxy]: |-
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_replication_hostgroups VALUES (2,3,'Group setup');"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PSWD}' WHERE variable_name='mysql-monitor_password';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_USER}' WHERE variable_name='mysql-monitor_username';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_PSWD}' WHERE variable_name='mysql-monitor_password';"
         wget ${globals.PATH}/scripts/proxysql_galera_checker.sh -O /var/lib/proxysql/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO scheduler(id,interval_ms,filename,arg1,arg2,arg3,arg4) VALUES
         (1,'2000','/var/lib/proxysql/proxysql_galera_checker.sh','127.0.0.1','6032','2', '/var/lib/proxysql/proxysql_galera_checker.log');"
@@ -104,8 +104,8 @@ actions:
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_galera_hostgroups (writer_hostgroup,backup_writer_hostgroup,reader_hostgroup,offline_hostgroup,active,max_writers,writer_is_also_reader,max_transactions_behind) 
         VALUES (2,4,3,1,1,3,1,100);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_USER}' WHERE variable_name='mysql-monitor_username';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.MONITOR_PSWD}' WHERE variable_name='mysql-monitor_password';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_USER}' WHERE variable_name='mysql-monitor_username';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_PSWD}' WHERE variable_name='mysql-monitor_password';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD SCHEDULER TO RUNTIME; SAVE SCHEDULER TO DISK;"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
