@@ -175,32 +175,31 @@ function parseOut(data, restoreMaster) {
                         break;
 
                     case SECONDARY:
-                        if (item.service_status == DOWN && item.status == FAILED) {
-                            if (item.node_type == PRIMARY) {
-                                scenario = " --scenario restore_primary_from_secondary";
-                                failedPrimary.push({
-                                    address: item.address,
-                                    scenario: scenario
-                                });
-                                isMasterFailed = true;
-                            } else {
-                                scenario = " --scenario restore_secondary_from_primary";
-                                failedNodes.push({
-                                    address: item.address,
-                                    scenario: scenario
-                                });
-                            }
-                        }
-
                         if (item.service_status == DOWN || item.status == FAILED) {
+
                             if (!isRestore) {
                                 return {
                                     result: FAILED_CLUSTER_CODE,
                                     type: SUCCESS
                                 };
                             }
-
-                            if (item.node_type == PRIMARY) {
+                            
+                            if (item.service_status == DOWN && item.status == FAILED) {
+                                if (item.node_type == PRIMARY) {
+                                    scenario = " --scenario restore_primary_from_secondary";
+                                    failedPrimary.push({
+                                        address: item.address,
+                                        scenario: scenario
+                                    });
+                                    isMasterFailed = true;
+                                } else {
+                                    scenario = " --scenario restore_secondary_from_primary";
+                                    failedNodes.push({
+                                        address: item.address,
+                                        scenario: scenario
+                                    });
+                                }
+                            } else if (item.node_type == PRIMARY) {
                                 scenario = " --scenario restore_primary_from_secondary";
                                 failedPrimary.push({
                                     address: item.address,
