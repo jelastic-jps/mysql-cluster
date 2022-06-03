@@ -33,7 +33,7 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-api.marketplace.console.WriteLog("exec1->" + exec);
+api.marketplace.console.WriteLog("1exec1->" + exec);
 user = user || "$REPLICA_USER";
 password = password || "$REPLICA_PSWD";
 
