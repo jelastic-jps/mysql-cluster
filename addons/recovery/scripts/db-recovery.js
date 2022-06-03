@@ -33,12 +33,9 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-api.marketplace.console.WriteLog("exec->" + exec);
-if (exec) {
-    api.marketplace.console.WriteLog("in exec->");
-    user = user || "$REPLICA_USER";
-    password = password || "$REPLICA_PSWD";
-}
+api.marketplace.console.WriteLog("exec1->" + exec);
+user = user || "$REPLICA_USER";
+password = password || "$REPLICA_PSWD";
 
 resp = getNodeGroups();
 if (resp.result != 0) return resp;
