@@ -117,7 +117,7 @@ function parseOut(data, restoreAll) {
             item = data[i].out;
             item = JSON.parse(item);
 
-            api.marketplace.console.WriteLog("item11->" + item);
+            api.marketplace.console.WriteLog("item111->" + item);
             if (item.result == 0) {
                 switch(String(scheme)) {
                     case GALERA:
@@ -127,7 +127,7 @@ function parseOut(data, restoreAll) {
                                 message: "There are MyISAM tables in the Galera Cluster. These tables should be converted in InnoDB type"
                             }
                         }
-                        if (item.service_status == DOWN || item.status == FAILED || item.galera_size != OK) {
+                        if (item.service_status == DOWN || item.status == FAILED) { // || item.galera_size != OK
                             scenario = " --scenario restore_galera";
                             if (!donorIps[scheme]) {
                                 donorIps[GALERA] = " --donor-ip " + GALERA;
