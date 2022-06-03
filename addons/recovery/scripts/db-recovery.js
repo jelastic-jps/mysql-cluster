@@ -210,13 +210,13 @@ function parseOut(data, restoreMaster) {
                         }
 
                         if (item.node_type == PRIMARY) {
-                            if (item.service_status == UP) {
+                            if (item.service_status == UP && item.status == OK) {
                                 primaryDonorIp = item.address;
                                 continue;
                             }
                         }
 
-                        if (item.service_status == UP && item.status == OK) { // && item.status == OK
+                        if (item.service_status == UP && item.status == OK) {
                             donorIps[SECONDARY] = item.address;
                             statusesUp = true;
                         }
@@ -228,6 +228,7 @@ function parseOut(data, restoreMaster) {
                             donorIps[scheme] = primaryDonorIp;
                         }
                         break;
+                        api.marketplace.console.WriteLog("donorIps->" + donorIps);
                 }
             } else {
                 return {
