@@ -8,7 +8,7 @@ var SQLDB = "sqldb",
     exec = getParam('exec', ''),
     failedPrimary = [],
     failedNodes = [],
-    unshift = false,
+    isMasterFailed = false,
     GALERA = "galera",
     PRIMARY = "primary",
     SECONDARY = "secondary",
@@ -84,6 +84,13 @@ if (isRestore) {
         }
     }
 
+    if (isMasterFailed) {
+        resp = getSlavesOnly();
+        if (resp.result != 0) return resp;
+
+        failedNodes = resp.nodes;
+    }
+
     api.marketplace.console.WriteLog("before loop failedNodes->" + failedNodes);
     for (var k = 0, l = failedNodes.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodes[k].address);
@@ -130,7 +137,7 @@ function parseOut(data, restoreAll) {
                         if (item.service_status == DOWN || item.status == FAILED) { // || item.galera_size != OK
                             scenario = " --scenario restore_galera";
                             if (!donorIps[scheme]) {
-                                donorIps[GALERA] = " --donor-ip " + GALERA;
+                                donorIps[GALERA] = GALERA;
                             }
 
                             failedNodes.push({
@@ -167,13 +174,13 @@ function parseOut(data, restoreAll) {
                         }
 
                         if (!donorIps[scheme] && item.service_status == UP && item.status == OK) {
-                            donorIps[PRIMARY] = " --donor-ip " + item.address;
+                            donorIps[PRIMARY] = item.address;
                         }
                         break;
 
                     case SECONDARY:
                         if (item.node_type == PRIMARY && item.service_status == UP) {
-                            primaryDonorIp = " --donor-ip " + item.address;
+                            primaryDonorIp = item.address;
                             continue;
                         }
 
@@ -184,6 +191,7 @@ function parseOut(data, restoreAll) {
                                     address: item.address,
                                     scenario: scenario
                                 });
+                                isMasterFailed = true;
                             } else {
                                 scenario = " --scenario restore_secondary_from_primary";
                                 failedNodes.push({
@@ -203,16 +211,15 @@ function parseOut(data, restoreAll) {
                         }
 
                         if (item.service_status == UP && item.status == OK) { // && item.status == OK
-                            donorIps[SECONDARY] = " --donor-ip " + item.address;
+                            donorIps[SECONDARY] = item.address;
                         }
                         else if (item.node_type == SECONDARY && item.service_status == UP) {
-                            donorIps[SECONDARY] = " --donor-ip " + item.address;
+                            donorIps[SECONDARY] = item.address;
                         }
-                        api.marketplace.console.WriteLog("primaryDonorIp->" + primaryDonorIp);
+
                         if (primaryDonorIp) { //!donorIps[scheme]
                             donorIps[scheme] = primaryDonorIp;
                         }
-                        api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
                         break;
                 }
             } else {
@@ -235,6 +242,13 @@ function parseOut(data, restoreAll) {
         api.marketplace.console.WriteLog("failedNodes->" + failedNodes);
         api.marketplace.console.WriteLog("failedPrimary->" + failedPrimary);
 
+        if (!failedNodes.length && failedPrimary.length) {
+            api.marketplace.console.WriteLog("in if failedNodes = failedPrimary;");
+            api.marketplace.console.WriteLog("in if failedNodes->" + failedNodes);
+            api.marketplace.console.WriteLog("in if failedPrimary->" + failedPrimary);
+            failedNodes = failedPrimary;
+        }
+
         if (isRestore && restoreAll && failedPrimary.length) {
             resp = getNodeIdByIp(failedPrimary[0].address);
             if (resp.result != 0) return resp;
@@ -245,13 +259,6 @@ function parseOut(data, restoreAll) {
             if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
             failedPrimary = [];
             donorIps[scheme] = primaryDonorIp;
-        }
-
-        if (!failedNodes.length && failedPrimary.length) {
-            api.marketplace.console.WriteLog("in if failedNodes = failedPrimary;");
-            api.marketplace.console.WriteLog("in if failedNodes->" + failedNodes);
-            api.marketplace.console.WriteLog("in if failedPrimary->" + failedPrimary);
-            failedNodes = failedPrimary;
         }
 
         return {
@@ -293,7 +300,7 @@ function execRecovery(scenario, donor, nodeid) {
     var action = "";
 
     if (scenario && donor) {
-        action = scenario + donor;
+        action = scenario + " --donor-ip " +  donor;
     } else {
         action = exec;
     }
@@ -315,7 +322,31 @@ function getEnvInfo() {
     return envInfo;
 }
 
-function getNodesByGroup() {
+function getSlavesOnly() {
+    var resp,
+        slaves = [];
+
+    resp = getSQLNodes();
+    if (resp.result != 0) return resp;
+
+    for (var i = 0, n = resp.nodes; i < n; i++) {
+        api.marketplace.console.WriteLog("resp.nodes[i].address -> " + resp.nodes[i].address);
+        if (resp.nodes[i].address != primaryDonorIp) {
+            slaves.push({
+                address: resp.nodes[i].address,
+                scenario: scenario
+            });
+        }
+    }
+
+    api.marketplace.console.WriteLog("getSlavesOnly -> " + slaves);
+    return {
+        result: 0,
+        nodes: slaves
+    }
+}
+
+function getSQLNodes() {
     var resp,
         sqlNodes = [],
         nodes;
