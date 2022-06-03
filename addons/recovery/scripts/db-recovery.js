@@ -70,6 +70,9 @@ if (isRestore) {
     user = user || "$REPLICA_USER";
     password = password || "$REPLICA_PSWD";
 
+    api.marketplace.console.WriteLog("user->" + user);
+    api.marketplace.console.WriteLog("password->" + password);
+
     if (!failedNodes.length) {
         return {
             result: !isRestore ? 200 : 201,
