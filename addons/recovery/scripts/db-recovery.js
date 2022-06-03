@@ -33,7 +33,7 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-api.marketplace.console.WriteLog("1exec1->" + exec);
+api.marketplace.console.WriteLog("11exec1->" + exec);
 user = user || "$REPLICA_USER";
 password = password || "$REPLICA_PSWD";
 
@@ -71,7 +71,7 @@ if (isRestore) {
         failedNodes = resp.nodes;
         scenario = " --scenario restore_secondary_from_primary";
     }
-    
+
     if (!failedNodes.length) {
         return {
             result: !isRestore ? 200 : 201,
