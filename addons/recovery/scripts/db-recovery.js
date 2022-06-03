@@ -202,12 +202,17 @@ function parseOut(data, restoreAll) {
                             }
                         }
 
-                        if (!primaryDonorIp && item.service_status == UP && item.status == OK) { // && item.status == OK
+                        if (item.service_status == UP && item.status == OK) { // && item.status == OK
                             donorIps[SECONDARY] = " --donor-ip " + item.address;
                         }
                         else if (item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = " --donor-ip " + item.address;
                         }
+                        api.marketplace.console.WriteLog("primaryDonorIp->" + primaryDonorIp);
+                        if (primaryDonorIp) { //!donorIps[scheme]
+                            donorIps[scheme] = primaryDonorIp;
+                        }
+                        api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
                         break;
                 }
             } else {
@@ -247,10 +252,6 @@ function parseOut(data, restoreAll) {
             api.marketplace.console.WriteLog("in if failedNodes->" + failedNodes);
             api.marketplace.console.WriteLog("in if failedPrimary->" + failedPrimary);
             failedNodes = failedPrimary;
-        }
-
-        if (primaryDonorIp) { //!donorIps[scheme]
-            donorIps[scheme] = primaryDonorIp;
         }
 
         return {
