@@ -176,9 +176,11 @@ function parseOut(data, restoreMaster) {
                         break;
 
                     case SECONDARY:
-                        if (item.node_type == PRIMARY && item.service_status == UP) {
-                            primaryDonorIp = item.address;
-                            continue;
+                        if (item.node_type == PRIMARY) {
+                            if (item.service_status == UP) {
+                                primaryDonorIp = item.address;
+                                continue;
+                            }
                         }
 
                         if (item.service_status == DOWN && item.status == FAILED) {
@@ -205,6 +207,15 @@ function parseOut(data, restoreMaster) {
                                     type: SUCCESS
                                 };
                             }
+
+                            if (item.node_type == PRIMARY) {
+                                scenario = " --scenario restore_primary_from_secondary";
+                                failedPrimary.push({
+                                    address: item.address,
+                                    scenario: scenario
+                                });
+                                isMasterFailed = true;
+                            }
                         }
 
                         if (item.service_status == UP && item.status == OK) { // && item.status == OK
@@ -226,7 +237,7 @@ function parseOut(data, restoreMaster) {
                 };
             }
 
-            api.marketplace.console.WriteLog("item.result->" + item.result);
+            api.marketplace.console.WriteLog("item.resultttt->" + item.result);
             if (item.result == AUTH_ERROR_CODE) {
                 api.marketplace.console.WriteLog("in auth return->");
                 return {
@@ -248,7 +259,7 @@ function parseOut(data, restoreMaster) {
 
         api.marketplace.console.WriteLog("failedPrimary.length->" + failedPrimary.length);
         if (isRestore && restoreMaster && failedPrimary.length) { //restoreAll
-            
+
             resp = getNodeIdByIp(failedPrimary[0].address);
             if (resp.result != 0) return resp;
             api.marketplace.console.WriteLog("failedPrimary.length failedPrimary[0].scenario->");
