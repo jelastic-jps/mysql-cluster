@@ -107,7 +107,8 @@ if (isRestore) {
 
 function parseOut(data, restoreMaster) {
     var resp,
-        nodeid;
+        nodeid,
+        statusesUp = false;
 
     if (scheme != GALERA) {
         failedNodes = [];
@@ -220,8 +221,9 @@ function parseOut(data, restoreMaster) {
 
                         if (item.service_status == UP && item.status == OK) { // && item.status == OK
                             donorIps[SECONDARY] = item.address;
+                            statusesUp = true;
                         }
-                        else if (item.node_type == SECONDARY && item.service_status == UP) {
+                        else if (!statusesUp && item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = item.address;
                         }
 
@@ -237,7 +239,7 @@ function parseOut(data, restoreMaster) {
                 };
             }
 
-            api.marketplace.console.WriteLog("item.resultttttttttt->" + item.result);
+            api.marketplace.console.WriteLog("item.resultttttttttt statusesUp->" + item.result);
             if (item.result == AUTH_ERROR_CODE) {
                 api.marketplace.console.WriteLog("in auth return->");
                 return {
