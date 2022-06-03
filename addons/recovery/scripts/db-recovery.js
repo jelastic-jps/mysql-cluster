@@ -108,7 +108,7 @@ if (isRestore) {
     return resp;
 }
 
-function parseOut(data, restoreAll) {
+function parseOut(data) {
     var resp,
         nodeid;
 
@@ -249,9 +249,8 @@ function parseOut(data, restoreAll) {
             failedNodes = failedPrimary;
         }
 
-        api.marketplace.console.WriteLog("restoreAll->" + restoreAll);
         api.marketplace.console.WriteLog("failedPrimary.length->" + failedPrimary.length);
-        if (isRestore && restoreAll && failedPrimary.length) {
+        if (isRestore && failedPrimary.length) { //restoreAll
             resp = getNodeIdByIp(failedPrimary[0].address);
             if (resp.result != 0) return resp;
             api.marketplace.console.WriteLog("failedPrimary.length failedPrimary[0].scenario->");
