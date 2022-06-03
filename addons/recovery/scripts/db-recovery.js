@@ -70,9 +70,6 @@ if (isRestore) {
     user = getParam('user', '');
     password = getParam('password', '');
 
-    api.marketplace.console.WriteLog("user->" + user);
-    api.marketplace.console.WriteLog("password->" + password);
-
     if (!failedNodes.length) {
         return {
             result: !isRestore ? 200 : 201,
@@ -108,9 +105,11 @@ function parseOut(data, restoreAll) {
     var resp,
         nodeid;
 
-    failedNodes = [];
-    failedPrimary = [];
-    donorIps = {};
+    if (scheme != GALERA) {
+        failedNodes = [];
+        failedPrimary = [];
+        donorIps = {};
+    }
 
     if (data.length) {
         for (var i = 0, n = data.length; i < n; i++) {
