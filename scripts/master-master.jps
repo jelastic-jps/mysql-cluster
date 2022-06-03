@@ -45,7 +45,7 @@ onAfterClone:
       clone: true
 
 onInstall:
-  - getReplicarUser
+  - getReplicaUser
   - if (${settings.clone:false}):
     - importGlobalsFromNodeGroup: sqldb
     - getMastersIDs
