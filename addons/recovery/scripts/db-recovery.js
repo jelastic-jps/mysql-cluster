@@ -207,14 +207,16 @@ function parseOut(data, restoreAll) {
                 };
             }
 
+            api.marketplace.console.WriteLog("item.result->" + item.result);
             if (item.result == AUTH_ERROR_CODE) {
+                api.marketplace.console.WriteLog("in auth return->");
                 return {
                     type: WARNING,
                     message: item.error
                 };
             }
         }
-        
+
         api.marketplace.console.WriteLog("failedNodes->" + failedNodes);
         api.marketplace.console.WriteLog("failedPrimary->" + failedPrimary);
 
