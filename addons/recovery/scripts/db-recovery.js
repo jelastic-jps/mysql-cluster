@@ -33,7 +33,7 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-api.marketplace.console.WriteLog("11exec1->" + exec);
+api.marketplace.console.WriteLog("112exec1->" + exec);
 user = user || "$REPLICA_USER";
 password = password || "$REPLICA_PSWD";
 
@@ -340,6 +340,7 @@ function getSlavesOnly() {
     resp = getSQLNodes();
     if (resp.result != 0) return resp;
 
+    api.marketplace.console.WriteLog("in getSlavesOnly primaryDonorIp -> " + primaryDonorIp);
     for (var i = 0, n = resp.nodes; i < n; i++) {
         api.marketplace.console.WriteLog("resp.nodes[i].address -> " + resp.nodes[i].address);
         if (resp.nodes[i].address != primaryDonorIp) {
@@ -372,6 +373,7 @@ function getSQLNodes() {
         }
     }
 
+    api.marketplace.console.WriteLog("sqlNodes -> " + sqlNodes);
     return {
         result: 0,
         nodes: sqlNodes
