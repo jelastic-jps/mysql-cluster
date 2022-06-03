@@ -206,10 +206,10 @@ function parseOut(data, restoreAll) {
                         if (!primaryDonorIp && item.service_status == UP && item.status == OK) { // && item.status == OK
                             donorIps[SECONDARY] = " --donor-ip " + item.address;
                         }
-                        api.marketplace.console.WriteLog("donorIps[SECONDARY]->" + donorIps[SECONDARY]);
                         else if (item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = " --donor-ip " + item.address;
                         }
+                        api.marketplace.console.WriteLog("donorIps[SECONDARY]->" + donorIps[SECONDARY]);
                         break;
                 }
             } else {
