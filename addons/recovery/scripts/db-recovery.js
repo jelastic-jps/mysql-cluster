@@ -61,9 +61,17 @@ api.marketplace.console.WriteLog("schem11e->" + scheme);
 api.marketplace.console.WriteLog("isRestore->" + isRestore);
 api.marketplace.console.WriteLog("scenario->" + scenario);
 api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
-api.marketplace.console.WriteLog("failedNodes000->" + failedNodes);
+api.marketplace.console.WriteLog("failedNodes000001->" + failedNodes);
 
 if (isRestore) {
+    if (isMasterFailed) {
+        resp = getSlavesOnly();
+        if (resp.result != 0) return resp;
+
+        failedNodes = resp.nodes;
+        scenario = " --scenario restore_secondary_from_primary";
+    }
+    
     if (!failedNodes.length) {
         return {
             result: !isRestore ? 200 : 201,
@@ -76,13 +84,6 @@ if (isRestore) {
             result: UNABLE_RESTORE_CODE,
             type: SUCCESS
         }
-    }
-
-    if (isMasterFailed) {
-        resp = getSlavesOnly();
-        if (resp.result != 0) return resp;
-
-        failedNodes = resp.nodes;
     }
 
     api.marketplace.console.WriteLog("before loop failedNodes->" + failedNodes);
