@@ -33,8 +33,10 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-user = user || "$REPLICA_USER";
-password = password || "$REPLICA_PSWD";
+if (exec) {
+    user = "$REPLICA_USER";
+    password = "$REPLICA_PSWD";
+}
 
 resp = getNodeGroups();
 if (resp.result != 0) return resp;
@@ -56,7 +58,7 @@ resp = execRecovery();
 
 resp = parseOut(resp.responses);
 
-api.marketplace.console.WriteLog("scheme->" + scheme);
+api.marketplace.console.WriteLog("schem1e->" + scheme);
 api.marketplace.console.WriteLog("isRestore->" + isRestore);
 api.marketplace.console.WriteLog("scenario->" + scenario);
 api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
