@@ -249,6 +249,8 @@ function parseOut(data, restoreAll) {
             failedNodes = failedPrimary;
         }
 
+        api.marketplace.console.WriteLog("restoreAll->" + restoreAll);
+        api.marketplace.console.WriteLog("failedPrimary.length->" + failedPrimary.length);
         if (isRestore && restoreAll && failedPrimary.length) {
             resp = getNodeIdByIp(failedPrimary[0].address);
             if (resp.result != 0) return resp;
