@@ -176,13 +176,6 @@ function parseOut(data, restoreMaster) {
                         break;
 
                     case SECONDARY:
-                        if (item.node_type == PRIMARY) {
-                            if (item.service_status == UP) {
-                                primaryDonorIp = item.address;
-                                continue;
-                            }
-                        }
-
                         if (item.service_status == DOWN && item.status == FAILED) {
                             if (item.node_type == PRIMARY) {
                                 scenario = " --scenario restore_primary_from_secondary";
@@ -218,6 +211,13 @@ function parseOut(data, restoreMaster) {
                             }
                         }
 
+                        if (item.node_type == PRIMARY) {
+                            if (item.service_status == UP) {
+                                primaryDonorIp = item.address;
+                                continue;
+                            }
+                        }
+
                         if (item.service_status == UP && item.status == OK) { // && item.status == OK
                             donorIps[SECONDARY] = item.address;
                         }
@@ -237,7 +237,7 @@ function parseOut(data, restoreMaster) {
                 };
             }
 
-            api.marketplace.console.WriteLog("item.resultttt->" + item.result);
+            api.marketplace.console.WriteLog("item.resultttttttttt->" + item.result);
             if (item.result == AUTH_ERROR_CODE) {
                 api.marketplace.console.WriteLog("in auth return->");
                 return {
