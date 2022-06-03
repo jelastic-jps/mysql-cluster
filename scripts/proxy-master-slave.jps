@@ -63,7 +63,7 @@ onAfterMigrate:
     path: "${globals.PATH}"
 
 onInstall:
-  - getReplicarUser
+  - getReplicaUser
   - resetProxyNodes
   - setupOrchestrator
   - setupProxySQL
