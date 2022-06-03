@@ -117,7 +117,7 @@ function parseOut(data, restoreAll) {
             item = data[i].out;
             item = JSON.parse(item);
 
-            api.marketplace.console.WriteLog("item->" + item);
+            api.marketplace.console.WriteLog("item1->" + item);
             if (item.result == 0) {
                 switch(String(scheme)) {
                     case GALERA:
@@ -132,14 +132,14 @@ function parseOut(data, restoreAll) {
                             if (!donorIps[scheme]) {
                                 donorIps[GALERA] = " --donor-ip " + GALERA;
                             }
+
+                            failedNodes.push({
+                                address: item.address,
+                                scenario: scenario
+                            });
                         }
 
-                        failedNodes.push({
-                            address: item.address,
-                            scenario: scenario
-                        });
-
-                        if (!isRestore) {
+                        if (!isRestore && failedNodes.length) {
                             return {
                                 result: FAILED_CLUSTER_CODE,
                                 type: SUCCESS
