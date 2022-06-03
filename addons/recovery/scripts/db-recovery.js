@@ -36,8 +36,8 @@ exec = exec || " --diagnostic";
 api.marketplace.console.WriteLog("exec->" + exec);
 if (exec) {
     api.marketplace.console.WriteLog("in exec->");
-    user = "$REPLICA_USER";
-    password = "$REPLICA_PSWD";
+    user = user || "$REPLICA_USER";
+    password = password || "$REPLICA_PSWD";
 }
 
 resp = getNodeGroups();
@@ -58,18 +58,15 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
 
 resp = execRecovery();
 
-resp = parseOut(resp.responses);
+resp = parseOut(resp.responses, true);
 
-api.marketplace.console.WriteLog("schem1e->" + scheme);
+api.marketplace.console.WriteLog("schem11e->" + scheme);
 api.marketplace.console.WriteLog("isRestore->" + isRestore);
 api.marketplace.console.WriteLog("scenario->" + scenario);
 api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
 api.marketplace.console.WriteLog("failedNodes000->" + failedNodes);
 
 if (isRestore) {
-    user = getParam('user', '');
-    password = getParam('password', '');
-
     if (!failedNodes.length) {
         return {
             result: !isRestore ? 200 : 201,
@@ -108,7 +105,7 @@ if (isRestore) {
     return resp;
 }
 
-function parseOut(data) {
+function parseOut(data, restoreMaster) {
     var resp,
         nodeid;
 
@@ -250,7 +247,8 @@ function parseOut(data) {
         }
 
         api.marketplace.console.WriteLog("failedPrimary.length->" + failedPrimary.length);
-        if (isRestore && failedPrimary.length) { //restoreAll
+        if (isRestore && restoreMaster && failedPrimary.length) { //restoreAll
+            
             resp = getNodeIdByIp(failedPrimary[0].address);
             if (resp.result != 0) return resp;
             api.marketplace.console.WriteLog("failedPrimary.length failedPrimary[0].scenario->");
