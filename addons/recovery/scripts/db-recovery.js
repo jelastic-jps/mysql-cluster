@@ -108,6 +108,7 @@ function parseOut(data, restoreAll) {
             item = data[i].out;
             item = JSON.parse(item);
 
+            api.marketplace.console.WriteLog("item->" + item);
             if (item.result == 0) {
                 switch(String(scheme)) {
                     case GALERA:
@@ -213,6 +214,9 @@ function parseOut(data, restoreAll) {
                 };
             }
         }
+        
+        api.marketplace.console.WriteLog("failedNodes->" + failedNodes);
+        api.marketplace.console.WriteLog("failedPrimary->" + failedPrimary);
 
         if (isRestore && restoreAll && failedPrimary.length) {
             resp = getNodeIdByIp(failedPrimary[0].address);
