@@ -64,9 +64,11 @@ api.marketplace.console.WriteLog("schem1e->" + scheme);
 api.marketplace.console.WriteLog("isRestore->" + isRestore);
 api.marketplace.console.WriteLog("scenario->" + scenario);
 api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
-api.marketplace.console.WriteLog("failedNodes0->" + failedNodes);
+api.marketplace.console.WriteLog("failedNodes00->" + failedNodes);
 
 if (isRestore) {
+    user = user || "$REPLICA_USER";
+    password = password || "$REPLICA_PSWD";
 
     if (!failedNodes.length) {
         return {
