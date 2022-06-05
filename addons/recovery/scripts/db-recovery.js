@@ -183,7 +183,7 @@ function parseOut(data, restoreMaster) {
                                     type: SUCCESS
                                 };
                             }
-                            
+
                             if (item.service_status == DOWN && item.status == FAILED) {
                                 if (item.node_type == PRIMARY) {
                                     scenario = " --scenario restore_primary_from_secondary";
@@ -339,8 +339,8 @@ function getSlavesOnly() {
     resp = getSQLNodes();
     if (resp.result != 0) return resp;
 
-    api.marketplace.console.WriteLog("in getSlavesOnly primaryDonorIp -> " + primaryDonorIp);
-    for (var i = 0, n = resp.nodes; i < n; i++) {
+    api.marketplace.console.WriteLog("in getSlavesOnly primaryDonorIp2 -> " + primaryDonorIp);
+    for (var i = 0, n = resp.nodes.length; i < n; i++) {
         api.marketplace.console.WriteLog("resp.nodes[i].address -> " + resp.nodes[i].address);
         if (resp.nodes[i].address != primaryDonorIp) {
             slaves.push({
