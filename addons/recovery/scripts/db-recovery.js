@@ -33,7 +33,7 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-api.marketplace.console.WriteLog("112exec1->" + exec);
+api.marketplace.console.WriteLog("1123456exec1->" + exec);
 user = user || "$REPLICA_USER";
 password = password || "$REPLICA_PSWD";
 
@@ -95,7 +95,7 @@ if (isRestore) {
         resp = execRecovery(scenario, donorIps[scheme], resp.nodeid);
         if (resp.result != 0) return resp;
 
-        resp = parseOut(resp.responses);
+        resp = parseOut(resp.responses, false);
         if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
     }
 
@@ -108,7 +108,7 @@ function parseOut(data, restoreMaster) {
         nodeid,
         statusesUp = false;
 
-    if (scheme != GALERA) {
+    if (scheme != GALERA && restoreMaster) {
         failedNodes = [];
         failedPrimary = [];
         donorIps = {};
