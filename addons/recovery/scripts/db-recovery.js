@@ -33,7 +33,6 @@ var SQLDB = "sqldb",
 
 if (user && password) isRestore = true;
 exec = exec || " --diagnostic";
-api.marketplace.console.WriteLog("1123456exec1->" + exec);
 user = user || "$REPLICA_USER";
 password = password || "$REPLICA_PSWD";
 
@@ -57,12 +56,6 @@ resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
 
-api.marketplace.console.WriteLog("schem11e->" + scheme);
-api.marketplace.console.WriteLog("isRestore->" + isRestore);
-api.marketplace.console.WriteLog("scenario->" + scenario);
-api.marketplace.console.WriteLog("donorIps[scheme]->" + donorIps[scheme]);
-api.marketplace.console.WriteLog("failedNodes000001->" + failedNodes);
-
 if (isRestore) {
     if (isMasterFailed) {
         resp = getSlavesOnly();
@@ -85,13 +78,11 @@ if (isRestore) {
             type: SUCCESS
         }
     }
-
-    api.marketplace.console.WriteLog("before loop failedNodes->" + failedNodes);
+    
     for (var k = 0, l = failedNodes.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
 
-        api.marketplace.console.WriteLog("before execRecovery resp.nodeid1234->" + resp.nodeid);
         resp = execRecovery(scenario, donorIps[scheme], resp.nodeid);
         if (resp.result != 0) return resp;
 
@@ -120,7 +111,7 @@ function parseOut(data, restoreMaster) {
             item = data[i].out;
             item = JSON.parse(item);
 
-            api.marketplace.console.WriteLog("item111->" + item);
+            api.marketplace.console.WriteLog("item->" + item);
             if (item.result == 0) {
                 switch(String(scheme)) {
                     case GALERA:
@@ -237,9 +228,7 @@ function parseOut(data, restoreMaster) {
                 };
             }
 
-            api.marketplace.console.WriteLog("item.resultttttttttt statusesUp->" + item.result);
             if (item.result == AUTH_ERROR_CODE) {
-                api.marketplace.console.WriteLog("in auth return->");
                 return {
                     type: WARNING,
                     message: item.error
@@ -247,22 +236,15 @@ function parseOut(data, restoreMaster) {
             }
         }
 
-        api.marketplace.console.WriteLog("failedNodes->" + failedNodes);
-        api.marketplace.console.WriteLog("failedPrimary->" + failedPrimary);
-
         if (!failedNodes.length && failedPrimary.length) {
-            api.marketplace.console.WriteLog("in if failedNodes = failedPrimary;");
-            api.marketplace.console.WriteLog("in if failedNodes->" + failedNodes);
-            api.marketplace.console.WriteLog("in if failedPrimary->" + failedPrimary);
             failedNodes = failedPrimary;
         }
 
-        api.marketplace.console.WriteLog("failedPrimary.length->" + failedPrimary.length);
         if (isRestore && restoreMaster && failedPrimary.length) { //restoreAll
 
             resp = getNodeIdByIp(failedPrimary[0].address);
             if (resp.result != 0) return resp;
-            api.marketplace.console.WriteLog("failedPrimary.length failedPrimary[0].scenario->");
+
             resp = execRecovery(failedPrimary[0].scenario, donorIps[scheme], resp.nodeid);
             if (resp.result != 0) return resp;
             resp = parseOut(resp.responses);
@@ -276,7 +258,7 @@ function parseOut(data, restoreMaster) {
             type: SUCCESS
         };
     }
-};
+}
 
 return {
     result: !isRestore ? 200 : 201,
