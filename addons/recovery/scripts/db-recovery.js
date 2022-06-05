@@ -91,11 +91,11 @@ if (isRestore) {
         resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
 
-        api.marketplace.console.WriteLog("before execRecovery resp.nodeid1->" + resp.nodeid);
+        api.marketplace.console.WriteLog("before execRecovery resp.nodeid1234->" + resp.nodeid);
         resp = execRecovery(scenario, donorIps[scheme], resp.nodeid);
         if (resp.result != 0) return resp;
 
-        resp = parseOut(resp.responses, true);
+        resp = parseOut(resp.responses);
         if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
     }
 
