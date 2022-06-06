@@ -55,8 +55,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
-api.marketplace.console.WriteLog("failedNodes00-> " + failedNodes);
-api.marketplace.console.WriteLog("isRestore-> " + isRestore);
+api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
 if (isRestore) {
     if (isMasterFailed) {
         resp = getSlavesOnly();
@@ -327,9 +326,7 @@ function getSlavesOnly() {
     resp = getSQLNodes();
     if (resp.result != 0) return resp;
 
-    api.marketplace.console.WriteLog("in getSlavesOnly primaryDonorIp2 -> " + primaryDonorIp);
     for (var i = 0, n = resp.nodes.length; i < n; i++) {
-        api.marketplace.console.WriteLog("resp.nodes[i].address -> " + resp.nodes[i].address);
         if (resp.nodes[i].address != primaryDonorIp) {
             slaves.push({
                 address: resp.nodes[i].address,
@@ -338,7 +335,6 @@ function getSlavesOnly() {
         }
     }
 
-    api.marketplace.console.WriteLog("getSlavesOnly -> " + slaves);
     return {
         result: 0,
         nodes: slaves
@@ -360,7 +356,6 @@ function getSQLNodes() {
         }
     }
 
-    api.marketplace.console.WriteLog("sqlNodes -> " + sqlNodes);
     return {
         result: 0,
         nodes: sqlNodes
