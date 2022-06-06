@@ -55,7 +55,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
-
+api.marketplace.console.WriteLog("failedNodes0-> " + failedNodes);
 if (isRestore) {
     if (isMasterFailed) {
         resp = getSlavesOnly();
@@ -78,6 +78,7 @@ if (isRestore) {
             type: SUCCESS
         }
     }
+    api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
     
     for (var k = 0, l = failedNodes.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodes[k].address);
