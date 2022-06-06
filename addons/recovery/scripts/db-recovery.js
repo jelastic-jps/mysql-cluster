@@ -55,7 +55,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
-api.marketplace.console.WriteLog("failedNodes0-> " + failedNodes);
+api.marketplace.console.WriteLog("failedNodes00-> " + failedNodes);
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 if (isRestore) {
     if (isMasterFailed) {
@@ -80,7 +80,7 @@ if (isRestore) {
         }
     }
     api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
-    
+
     for (var k = 0, l = failedNodes.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
@@ -148,6 +148,10 @@ function parseOut(data, restoreMaster) {
                         if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_primary_from_primary";
 
+                            if (!donorIps[scheme] && item.service_status == UP) {
+                                donorIps[PRIMARY] = item.address;
+                            }
+                            
                             if (item.status == FAILED) {
                                 failedNodes.push({
                                     address: item.address,
@@ -162,7 +166,7 @@ function parseOut(data, restoreMaster) {
                             }
                         }
 
-                        if (!donorIps[scheme] && item.service_status == UP && item.status == OK) {
+                        if (item.service_status == UP && item.status == OK) {
                             donorIps[PRIMARY] = item.address;
                         }
                         break;
