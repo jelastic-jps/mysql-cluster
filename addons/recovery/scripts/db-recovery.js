@@ -56,6 +56,7 @@ resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
 api.marketplace.console.WriteLog("failedNodes0-> " + failedNodes);
+api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 if (isRestore) {
     if (isMasterFailed) {
         resp = getSlavesOnly();
