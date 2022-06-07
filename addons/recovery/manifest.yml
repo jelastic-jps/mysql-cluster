@@ -50,8 +50,7 @@ onAfterScaleOut[sqldb]: generate-share-keys
 onAfterRedeployContainer[sqldb]: generate-share-keys
 
 onInstall:
-  - api: env.control.GetNodeGroups
-    nodeGroup: sqldb
+  - env.control.GetNodeGroups [sqldb]
   - if ("${response.object[0].cluster.enabled}" != "true"):
       return:
         type: warning
