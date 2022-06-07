@@ -30,6 +30,7 @@ buttons:
     caption: Cluster Recovery
     loadingText: Cluster recovery is in progress...
     successText: Cluster recovery is finished successfully!
+    submitButtonText: Recover
     action: recovery
     settings: main
 
