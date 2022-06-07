@@ -172,11 +172,6 @@ function parseOut(data, restoreMaster) {
                         break;
 
                     case SECONDARY:
-                        if (primaryDonorIp) { //!donorIps[scheme]
-                            donorIps[scheme] = primaryDonorIp;
-                        }
-                        api.marketplace.console.WriteLog("donorIps2->" + donorIps);
-                        
                         if (item.service_status == DOWN || item.status == FAILED) {
 
                             if (!isRestore) {
@@ -220,9 +215,14 @@ function parseOut(data, restoreMaster) {
                         if (item.node_type == PRIMARY) {
                             if (item.service_status == UP && item.status == OK) {
                                 primaryDonorIp = item.address;
-                                continue;
                             }
                         }
+
+                        if (primaryDonorIp) { //!donorIps[scheme]
+                            donorIps[scheme] = primaryDonorIp;
+                            continue;
+                        }
+                        api.marketplace.console.WriteLog("donorIps22->" + donorIps);
 
                         if (item.service_status == UP && item.status == OK) {
                             donorIps[SECONDARY] = item.address;
