@@ -79,7 +79,7 @@ if (isRestore) {
             type: SUCCESS
         }
     }
-    api.marketplace.console.WriteLog("failedNodes1-> " + failedNodes);
+    api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
 
     for (var k = 0, l = failedNodes.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodes[k].address);
@@ -172,6 +172,11 @@ function parseOut(data, restoreMaster) {
                         break;
 
                     case SECONDARY:
+                        if (primaryDonorIp) { //!donorIps[scheme]
+                            donorIps[scheme] = primaryDonorIp;
+                        }
+                        api.marketplace.console.WriteLog("donorIps2->" + donorIps);
+                        
                         if (item.service_status == DOWN || item.status == FAILED) {
 
                             if (!isRestore) {
@@ -226,12 +231,7 @@ function parseOut(data, restoreMaster) {
                         else if (!statusesUp && item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = item.address;
                         }
-
-                        if (primaryDonorIp) { //!donorIps[scheme]
-                            donorIps[scheme] = primaryDonorIp;
-                        }
                         break;
-                        api.marketplace.console.WriteLog("donorIps->" + donorIps);
                 }
             } else {
                 return {
