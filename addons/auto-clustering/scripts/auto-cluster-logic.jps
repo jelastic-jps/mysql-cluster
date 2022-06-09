@@ -44,6 +44,8 @@ onInstall:
       jps: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-62640/addons/recovery/manifest.yml?_r=${fn.random}
       nodeGroup: sqldb
       targetNodes: sqldb
+      settings:
+        install: true
       
   - if (nodes.proxy):
       setupCluster
