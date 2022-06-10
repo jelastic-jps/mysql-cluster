@@ -69,6 +69,7 @@ if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
 fi
 
 if [[ "${diagnostic}" != "YES" ]]; then
+  [ "${SCENARIO}" == "init" ] && { DONOR_IP='pass'; }
   [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='pass'; }
   if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
@@ -235,6 +236,14 @@ resetReplicaPassword(){
   done
 }
 
+setReplicaUserFromEnv(){
+  local nodeType
+  nodeType=$(getNodeType)
+  [[ "${nodeType}" != "secondary" ]] && { echo "Note type is not secondary"; return ${SUCCESS_CODE}; }
+  [[ -z "${REPLICA_USER}" ]] && { echo "Environment variable REPLICA_USER do not set"; return ${FAIL_CODE}; }
+  [[ -z "${REPLICA_PSWD}" ]] && { echo "Environment variable REPLICA_PSWD do not set"; return ${FAIL_CODE}; }
+  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_USER = '${REPLICA_USER}', MASTER_PASSWORD = '${REPLICA_PSWD}'; START SLAVE;" "localhost"
+}
 
 
 getPrimaryPosition(){
@@ -586,6 +595,11 @@ restore_primary_from_primary(){
 restore_galera(){
   execAction 'checkAuth' 'Authentication check'
   galeraFix
+}
+
+init(){
+  execAction 'checkAuth' 'Authentication check'
+  execAction 'setReplicaUserFromEnv' 'Set replica user from environment variables'
 }
 
 if [[ "${diagnostic}" == "YES" ]]; then
