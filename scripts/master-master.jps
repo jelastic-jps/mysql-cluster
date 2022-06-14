@@ -168,7 +168,7 @@ actions:
         wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log;
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf;
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
-    - setupUser:
+    - setupUsers:
         id: "${this.id}"
     - setNodeDisplayName[${this.id}]: Secondary
   
