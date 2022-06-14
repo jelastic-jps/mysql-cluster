@@ -23,6 +23,7 @@ globals:
   CUSTOM_CONF: "${settings.custom_conf}"
 
 onBeforeCloneNodes[sqldb]:
+  - getReplicaUser
   - importGlobalsFromNodeGroup: sqldb
   - script: |
       var nodeCount = [];
