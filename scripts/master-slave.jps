@@ -23,6 +23,7 @@ globals:
   CUSTOM_CONF: "${settings.custom_conf}"
 
 onBeforeCloneNodes[sqldb]:
+  - getReplicaUser
   - getSlaveId
   - set:
       slaveId: ${response.slaveId}
