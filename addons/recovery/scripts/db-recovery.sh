@@ -162,6 +162,7 @@ checkAuth(){
     log "Authentication check: There are no hosts with running MySQL, can't check. Set check result as OK...done"
     return ${SUCCESS_CODE}
   else
+    [[ "${diagnostic}" != "YES" ]] || return ${SUCCESS_CODE}
     echo "Can't connect to MySQL server on host ${cluster_hosts}"
     return ${FAIL_CODE}
   fi
