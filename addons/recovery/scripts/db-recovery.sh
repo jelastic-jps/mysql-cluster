@@ -69,8 +69,8 @@ if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
 fi
 
 if [[ "${diagnostic}" != "YES" ]]; then
-  [ "${SCENARIO}" == "init" ] && { DONOR_IP='pass'; }
-  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='pass'; }
+  [ "${SCENARIO}" == "init" ] && { DONOR_IP='localhost'; }
+  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='localhost'; }
   if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
