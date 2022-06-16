@@ -69,8 +69,8 @@ if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
 fi
 
 if [[ "${diagnostic}" != "YES" ]]; then
-  [ "${SCENARIO}" == "init" ] && { DONOR_IP='pass'; }
-  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='pass'; }
+  [ "${SCENARIO}" == "init" ] && { DONOR_IP='localhost'; }
+  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='localhost'; }
   if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
@@ -142,16 +142,31 @@ getNodeType(){
 
 checkAuth(){
   local cluster_hosts
+  local nodeType
+  #
+  nodeType=$(getNodeType)
+  if [[ "${nodeType}" == "galera" ]]; then
+    cluster_hosts=$(host sqldb |awk -F 'has address' '{print $2}'|xargs)
+  else
+    cluster_hosts="${DONOR_IP:=localhost}"
+  fi
 
-  cluster_hosts=$(host sqldb |awk -F 'has address' '{print $2}'|xargs)
   for host in ${cluster_hosts}
   do
     check_count=$((check_count+1))
     stderr=$( { mysqlCommandExec "exit" "${host}"; } 2>&1 ) && return ${SUCCESS_CODE}
     [[ x"$(echo ${stderr}| grep 'ERROR 1045')" != x ]] && { echo ${stderr}; return ${FAIL_CODE}; }
   done
-  log "[Authentication check]: There are no hosts with running MySQL, can't check. Set check result as OK...done"
-  return ${SUCCESS_CODE}
+
+  if [[ "${nodeType}" == "galera" ]]; then
+    log "Authentication check: There are no hosts with running MySQL, can't check. Set check result as OK...done"
+    return ${SUCCESS_CODE}
+  else
+    [[ "${diagnostic}" != "YES" ]] || return ${SUCCESS_CODE}
+    echo "Can't connect to MySQL server on host ${cluster_hosts}"
+    return ${FAIL_CODE}
+  fi
+
 }
 
 
@@ -247,11 +262,11 @@ setReplicaUserFromEnv(){
 
 
 getPrimaryPosition(){
-  local mysql_src_ip=$1
-  echo "File=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
-  echo "Position=$(mysqlCommandExec 'show master status\G;' ${mysql_src_ip}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
-  echo "ReportHost=$(mysqlCommandExec 'show variables like "report_host" \G;' ${mysql_src_ip}|grep 'Value'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
-  echo "ReplicaUser=$(mysqlCommandExec 'select User from mysql.user where User like "repl-%" \G;' ${mysql_src_ip}|grep 'User'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  local node=$1
+  echo "File=$(mysqlCommandExec 'show master status\G;' ${node} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
+  echo "Position=$(mysqlCommandExec 'show master status\G;' ${node}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  echo "ReportHost=$(mysqlCommandExec 'show variables like "report_host" \G;' ${node}|grep 'Value'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  echo "ReplicaUser=${REPLICA_USER}" >> ${REPLICATION_INFO}
   echo "ReplicaPassword=${REPLICA_PSWD}" >> ${REPLICATION_INFO}
 }
 
