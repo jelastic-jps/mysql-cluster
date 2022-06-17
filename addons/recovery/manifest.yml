@@ -56,6 +56,7 @@ onInstall:
         type: warning
         message: Add-on does not provide restore and recovery for a non-cluster topologies.
   - getReplicaUser
+  - if (!${settings.install:false}): init
   - generate-share-keys
 
 responses:
@@ -91,6 +92,12 @@ actions:
     user: ${settings.user:}
     password: ${settings.password:}
     
+  init:
+    - cmd[sqldb]: |-
+        curl --silent ${baseUrl}/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        bash /tmp/db-recovery.sh --mysql-user ${settings.user} --mysql-password ${settings.password} --scenario init;
+      user: root
+
   generate-share-keys:
     - cmd[${nodes.sqldb.master.id}]: |-
         [ -f ${globals.ssh_root}${globals.ssh-key} ] && rm -f ${globals.ssh_root}${globals.ssh-key};
