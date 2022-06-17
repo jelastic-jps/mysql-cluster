@@ -50,11 +50,22 @@ onAfterScaleOut[sqldb]: generate-share-keys
 onAfterRedeployContainer[sqldb]: generate-share-keys
 
 onInstall:
-  - env.control.GetNodeGroups [sqldb]
-  - if (!${response.object[0].cluster.enabled:false} && !${settings.install:false}):
+  - script: |
+      var nodeGroups, resp, isInstall = false;
+      resp = api.env.control.GetNodeGroups("${env.name}", session);
+      if (resp.result != 0) return resp;
+      nodeGroups = resp.object;
+      for (var i = 0, n = nodeGroups.length; i < n; i++) {
+        if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled)
+          isInstall = true;
+      }
+      return { result: 0, isInstall: isInstall };
+
+  - if (!${response.isInstall:false} && !${settings.install:false}):
       return:
         type: warning
         message: Add-on does not provide restore and recovery for a non-cluster topologies.
+
   - getReplicaUser
   - if (!${settings.install:false}): init
   - generate-share-keys
