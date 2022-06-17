@@ -58,6 +58,8 @@ resp = parseOut(resp.responses, true);
 api.marketplace.console.WriteLog("failedNodes00-> " + failedNodes);
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 if (isRestore) {
+    if (resp.result != 0) return resp;
+    
     if (isMasterFailed) {
         resp = getSlavesOnly();
         if (resp.result != 0) return resp;
@@ -112,8 +114,14 @@ function parseOut(data, restoreMaster) {
             nodeid = data[i].nodeid;
             item = data[i].out;
             item = JSON.parse(item);
-
             api.marketplace.console.WriteLog("item->" + item);
+            if (item.result == AUTH_ERROR_CODE) {
+                return {
+                    type: WARNING,
+                    message: item.error
+                };
+            }
+            
             if (item.result == 0) {
                 switch(String(scheme)) {
                     case GALERA:
@@ -237,13 +245,6 @@ function parseOut(data, restoreMaster) {
                 return {
                     result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
                     type: SUCCESS
-                };
-            }
-
-            if (item.result == AUTH_ERROR_CODE) {
-                return {
-                    type: WARNING,
-                    message: item.error
                 };
             }
         }
