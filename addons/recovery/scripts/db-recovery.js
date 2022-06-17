@@ -58,7 +58,7 @@ resp = parseOut(resp.responses, true);
 api.marketplace.console.WriteLog("failedNodes00-> " + failedNodes);
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 if (isRestore) {
-    if (resp.result = AUTH_ERROR_CODE) return resp;
+    if (resp.result == AUTH_ERROR_CODE) return resp;
     
     if (isMasterFailed) {
         resp = getSlavesOnly();
