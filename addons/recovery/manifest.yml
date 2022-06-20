@@ -50,12 +50,24 @@ onAfterScaleOut[sqldb]: generate-share-keys
 onAfterRedeployContainer[sqldb]: generate-share-keys
 
 onInstall:
-  - env.control.GetNodeGroups [sqldb]
-  - if (!${response.object[0].cluster.enabled:false} && !${settings.install:false}):
+  - script: |
+      var nodeGroups, resp, isInstall = false;
+      resp = api.env.control.GetNodeGroups("${env.name}", session);
+      if (resp.result != 0) return resp;
+      nodeGroups = resp.object;
+      for (var i = 0, n = nodeGroups.length; i < n; i++) {
+        if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled)
+          isInstall = true;
+      }
+      return { result: 0, isInstall: isInstall };
+
+  - if (!${response.isInstall:false} && !${settings.install:false}):
       return:
         type: warning
         message: Add-on does not provide restore and recovery for a non-cluster topologies.
+
   - getReplicaUser
+  - if (!${settings.install:false}): init
   - generate-share-keys
 
 responses:
@@ -91,6 +103,12 @@ actions:
     user: ${settings.user:}
     password: ${settings.password:}
     
+  init:
+    - cmd[sqldb]: |-
+        curl --silent ${baseUrl}/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        bash /tmp/db-recovery.sh --mysql-user ${settings.user} --mysql-password ${settings.password} --scenario init;
+      user: root
+
   generate-share-keys:
     - cmd[${nodes.sqldb.master.id}]: |-
         [ -f ${globals.ssh_root}${globals.ssh-key} ] && rm -f ${globals.ssh_root}${globals.ssh-key};
