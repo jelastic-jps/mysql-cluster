@@ -44,6 +44,7 @@ settings:
     - name: password
       caption: Password
       type: string
+      inputType: password
       required: true
 
 onAfterScaleOut[sqldb]: generate-share-keys
