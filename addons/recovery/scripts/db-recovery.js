@@ -58,8 +58,8 @@ resp = parseOut(resp.responses, true);
 api.marketplace.console.WriteLog("failedNodes00-> " + failedNodes);
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 if (isRestore) {
-    if (resp.result != 0) return resp;
-    
+    if (resp.result == AUTH_ERROR_CODE) return resp;
+
     if (isMasterFailed) {
         resp = getSlavesOnly();
         if (resp.result != 0) return resp;
@@ -114,14 +114,16 @@ function parseOut(data, restoreMaster) {
             nodeid = data[i].nodeid;
             item = data[i].out;
             item = JSON.parse(item);
+
             api.marketplace.console.WriteLog("item->" + item);
             if (item.result == AUTH_ERROR_CODE) {
                 return {
                     type: WARNING,
-                    message: item.error
+                    message: item.error,
+                    result: AUTH_ERROR_CODE
                 };
             }
-            
+
             if (item.result == 0) {
                 switch(String(scheme)) {
                     case GALERA:
@@ -239,6 +241,9 @@ function parseOut(data, restoreMaster) {
                         else if (!statusesUp && item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = item.address;
                         }
+
+                        api.marketplace.console.WriteLog("failedNodes123->" + failedNodes);
+                        api.marketplace.console.WriteLog("failedPrimary123->" + failedPrimary);
                         break;
                 }
             } else {
@@ -312,7 +317,7 @@ function execRecovery(scenario, donor, nodeid) {
 
     api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user " + user + " --mysql-password " + password + action);
     return cmd({
-        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user " + user + " --mysql-password " + password + action,
+        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user '" + user + "' --mysql-password '" + password + "'" + action,
         nodeid: nodeid || ""
     });
 }
