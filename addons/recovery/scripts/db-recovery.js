@@ -119,7 +119,8 @@ function parseOut(data, restoreMaster) {
             if (item.result == AUTH_ERROR_CODE) {
                 return {
                     type: WARNING,
-                    message: item.error
+                    message: item.error,
+                    result: AUTH_ERROR_CODE
                 };
             }
 
