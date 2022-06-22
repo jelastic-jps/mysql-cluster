@@ -28,7 +28,7 @@ actions:
         cmd[${this.id}]: |-
           mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
           if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER IF NOT EXISTS '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"; fi;
-          if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"; fi;
+          if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, LOCK TABLES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"; fi;
           if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"; fi;
 
     - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
@@ -36,13 +36,13 @@ actions:
           cmd[${this.id}]: |-
             mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
             if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER IF NOT EXISTS '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"; fi;
-            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"; fi;
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, LOCK TABLES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"; fi;
             if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"; fi;
       - else:
           cmd[${this.id}]: |-
             mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
             if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER IF NOT EXISTS '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"; fi;
-            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, SHOW DATABASES, REPLICATION SLAVE, SLAVE MONITOR, BINLOG MONITOR ON *.* TO '${this.user}'@'%';"; fi;
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, LOCK TABLES, REPLICATION SLAVE, SLAVE MONITOR, BINLOG MONITOR ON *.* TO '${this.user}'@'%';"; fi;
             if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"; fi;
 
   setupAdminUser:
