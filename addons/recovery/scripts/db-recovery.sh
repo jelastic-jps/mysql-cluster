@@ -574,7 +574,6 @@ nodeDiagnostic(){
 restore_secondary_from_primary(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
-  execAction "resetReplicaPassword ${DONOR_IP}" "[Node: ${DONOR_IP}] Reset replica user password"
   execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
   execAction "setPrimaryReadonly ${DONOR_IP}" "[Node: ${DONOR_IP}] Set primary readonly"
   execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} lock"
@@ -588,7 +587,6 @@ restore_secondary_from_primary(){
 restore_primary_from_secondary(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
-  execAction "resetReplicaPassword ${DONOR_IP}"
   execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
   stopMysqlService "${DONOR_IP}"
   execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} service stop"
