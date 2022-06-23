@@ -87,7 +87,7 @@ if (isRestore) {
         resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
 
-        resp = execRecovery(scenario, donorIps[scheme], resp.nodeid);
+        resp = execRecovery(failedNodes[k].scenario, donorIps[scheme], resp.nodeid);
         if (resp.result != 0) return resp;
 
         resp = parseOut(resp.responses, false);
@@ -164,6 +164,12 @@ function parseOut(data, restoreMaster) {
                         break;
 
                     case PRIMARY:
+                        if (item.node_type == SECONDARY) {
+                            scenario = " --scenario restore_secondary_from_primary";
+                        } else {
+                            scenario = " --scenario restore_primary_from_primary";
+                        }
+                        
                         if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_primary_from_primary";
 
@@ -177,10 +183,17 @@ function parseOut(data, restoreMaster) {
                             }
 
                             if (item.status == FAILED) {
-                                failedNodes.push({
-                                    address: item.address,
-                                    scenario: scenario
-                                });
+                                if (item.node_type == PRIMARY) {
+                                    failedPrimary.push({
+                                        address: item.address,
+                                        scenario: scenario
+                                    });
+                                } else {
+                                    failedNodes.push({
+                                        address: item.address,
+                                        scenario: scenario
+                                    });
+                                }
                             }
                             if (!isRestore) {
                                 return {
