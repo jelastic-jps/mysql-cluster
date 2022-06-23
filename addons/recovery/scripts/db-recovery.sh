@@ -614,6 +614,7 @@ restore_galera(){
 }
 
 init(){
+  yum -y -q install jq >/dev/null 2>&1 || echo '{"result":99,"scenario":"init","address":"","error":"Install jq utility failed"}'
   execAction 'checkAuth' 'Authentication check'
   execAction 'setReplicaUserFromEnv' 'Set replica user from environment variables'
 }
