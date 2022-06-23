@@ -4,8 +4,6 @@ var SQLDB = "sqldb",
     FAILED_CLUSTER_CODE = 99,
     RESTORE_SUCCESS = 201,
     envName = "${env.name}",
-    user = getParam('user', ''),
-    password = getParam('password', ''),
     exec = getParam('exec', ''),
     failedNodes = [],
     isMasterFailed = false,
@@ -32,10 +30,8 @@ var SQLDB = "sqldb",
     item,
     resp;
 
-if (user && password) isRestore = true;
+if (exec) isRestore = true;
 exec = exec || " --diagnostic";
-user = user || "$REPLICA_USER";
-password = password || "$REPLICA_PSWD";
 
 resp = getNodeGroups();
 if (resp.result != 0) return resp;
@@ -171,7 +167,7 @@ function parseOut(data, restoreMaster) {
                         } else {
                             scenario = " --scenario restore_primary_from_primary";
                         }
-                        
+
                         if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_primary_from_primary";
 
@@ -446,9 +442,9 @@ function execRecovery(scenario, donor, nodeid) {
         action = exec;
     }
 
-    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user \"" + user + "\" --mysql-password \"" + password + "\"" + action);
+    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
     return cmd({
-        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user \"" + user + "\" --mysql-password \"" + password + "\"" + action,
+        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action,
         nodeid: nodeid || ""
     });
 }
