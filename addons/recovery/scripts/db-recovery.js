@@ -30,7 +30,7 @@ var SQLDB = "sqldb",
     item,
     resp;
 
-if (exec) isRestore = true;
+if (!exec) isRestore = true;
 exec = exec || " --diagnostic";
 
 resp = getNodeGroups();
@@ -48,11 +48,12 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
+api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
+api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
-api.marketplace.console.WriteLog("failedNodes00-> " + failedNodes);
-api.marketplace.console.WriteLog("isRestore-> " + isRestore);
+
 if (isRestore) {
     if (resp.result == AUTH_ERROR_CODE) return resp;
 
