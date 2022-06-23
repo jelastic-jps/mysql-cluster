@@ -32,7 +32,6 @@ buttons:
     successText: Cluster recovery is finished successfully!
     submitButtonText: Recover
     action: recovery
-    settings: main
 
 settings:
   submitUnchanged: true
@@ -101,8 +100,6 @@ actions:
 
   recovery:
     script: /scripts/db-recovery.js
-    user: ${settings.user:}
-    password: ${settings.password:}
     
   init:
     - cmd[sqldb]: |-
