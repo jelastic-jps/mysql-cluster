@@ -5,13 +5,13 @@ description:
   text: The Database Cluster Recovery add-on performs a comprehensive diagnostic of your MySQL/MariaDB Cluster (Galera, Primary-Primary, Primary-Secondary) to detect any disruptions of the provisioned service. In case of errors, the automatic Cluster Recovery functionality can restore the cluster operability after most of the problems.
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery
 
 targetNodes:
   nodeGroup: sqldb
 
 mixins:
-  - /../../scripts/common.yml
+  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/common.yml
 
 globals:
   ssh_root: /root/.ssh/
