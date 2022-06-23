@@ -1,0 +1,159 @@
+type: update
+name: Database Cluster Recovery
+id: db-recovery
+description:
+  text: The Database Cluster Recovery add-on performs a comprehensive diagnostic of your MySQL/MariaDB Cluster (Galera, Primary-Primary, Primary-Secondary) to detect any disruptions of the provisioned service. In case of errors, the automatic Cluster Recovery functionality can restore the cluster operability after most of the problems.
+  short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
+
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery
+
+targetNodes:
+  nodeGroup: sqldb
+
+mixins:
+  - /../../scripts/common.yml
+
+globals:
+  ssh_root: /root/.ssh/
+  ssh-key: id_rsa_db_monitoring
+  tmp: /tmp/
+
+buttons:
+  - name: diagnostic
+    caption: Cluster Diagnostic
+    confirmText: Run cluster diagnostic?
+    loadingText: Diagnostic is in progress...
+    logsPath: /var/log/db_recovery.log
+    action: diagnostic
+    
+  - name: recovery
+    confirmText: Run cluster recovery?
+    caption: Cluster Recovery
+    loadingText: Cluster recovery is in progress...
+    successText: Cluster recovery is finished successfully!
+    submitButtonText: Recover
+    action: recovery
+
+settings:
+  submitUnchanged: true
+  fields:
+    - name: user
+      caption: User
+      type: string
+      required: true
+    - name: password
+      caption: Password
+      type: string
+      inputType: password
+      required: true
+
+onAfterScaleOut[sqldb]: generate-share-keys
+onAfterRedeployContainer[sqldb]: generate-share-keys
+
+onInstall:
+  - script: |
+      var nodeGroups, resp, isInstall = false;
+      resp = api.env.control.GetNodeGroups("${env.name}", session);
+      if (resp.result != 0) return resp;
+      nodeGroups = resp.object;
+      for (var i = 0, n = nodeGroups.length; i < n; i++) {
+        if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled)
+          isInstall = true;
+      }
+      return { result: 0, isInstall: isInstall };
+
+  - if (!${response.isInstall:false} && !${settings.install:false}):
+      return:
+        type: warning
+        message: Add-on does not provide restore and recovery for a non-cluster topologies.
+
+  - getReplicaUser
+  - if (!${settings.install:false}): init
+  - generate-share-keys
+
+responses:
+  200:
+    type: success
+    message: Database Cluster is OK! No errors have been discovered.
+    
+  201:
+    type: success
+    message: Database Cluster recovery has been finished successfully!
+
+  98:
+    type: success
+    message: |
+      An error occurs while recovering the Database Cluster.  
+      Please check the **/var/log/db_recovery.log** log file for details.
+      Follow the [Galera Cluster Recovery](https://docs.jelastic.com/mariadb-galera-recovery/) guide to recover the cluster manually.
+
+  99:
+    type: success
+    message: |
+      Errors were discovered during the Database Cluster diagnostic.
+      Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
+      Follow the [Galera Cluster Recovery](https://docs.jelastic.com/mariadb-galera-recovery/) guide to recover the cluster manually.
+
+actions:
+  diagnostic:
+    script: /scripts/db-recovery.js
+    exec: ' --diagnostic'
+
+  recovery:
+    script: /scripts/db-recovery.js
+    
+  init:
+    - cmd[sqldb]: |-
+        curl --silent ${baseUrl}/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        bash /tmp/db-recovery.sh --mysql-user ${settings.user} --mysql-password ${settings.password} --scenario init;
+      user: root
+
+  generate-share-keys:
+    - cmd[${nodes.sqldb.master.id}]: |-
+        [ -f ${globals.ssh_root}${globals.ssh-key} ] && rm -f ${globals.ssh_root}${globals.ssh-key};
+        [ -f ${globals.ssh_root}${globals.ssh-key}.pub ] && rm -f ${globals.ssh_root}${globals.ssh-key}.pub;
+        sed -i '/db_monitoring/d' ${globals.ssh_root}authorized_keys;
+        ssh-keygen -t rsa -b 4098 -f ${globals.tmp}${globals.ssh-key} -q -N '' -C 'db_monitoring' <<<y >/dev/null 2>&1
+        chown mysql:mysql ${globals.tmp}${globals.ssh-key}*
+      user: root
+    - script: |
+        var resp;
+        
+        resp = api.environment.file.Read({
+          envName: "${env.name}",
+          session: session,
+          path: "${globals.tmp}${globals.ssh-key}.pub",
+          nodeid: "${nodes.sqldb.master.id}" 
+        });
+        if (resp.result != 0) return resp;
+        
+        resp =  api.environment.file.Write({
+          envName: "${env.name}",
+          session: session,
+          path: "${globals.tmp}${globals.ssh-key}.pub",
+          nodeGroup: "sqldb",
+          nodeid: "-1",
+          body: resp.body
+        });
+        if (resp.result != 0) return resp;
+        
+        resp = api.environment.file.Read({
+          envName: "${env.name}",
+          session: session,
+          path: "${globals.tmp}${globals.ssh-key}",
+          nodeid: "${nodes.sqldb.master.id}" 
+        });
+        if (resp.result != 0) return resp;
+        
+        return api.environment.file.Write({
+          envName: "${env.name}",
+          session: session,
+          path: "${globals.tmp}${globals.ssh-key}",
+          nodeGroup: "sqldb",
+          nodeid: "-1",
+          body: resp.body
+        });
+    - cmd [sqldb]: |-
+        mv ${globals.tmp}${globals.ssh-key}* ${globals.ssh_root}
+        cat ${globals.ssh_root}${globals.ssh-key}.pub >> ${globals.ssh_root}authorized_keys
+      user: root
