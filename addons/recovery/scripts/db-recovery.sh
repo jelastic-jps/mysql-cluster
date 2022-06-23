@@ -64,23 +64,16 @@ echo
 }
 
 
-if [ "${SCENARIO}" == "init" ]; then
-  DONOR_IP='localhost'
-else
+if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
   [[ -z "${REPLICA_USER}" ]] && { echo "Environment variable REPLICA_USER do not set"; exit 1; }
   [[ -z "${REPLICA_PSWD}" ]] && { echo "Environment variable REPLICA_PSWD do not set"; exit 1; }
   MYSQL_USER=${REPLICA_USER}
   MYSQL_PASSWORD=${REPLICA_PSWD}
 fi
 
-if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
-  echo "Not all arguments passed!"
-  usage
-  exit 1;
-fi
-
 if [[ "${diagnostic}" != "YES" ]]; then
-  [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='localhost'; }
+  [ "${SCENARIO}" == "init" ] && DONOR_IP='localhost'
+  [ "${SCENARIO}" == "restore_galera" ] && DONOR_IP='localhost'
   if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
