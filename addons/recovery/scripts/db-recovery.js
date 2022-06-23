@@ -30,7 +30,7 @@ var SQLDB = "sqldb",
     item,
     resp;
 
-if (exec) isRestore = true;
+if (!exec) isRestore = true;
 exec = exec || " --diagnostic";
 
 resp = getNodeGroups();
