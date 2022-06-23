@@ -29,7 +29,7 @@ With help of the add-on you can carry out cluster diagnostic and take a decision
 The add-on can be installed either automatically along with database cluster installation or manually from [Marketplace](https://www.virtuozzo.com/application-platform-docs/marketplace/) of Virtuozzo Application Platform. It is considered that you have already an account on one of [Hosting Service Providers](https://www.virtuozzo.com/application-platform-partners/). So, if you have no add-on installed, sing in to the platform, open **Add-Ons** section in the Marketplace and pick **MySQL/MariaDB Cluster Recovery** add-On.
 
 <p align="left">
-<img src="../../images/marketplace.png" width="650">
+<img src="images/marketplace.png" width="650">
 </p>
 
 
@@ -38,13 +38,13 @@ The add-on can be installed either automatically along with database cluster ins
 In the opened confirmation window, choose Database Environment and respective database nodes, and click on **Install**.
 
 <p align="left">
-<img src="../../images/install-recovery-addon.png" width="500">
+<img src="images/install-recovery-addon.png" width="500">
 </p>
 
 After successful installation, the add-on will appear in the list of add-ons of sqldb layer. Now it is ready for utilization.
 
 <p align="left">
-<img src="../../images/add-ons.png" width="700">
+<img src="images/add-ons.png" width="700">
 </p>
 
 ## Database Recovery How To
@@ -54,7 +54,7 @@ Add-on allows to do two actions:
  - **Cluster Diagnostic** - with this action the add-on automatically scans all nodes in the cluster in order to identify whether the nodes are accessible and databases are consistent or not. If during diagnostic the database corruption or even node failure will be detected, the add-on will warn you with respective popup window  
  
 <p align="left">
-<img src="../../images/diagnostic-failure.png" width="350">
+<img src="images/diagnostic-failure.png" width="350">
 </p>
 
  
