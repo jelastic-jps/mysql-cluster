@@ -13,6 +13,7 @@ var SQLDB = "sqldb",
     PRIMARY = "primary",
     SECONDARY = "secondary",
     FAILED = "failed",
+    FAILED_UPPER_CASE = "FAILED",
     SUCCESS = "success",
     WARNING = "warning",
     MASTER = "master",
@@ -51,7 +52,6 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
@@ -133,7 +133,7 @@ function parseOut(data, restoreMaster) {
                                 message: "There are MyISAM tables in the Galera Cluster. These tables should be converted in InnoDB type"
                             }
                         }
-                        if (item.service_status == DOWN || item.status == FAILED) { // || item.galera_size != OK
+                        if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_galera";
                             if (!donorIps[scheme]) {
                                 donorIps[GALERA] = GALERA;
@@ -144,6 +144,10 @@ function parseOut(data, restoreMaster) {
                                 scenario: scenario
                             });
 
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
                         }
 
                         if (!isRestore && failedNodes.length) {
@@ -152,11 +156,21 @@ function parseOut(data, restoreMaster) {
                                 type: SUCCESS
                             };
                         }
+
+                        if (item.service_status == UP && item.status == OK) {
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
+                        }
                         break;
 
                     case PRIMARY:
                         if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_primary_from_primary";
+
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
 
                             if (!donorIps[scheme] && item.service_status == UP) {
                                 donorIps[PRIMARY] = item.address;
@@ -178,11 +192,19 @@ function parseOut(data, restoreMaster) {
 
                         if (item.service_status == UP && item.status == OK) {
                             donorIps[PRIMARY] = item.address;
+
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
                         }
                         break;
 
                     case SECONDARY:
                         if (item.service_status == DOWN || item.status == FAILED) {
+
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
 
                             if (!isRestore) {
                                 return {
@@ -227,23 +249,23 @@ function parseOut(data, restoreMaster) {
                                 primaryDonorIp = item.address;
                             }
                         }
-
-                        if (primaryDonorIp) { //!donorIps[scheme]
-                            donorIps[scheme] = primaryDonorIp;
-                            continue;
-                        }
                         api.marketplace.console.WriteLog("donorIps22->" + donorIps);
 
                         if (item.service_status == UP && item.status == OK) {
                             donorIps[SECONDARY] = item.address;
                             statusesUp = true;
+
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
                         }
                         else if (!statusesUp && item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = item.address;
                         }
 
-                        api.marketplace.console.WriteLog("failedNodes123->" + failedNodes);
-                        api.marketplace.console.WriteLog("failedPrimary123->" + failedPrimary);
+                        if (primaryDonorIp) { //!donorIps[scheme]
+                            donorIps[scheme] = primaryDonorIp;
+                            continue;
+                        }
                         break;
                 }
             } else {
@@ -282,6 +304,50 @@ return {
     result: !isRestore ? 200 : 201,
     type: SUCCESS
 };
+
+function setFailedDisplayNode(address, removeLabelFailed) {
+    var REGEXP = new RegExp('\\b - ' + FAILED + '\\b', 'gi'),
+        displayName,
+        resp,
+        node;
+
+    removeLabelFailed = !!removeLabelFailed;
+
+    resp = getNodeIdByIp(address);
+    if (resp.result != 0) return resp;
+
+    resp = getNodeInfoById(resp.nodeid);
+    if (resp.result != 0) return resp;
+    node = resp.node;
+
+    if (!isRestore && node.displayName.indexOf(FAILED_UPPER_CASE) != -1) return { result: 0 }
+
+    displayName = removeLabelFailed ? node.displayName.replace(REGEXP, "") : (node.displayName + " - " + FAILED_UPPER_CASE);
+    return api.env.control.SetNodeDisplayName(envName, session, node.id, displayName);
+}
+
+function getNodeInfoById(id) {
+    var envInfo,
+        nodes,
+        node;
+
+    envInfo = getEnvInfo();
+    if (envInfo.result != 0) return envInfo;
+
+    nodes = envInfo.nodes;
+
+    for (var i = 0, n = nodes.length; i < n; i++) {
+        if (nodes[i].id == id) {
+            node = nodes[i];
+            break;
+        }
+    }
+
+    return {
+        result: 0,
+        node: node
+    }
+}
 
 function getNodeIdByIp(address) {
     var envInfo,
@@ -339,9 +405,7 @@ function getSlavesOnly() {
     resp = getSQLNodes();
     if (resp.result != 0) return resp;
 
-    api.marketplace.console.WriteLog("in getSlavesOnly primaryDonorIp2 -> " + primaryDonorIp);
     for (var i = 0, n = resp.nodes.length; i < n; i++) {
-        api.marketplace.console.WriteLog("resp.nodes[i].address -> " + resp.nodes[i].address);
         if (resp.nodes[i].address != primaryDonorIp) {
             slaves.push({
                 address: resp.nodes[i].address,
@@ -350,7 +414,6 @@ function getSlavesOnly() {
         }
     }
 
-    api.marketplace.console.WriteLog("getSlavesOnly -> " + slaves);
     return {
         result: 0,
         nodes: slaves
@@ -372,7 +435,6 @@ function getSQLNodes() {
         }
     }
 
-    api.marketplace.console.WriteLog("sqlNodes -> " + sqlNodes);
     return {
         result: 0,
         nodes: sqlNodes
