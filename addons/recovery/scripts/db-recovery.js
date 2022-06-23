@@ -13,6 +13,7 @@ var SQLDB = "sqldb",
     PRIMARY = "primary",
     SECONDARY = "secondary",
     FAILED = "failed",
+    FAILED_UPPER_CASE = "FAILED",
     SUCCESS = "success",
     WARNING = "warning",
     MASTER = "master",
@@ -51,7 +52,6 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
@@ -86,7 +86,7 @@ if (isRestore) {
         resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
 
-        resp = execRecovery(scenario, donorIps[scheme], resp.nodeid);
+        resp = execRecovery(failedNodes[k].scenario, donorIps[scheme], resp.nodeid);
         if (resp.result != 0) return resp;
 
         resp = parseOut(resp.responses, false);
@@ -121,7 +121,8 @@ function parseOut(data, restoreMaster) {
             if (item.result == AUTH_ERROR_CODE) {
                 return {
                     type: WARNING,
-                    message: item.error
+                    message: item.error,
+                    result: AUTH_ERROR_CODE
                 };
             }
 
@@ -134,7 +135,7 @@ function parseOut(data, restoreMaster) {
                                 message: "There are MyISAM tables in the Galera Cluster. These tables should be converted in InnoDB type"
                             }
                         }
-                        if (item.service_status == DOWN || item.status == FAILED) { // || item.galera_size != OK
+                        if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_galera";
                             if (!donorIps[scheme]) {
                                 donorIps[GALERA] = GALERA;
@@ -145,6 +146,10 @@ function parseOut(data, restoreMaster) {
                                 scenario: scenario
                             });
 
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
                         }
 
                         if (!isRestore && failedNodes.length) {
@@ -153,9 +158,20 @@ function parseOut(data, restoreMaster) {
                                 type: SUCCESS
                             };
                         }
+
+                        if (item.service_status == UP && item.status == OK) {
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
+                        }
                         break;
 
                     case PRIMARY:
+                        if (item.node_type == SECONDARY) {
+                            scenario = " --scenario restore_secondary_from_primary";
+                        } else {
+                            scenario = " --scenario restore_primary_from_primary";
+                        }
+                        
                         if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_primary_from_primary";
 
@@ -169,11 +185,27 @@ function parseOut(data, restoreMaster) {
                                 }
                             }
 
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
+
+                            if (!donorIps[scheme] && item.service_status == UP) {
+                                donorIps[PRIMARY] = item.address;
+                            }
+
                             if (item.status == FAILED) {
-                                failedPrimary.push({
+                                if (item.node_type == PRIMARY) {
+                                    failedPrimary.push({
                                         address: item.address,
                                         scenario: scenario
                                     });
+                                } else {
+                                    failedNodes.push({
+                                        address: item.address,
+                                        scenario: scenario
+                                    });
+                                }
                             }
                             if (!isRestore) {
                                 return {
@@ -187,12 +219,20 @@ function parseOut(data, restoreMaster) {
                         if (item.service_status == UP && item.status == OK) {
                             donorIps[PRIMARY] = item.address;
                             primaryMasterAddress = item.address;
+
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
                         }
 
                         break;
 
                     case SECONDARY:
                         if (item.service_status == DOWN || item.status == FAILED) {
+
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
 
                             if (!isRestore) {
                                 return {
@@ -238,17 +278,20 @@ function parseOut(data, restoreMaster) {
                             }
                         }
 
-                        if (primaryDonorIp) {
-                            donorIps[scheme] = primaryDonorIp;
-                            continue;
-                        }
-
                         if (item.service_status == UP && item.status == OK) {
                             donorIps[SECONDARY] = item.address;
                             statusesUp = true;
+
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
                         }
                         else if (!statusesUp && item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = item.address;
+                        }
+
+                        if (primaryDonorIp) { //!donorIps[scheme]
+                            donorIps[scheme] = primaryDonorIp;
+                            continue;
                         }
                         break;
                 }
@@ -327,6 +370,50 @@ return {
     type: SUCCESS
 };
 
+function setFailedDisplayNode(address, removeLabelFailed) {
+    var REGEXP = new RegExp('\\b - ' + FAILED + '\\b', 'gi'),
+        displayName,
+        resp,
+        node;
+
+    removeLabelFailed = !!removeLabelFailed;
+
+    resp = getNodeIdByIp(address);
+    if (resp.result != 0) return resp;
+
+    resp = getNodeInfoById(resp.nodeid);
+    if (resp.result != 0) return resp;
+    node = resp.node;
+
+    if (!isRestore && node.displayName.indexOf(FAILED_UPPER_CASE) != -1) return { result: 0 }
+
+    displayName = removeLabelFailed ? node.displayName.replace(REGEXP, "") : (node.displayName + " - " + FAILED_UPPER_CASE);
+    return api.env.control.SetNodeDisplayName(envName, session, node.id, displayName);
+}
+
+function getNodeInfoById(id) {
+    var envInfo,
+        nodes,
+        node;
+
+    envInfo = getEnvInfo();
+    if (envInfo.result != 0) return envInfo;
+
+    nodes = envInfo.nodes;
+
+    for (var i = 0, n = nodes.length; i < n; i++) {
+        if (nodes[i].id == id) {
+            node = nodes[i];
+            break;
+        }
+    }
+
+    return {
+        result: 0,
+        node: node
+    }
+}
+
 function getNodeIdByIp(address) {
     var envInfo,
         nodes,
@@ -359,9 +446,9 @@ function execRecovery(scenario, donor, nodeid) {
         action = exec;
     }
 
-    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user " + user + " --mysql-password " + password + action);
+    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user \"" + user + "\" --mysql-password \"" + password + "\"" + action);
     return cmd({
-        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user " + user + " --mysql-password " + password + action,
+        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user \"" + user + "\" --mysql-password \"" + password + "\"" + action,
         nodeid: nodeid || ""
     });
 }

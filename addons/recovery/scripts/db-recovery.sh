@@ -41,11 +41,12 @@ SCRIPTNAME=$(basename "$BASH_SOURCE")
 echo "    USAGE:"
 echo "        COMMAND RUN:  "
 echo "             $SCRIPTNAME --mysql-user 'MYSQL USER NAME' --mysql-password 'MYSQL USER PASSWORD' --replica-password 'PASSWORD FOR REPLICA' --donor-ip 'MYSQL PRIMARY IP ADDRESS' --scenario [SCENARIO NAME]"
-echo "             Diagnostic Run Example: $SCRIPTNAME --mysql-user 'mysql-12445' --mysql-password 'password123' --diagnostic"
-echo "             Restore Run Example: $SCRIPTNAME --mysql-user 'mysql-12445' --mysql-password 'password123' --replica-password 'replica123' --donor-ip '192.168.0.1' --scenario restore_primary_from_primary"
+echo "             Diagnostic Run Example: $SCRIPTNAME --diagnostic"
+echo "             Restore Run Example: $SCRIPTNAME --donor-ip '192.168.0.1' --scenario restore_primary_from_primary"
+echo "             Init Run Example: $SCRIPTNAME --mysql-user 'mysql-12445' --mysql-password 'password123' --scenario init"
 echo "        ARGUMENTS:    "
-echo "              --mysql-user - MySQL user with the LOCK TABLES privileges"
-echo "              --mysql-password - MySQL user password"
+echo "              --mysql-user - MySQL user with the LOCK TABLES privileges [USED FOR INIT ONLY]"
+echo "              --mysql-password - MySQL user password [USED FOR INIT ONLY]"
 echo "              --donor-ip - IP address of the operable MySQL server from which the failed node will be restored"
 echo "                           In the case of Galera cluster recovery, skip this parameter"
 echo "              --scenario - Restoration scenario; the following arguments are supported:"
@@ -62,6 +63,16 @@ echo "              - There are no such restrictions for the Galera scenario - t
 echo
 }
 
+
+if [ "${SCENARIO}" == "init" ]; then
+  DONOR_IP='localhost'
+else
+  [[ -z "${REPLICA_USER}" ]] && { echo "Environment variable REPLICA_USER do not set"; exit 1; }
+  [[ -z "${REPLICA_PSWD}" ]] && { echo "Environment variable REPLICA_PSWD do not set"; exit 1; }
+  MYSQL_USER=${REPLICA_USER}
+  MYSQL_PASSWORD=${REPLICA_PSWD}
+fi
+
 if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
   echo "Not all arguments passed!"
   usage
@@ -69,7 +80,6 @@ if [ -z "$MYSQL_USER" ] || [ -z "$MYSQL_PASSWORD" ]; then
 fi
 
 if [[ "${diagnostic}" != "YES" ]]; then
-  [ "${SCENARIO}" == "init" ] && { DONOR_IP='localhost'; }
   [ "${SCENARIO}" == "restore_galera" ] && { DONOR_IP='localhost'; }
   if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
@@ -574,7 +584,6 @@ nodeDiagnostic(){
 restore_secondary_from_primary(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
-  execAction "resetReplicaPassword ${DONOR_IP}" "[Node: ${DONOR_IP}] Reset replica user password"
   execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
   execAction "setPrimaryReadonly ${DONOR_IP}" "[Node: ${DONOR_IP}] Set primary readonly"
   execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} lock"
@@ -588,7 +597,6 @@ restore_secondary_from_primary(){
 restore_primary_from_secondary(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
-  execAction "resetReplicaPassword ${DONOR_IP}"
   execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
   stopMysqlService "${DONOR_IP}"
   execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} service stop"
