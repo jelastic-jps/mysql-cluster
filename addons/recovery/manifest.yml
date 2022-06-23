@@ -27,6 +27,7 @@ buttons:
     action: diagnostic
     
   - name: recovery
+    confirmText: Run cluster recovery?
     caption: Cluster Recovery
     loadingText: Cluster recovery is in progress...
     successText: Cluster recovery is finished successfully!
