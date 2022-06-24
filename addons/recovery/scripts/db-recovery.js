@@ -126,6 +126,12 @@ function parseOut(data, restoreMaster) {
                 }
 
                 if (item.result == 0) {
+                    if (!item.node_type && !isRestore) {
+                        resp = setFailedDisplayNode(item.address);
+                        if (resp.result != 0) return resp;
+                        continue;
+                    }
+                    
                     switch (String(scheme)) {
                         case GALERA:
                             if ((item.service_status == UP || item.status == OK) && item.galera_myisam != OK) {
