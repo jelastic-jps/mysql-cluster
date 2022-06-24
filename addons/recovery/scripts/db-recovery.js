@@ -125,13 +125,13 @@ function parseOut(data, restoreMaster) {
                     };
                 }
 
+                if (!item.node_type && !isRestore) {
+                    resp = setFailedDisplayNode(item.address);
+                    if (resp.result != 0) return resp;
+                    continue;
+                }
+
                 if (item.result == 0) {
-                    if (!item.node_type && !isRestore) {
-                        resp = setFailedDisplayNode(item.address);
-                        if (resp.result != 0) return resp;
-                        continue;
-                    }
-                    
                     switch (String(scheme)) {
                         case GALERA:
                             if ((item.service_status == UP || item.status == OK) && item.galera_myisam != OK) {
@@ -140,6 +140,7 @@ function parseOut(data, restoreMaster) {
                                     message: "There are MyISAM tables in the Galera Cluster. These tables should be converted in InnoDB type"
                                 }
                             }
+
                             if (item.service_status == DOWN || item.status == FAILED) {
                                 scenario = " --scenario restore_galera";
                                 if (!donorIps[scheme]) {
