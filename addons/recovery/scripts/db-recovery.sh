@@ -138,7 +138,6 @@ getNodeType(){
   [[ -f ${PRIMARY_CONF} ]] && { echo "primary"; return ${SUCCESS_CODE}; }
   [[ -f ${SECONDARY_CONF} ]] && { echo "secondary"; return ${SUCCESS_CODE}; }
   [[ -f ${GALERA_CONF} ]] && { echo "galera"; return ${SUCCESS_CODE}; }
-  echo "undefined"
   return ${FAIL_CODE}
 }
 
