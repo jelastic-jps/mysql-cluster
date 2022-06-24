@@ -158,12 +158,12 @@ function parseOut(data, restoreMaster) {
                                 }
                             }
 
-                            if (!isRestore && failedNodes.length) {
-                                return {
-                                    result: FAILED_CLUSTER_CODE,
-                                    type: SUCCESS
-                                };
-                            }
+                            // if (!isRestore && failedNodes.length) {
+                            //     return {
+                            //         result: FAILED_CLUSTER_CODE,
+                            //         type: SUCCESS
+                            //     };
+                            // }
 
                             if (item.service_status == UP && item.status == OK) {
                                 resp = setFailedDisplayNode(item.address, true);
@@ -213,12 +213,12 @@ function parseOut(data, restoreMaster) {
                                         });
                                     }
                                 }
-                                if (!isRestore) {
-                                    return {
-                                        result: FAILED_CLUSTER_CODE,
-                                        type: SUCCESS
-                                    };
-                                }
+                                // if (!isRestore) {
+                                //     return {
+                                //         result: FAILED_CLUSTER_CODE,
+                                //         type: SUCCESS
+                                //     };
+                                // }
                                 restoreMaster = true;
                             }
 
@@ -240,12 +240,12 @@ function parseOut(data, restoreMaster) {
                                     if (resp.result != 0) return resp;
                                 }
 
-                                if (!isRestore) {
-                                    return {
-                                        result: FAILED_CLUSTER_CODE,
-                                        type: SUCCESS
-                                    };
-                                }
+                                // if (!isRestore) {
+                                //     return {
+                                //         result: FAILED_CLUSTER_CODE,
+                                //         type: SUCCESS
+                                //     };
+                                // }
 
                                 if (item.service_status == DOWN && item.status == FAILED) {
                                     if (item.node_type == PRIMARY) {
@@ -307,6 +307,13 @@ function parseOut(data, restoreMaster) {
                     };
                 }
             }
+        }
+
+        if (!isRestore && (failedNodes.length || failedPrimary.length)) {
+            return {
+                result: FAILED_CLUSTER_CODE,
+                type: SUCCESS
+            };
         }
 
         if (!failedNodes.length && failedPrimary.length) {
