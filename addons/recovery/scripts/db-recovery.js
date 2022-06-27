@@ -50,6 +50,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
 }
 api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
+api.marketplace.console.WriteLog("scheme-> " + scheme);
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
