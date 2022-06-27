@@ -48,7 +48,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
+api.marketplace.console.WriteLog("start-> ");
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("scheme-> " + scheme);
 resp = execRecovery();
@@ -65,6 +65,8 @@ if (isRestore) {
         failedNodes = resp.nodes;
         scenario = " --scenario restore_secondary_from_primary";
     }
+
+    api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
 
     if (!failedNodes.length) {
         return {
@@ -173,14 +175,12 @@ function parseOut(data, restoreMaster) {
                             break;
 
                         case PRIMARY:
-                            if (item.node_type == SECONDARY) {
-                                scenario = " --scenario restore_secondary_from_primary";
-                            } else {
-                                scenario = " --scenario restore_primary_from_primary";
-                            }
-
                             if (item.service_status == DOWN || item.status == FAILED) {
-                                scenario = " --scenario restore_primary_from_primary";
+                                if (item.node_type == SECONDARY) {
+                                    scenario = " --scenario restore_secondary_from_primary";
+                                } else {
+                                    scenario = " --scenario restore_primary_from_primary";
+                                }
 
                                 if (item.service_status == UP) {
                                     if (!donorIps[scheme]) {
