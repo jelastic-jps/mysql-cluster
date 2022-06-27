@@ -259,7 +259,7 @@ setReplicaUserFromEnv(){
   [[ "${nodeType}" != "secondary" ]] && { echo "Note type is not secondary"; return ${SUCCESS_CODE}; }
   [[ -z "${REPLICA_USER}" ]] && { echo "Environment variable REPLICA_USER do not set"; return ${FAIL_CODE}; }
   [[ -z "${REPLICA_PSWD}" ]] && { echo "Environment variable REPLICA_PSWD do not set"; return ${FAIL_CODE}; }
-  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_USER = '${REPLICA_USER}', MASTER_PASSWORD = '${REPLICA_PSWD}'; START SLAVE;" "localhost"
+  mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_USER = '${REPLICA_USER}', MASTER_PASSWORD = '${REPLICA_PSWD}'; START SLAVE;" "localhost"
 }
 
 
@@ -342,7 +342,7 @@ restoreSecondaryPosition(){
   local node=$1
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
-  mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
+  mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
 }
 
 
