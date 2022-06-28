@@ -25,11 +25,18 @@ actions:
 
   setupUser:
     - if (/mysql/.test("${nodes.sqldb.nodeType}")):
-        cmd[${this.id}]: |-
-          mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
-          if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER IF NOT EXISTS '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"; fi;
-          if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, RELOAD, LOCK TABLES, REPLICATION SLAVE, REPLICATION_SLAVE_ADMIN, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"; fi;
-          if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"; fi;
+      - if ('${fn.compare([nodes.sqldb.version], 8.0)}' == -1):
+          cmd[${this.id}]: |-
+            mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER IF NOT EXISTS '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"; fi;
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SUPER, SELECT, RELOAD, LOCK TABLES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"; fi;
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"; fi;
+      - else:
+          cmd[${this.id}]: |-
+            mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER IF NOT EXISTS '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"; fi;
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, RELOAD, LOCK TABLES, REPLICATION SLAVE, REPLICATION_SLAVE_ADMIN, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"; fi;
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"; fi;
 
     - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
       - if ('${fn.compare([nodes.sqldb.version], 10.5)}' == -1):
