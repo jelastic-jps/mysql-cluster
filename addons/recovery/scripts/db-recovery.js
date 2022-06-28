@@ -2,17 +2,16 @@ var SQLDB = "sqldb",
     AUTH_ERROR_CODE = 701,
     UNABLE_RESTORE_CODE = 98,
     FAILED_CLUSTER_CODE = 99,
+    RESTORE_SUCCESS = 201,
     envName = "${env.name}",
-    user = getParam('user', ''),
-    password = getParam('password', ''),
     exec = getParam('exec', ''),
-    failedPrimary = [],
     failedNodes = [],
     isMasterFailed = false,
     GALERA = "galera",
     PRIMARY = "primary",
     SECONDARY = "secondary",
     FAILED = "failed",
+    FAILED_UPPER_CASE = "FAILED",
     SUCCESS = "success",
     WARNING = "warning",
     MASTER = "master",
@@ -31,10 +30,8 @@ var SQLDB = "sqldb",
     item,
     resp;
 
-if (user && password) isRestore = true;
+if (!exec) isRestore = true;
 exec = exec || " --diagnostic";
-user = user || "$REPLICA_USER";
-password = password || "$REPLICA_PSWD";
 
 resp = getNodeGroups();
 if (resp.result != 0) return resp;
@@ -51,7 +48,6 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
@@ -70,7 +66,7 @@ if (isRestore) {
 
     if (!failedNodes.length) {
         return {
-            result: !isRestore ? 200 : 201,
+            result: !isRestore ? 200 : RESTORE_SUCCESS,
             type: SUCCESS
         };
     }
@@ -81,13 +77,12 @@ if (isRestore) {
             type: SUCCESS
         }
     }
-    api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
 
     for (var k = 0, l = failedNodes.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
 
-        resp = execRecovery(scenario, donorIps[scheme], resp.nodeid);
+        resp = execRecovery(failedNodes[k].scenario, donorIps[scheme], resp.nodeid);
         if (resp.result != 0) return resp;
 
         resp = parseOut(resp.responses, false);
@@ -101,9 +96,12 @@ if (isRestore) {
 function parseOut(data, restoreMaster) {
     var resp,
         nodeid,
-        statusesUp = false;
+        statusesUp = false,
+        primaryMasterAddress = "",
+        primaryEnabledService = "",
+        failedPrimary = [];
 
-    if (scheme != GALERA && restoreMaster) {
+    if (scheme == SECONDARY && restoreMaster) {
         failedNodes = [];
         failedPrimary = [];
         donorIps = {};
@@ -133,7 +131,7 @@ function parseOut(data, restoreMaster) {
                                 message: "There are MyISAM tables in the Galera Cluster. These tables should be converted in InnoDB type"
                             }
                         }
-                        if (item.service_status == DOWN || item.status == FAILED) { // || item.galera_size != OK
+                        if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_galera";
                             if (!donorIps[scheme]) {
                                 donorIps[GALERA] = GALERA;
@@ -144,6 +142,10 @@ function parseOut(data, restoreMaster) {
                                 scenario: scenario
                             });
 
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
                         }
 
                         if (!isRestore && failedNodes.length) {
@@ -152,21 +154,54 @@ function parseOut(data, restoreMaster) {
                                 type: SUCCESS
                             };
                         }
+
+                        if (item.service_status == UP && item.status == OK) {
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
+                        }
                         break;
 
                     case PRIMARY:
+                        if (item.node_type == SECONDARY) {
+                            scenario = " --scenario restore_secondary_from_primary";
+                        } else {
+                            scenario = " --scenario restore_primary_from_primary";
+                        }
+
                         if (item.service_status == DOWN || item.status == FAILED) {
                             scenario = " --scenario restore_primary_from_primary";
+
+                            if (item.service_status == UP) {
+                                if (!donorIps[scheme]) {
+                                    donorIps[PRIMARY] = item.address;
+                                }
+
+                                if (item.address == "${nodes.sqldb.master.address}") {
+                                    primaryMasterAddress = item.address;
+                                }
+                            }
+
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
 
                             if (!donorIps[scheme] && item.service_status == UP) {
                                 donorIps[PRIMARY] = item.address;
                             }
 
                             if (item.status == FAILED) {
-                                failedNodes.push({
-                                    address: item.address,
-                                    scenario: scenario
-                                });
+                                if (item.node_type == PRIMARY) {
+                                    failedPrimary.push({
+                                        address: item.address,
+                                        scenario: scenario
+                                    });
+                                } else {
+                                    failedNodes.push({
+                                        address: item.address,
+                                        scenario: scenario
+                                    });
+                                }
                             }
                             if (!isRestore) {
                                 return {
@@ -174,15 +209,26 @@ function parseOut(data, restoreMaster) {
                                     type: SUCCESS
                                 };
                             }
+                            restoreMaster = true;
                         }
 
                         if (item.service_status == UP && item.status == OK) {
                             donorIps[PRIMARY] = item.address;
+                            primaryMasterAddress = item.address;
+
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
                         }
+
                         break;
 
                     case SECONDARY:
                         if (item.service_status == DOWN || item.status == FAILED) {
+
+                            if (!isRestore) {
+                                resp = setFailedDisplayNode(item.address);
+                                if (resp.result != 0) return resp;
+                            }
 
                             if (!isRestore) {
                                 return {
@@ -228,22 +274,21 @@ function parseOut(data, restoreMaster) {
                             }
                         }
 
-                        if (primaryDonorIp) { //!donorIps[scheme]
-                            donorIps[scheme] = primaryDonorIp;
-                            continue;
-                        }
-                        api.marketplace.console.WriteLog("donorIps22->" + donorIps);
-
                         if (item.service_status == UP && item.status == OK) {
                             donorIps[SECONDARY] = item.address;
                             statusesUp = true;
+
+                            resp = setFailedDisplayNode(item.address, true);
+                            if (resp.result != 0) return resp;
                         }
                         else if (!statusesUp && item.node_type == SECONDARY && item.service_status == UP) {
                             donorIps[SECONDARY] = item.address;
                         }
 
-                        api.marketplace.console.WriteLog("failedNodes123->" + failedNodes);
-                        api.marketplace.console.WriteLog("failedPrimary123->" + failedPrimary);
+                        if (primaryDonorIp) { //!donorIps[scheme]
+                            donorIps[scheme] = primaryDonorIp;
+                            continue;
+                        }
                         break;
                 }
             } else {
@@ -258,7 +303,35 @@ function parseOut(data, restoreMaster) {
             failedNodes = failedPrimary;
         }
 
+        if ((!scenario || !donorIps[scheme]) && failedNodes.length) {
+            return {
+                result: UNABLE_RESTORE_CODE,
+                type: SUCCESS
+            }
+        }
+
         if (isRestore && restoreMaster && failedPrimary.length) { //restoreAll
+            if (failedPrimary.length > 1) {
+                primaryEnabledService = primaryMasterAddress || donorIps[scheme];
+                i = failedPrimary.length;
+
+                while (i--) {
+                    if (failedPrimary[i].address != primaryEnabledService) {
+                        resp = getNodeIdByIp(failedPrimary[i].address);
+                        if (resp.result != 0) return resp;
+
+                        resp = execRecovery(failedPrimary[i].scenario, primaryEnabledService, resp.nodeid);
+                        if (resp.result != 0) return resp;
+
+                        resp = parseOut(resp.responses);
+                        if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
+
+                        if (resp.result == RESTORE_SUCCESS) {
+                            failedPrimary.splice(i, 1);
+                        }
+                    }
+                }
+            }
 
             resp = getNodeIdByIp(failedPrimary[0].address);
             if (resp.result != 0) return resp;
@@ -267,6 +340,16 @@ function parseOut(data, restoreMaster) {
             if (resp.result != 0) return resp;
             resp = parseOut(resp.responses);
             if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
+
+            if (failedNodes.length) {
+                i = failedNodes.length;
+                while (i--) {
+                    if (failedNodes[i].address == failedPrimary[0].address) {
+                        failedNodes.splice(i, 1);
+                        break;
+                    }
+                }
+            }
             failedPrimary = [];
             donorIps[scheme] = primaryDonorIp;
         }
@@ -282,6 +365,50 @@ return {
     result: !isRestore ? 200 : 201,
     type: SUCCESS
 };
+
+function setFailedDisplayNode(address, removeLabelFailed) {
+    var REGEXP = new RegExp('\\b - ' + FAILED + '\\b', 'gi'),
+        displayName,
+        resp,
+        node;
+
+    removeLabelFailed = !!removeLabelFailed;
+
+    resp = getNodeIdByIp(address);
+    if (resp.result != 0) return resp;
+
+    resp = getNodeInfoById(resp.nodeid);
+    if (resp.result != 0) return resp;
+    node = resp.node;
+
+    if (!isRestore && node.displayName.indexOf(FAILED_UPPER_CASE) != -1) return { result: 0 }
+
+    displayName = removeLabelFailed ? node.displayName.replace(REGEXP, "") : (node.displayName + " - " + FAILED_UPPER_CASE);
+    return api.env.control.SetNodeDisplayName(envName, session, node.id, displayName);
+}
+
+function getNodeInfoById(id) {
+    var envInfo,
+        nodes,
+        node;
+
+    envInfo = getEnvInfo();
+    if (envInfo.result != 0) return envInfo;
+
+    nodes = envInfo.nodes;
+
+    for (var i = 0, n = nodes.length; i < n; i++) {
+        if (nodes[i].id == id) {
+            node = nodes[i];
+            break;
+        }
+    }
+
+    return {
+        result: 0,
+        node: node
+    }
+}
 
 function getNodeIdByIp(address) {
     var envInfo,
@@ -315,9 +442,9 @@ function execRecovery(scenario, donor, nodeid) {
         action = exec;
     }
 
-    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user \"" + user + "\" --mysql-password \"" + password + "\"" + action);
+    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
     return cmd({
-        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh --mysql-user \"" + user + "\" --mysql-password \"" + password + "\"" + action,
+        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action,
         nodeid: nodeid || ""
     });
 }
@@ -339,9 +466,7 @@ function getSlavesOnly() {
     resp = getSQLNodes();
     if (resp.result != 0) return resp;
 
-    api.marketplace.console.WriteLog("in getSlavesOnly primaryDonorIp2 -> " + primaryDonorIp);
     for (var i = 0, n = resp.nodes.length; i < n; i++) {
-        api.marketplace.console.WriteLog("resp.nodes[i].address -> " + resp.nodes[i].address);
         if (resp.nodes[i].address != primaryDonorIp) {
             slaves.push({
                 address: resp.nodes[i].address,
@@ -350,7 +475,6 @@ function getSlavesOnly() {
         }
     }
 
-    api.marketplace.console.WriteLog("getSlavesOnly -> " + slaves);
     return {
         result: 0,
         nodes: slaves
@@ -372,7 +496,6 @@ function getSQLNodes() {
         }
     }
 
-    api.marketplace.console.WriteLog("sqlNodes -> " + sqlNodes);
     return {
         result: 0,
         nodes: sqlNodes
@@ -380,8 +503,7 @@ function getSQLNodes() {
 }
 
 function getNodeGroups() {
-    var envInfo,
-        nodeGroups;
+    var envInfo;
 
     envInfo = getEnvInfo();
     if (envInfo.result != 0) return envInfo;

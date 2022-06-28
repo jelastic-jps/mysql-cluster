@@ -27,12 +27,12 @@ buttons:
     action: diagnostic
     
   - name: recovery
+    confirmText: Run cluster recovery?
     caption: Cluster Recovery
     loadingText: Cluster recovery is in progress...
     successText: Cluster recovery is finished successfully!
     submitButtonText: Recover
     action: recovery
-    settings: main
 
 settings:
   submitUnchanged: true
@@ -101,8 +101,6 @@ actions:
 
   recovery:
     script: /scripts/db-recovery.js
-    user: ${settings.user:}
-    password: ${settings.password:}
     
   init:
     - cmd[sqldb]: |-
