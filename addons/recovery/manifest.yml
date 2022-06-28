@@ -53,6 +53,7 @@ onAfterRedeployContainer[sqldb]: generate-share-keys
 
 onInstall:
   - clusterValidate
+  - if (!${settings.install:false}): authValidate
   - getReplicaUser
   - if (!${settings.install:false}): init
   - generate-share-keys
@@ -101,7 +102,12 @@ actions:
   
   authValidate:
     - cmd[${nodes.sqldb.master.id}]: mysqladmin ping -u${settings.user} -p${settings.password} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
-    - if (!${response.out:false}):
+    - if ('${response.out}' != '0'):
+        return:
+          type: warning
+          message: Service does not running on master node.
+    - cmd[${nodes.sqldb.master.id}]: mysql -u${settings.user} -p${settings.password} -e "EXIT" 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
+    - if ('${response.out}' != '0'):
         return:
           type: warning
           message: Authentication failed, please check User/Password.
