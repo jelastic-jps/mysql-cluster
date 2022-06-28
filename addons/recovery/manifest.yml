@@ -53,7 +53,6 @@ onAfterRedeployContainer[sqldb]: generate-share-keys
 
 onInstall:
   - clusterValidate
-  - if (!${settings.install:false}): authValidate
   - getReplicaUser
   - if (!${settings.install:false}): init
   - generate-share-keys
