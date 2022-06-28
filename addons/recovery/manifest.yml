@@ -105,7 +105,7 @@ actions:
     - if (!${response.out:false}):
         return:
           type: warning
-          message: Authentication failed, please check service status or credentials.
+          message: Authentication failed, please check User/Password.
 
   diagnostic:
     script: /scripts/db-recovery.js
