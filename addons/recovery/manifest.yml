@@ -11,7 +11,7 @@ targetNodes:
   nodeGroup: sqldb
 
 mixins:
-  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/common.yml
+  - /../../scripts/common.yml
 
 globals:
   ssh_root: /root/.ssh/
@@ -51,22 +51,8 @@ onAfterScaleOut[sqldb]: generate-share-keys
 onAfterRedeployContainer[sqldb]: generate-share-keys
 
 onInstall:
-  - script: |
-      var nodeGroups, resp, isInstall = false;
-      resp = api.env.control.GetNodeGroups("${env.name}", session);
-      if (resp.result != 0) return resp;
-      nodeGroups = resp.object;
-      for (var i = 0, n = nodeGroups.length; i < n; i++) {
-        if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled)
-          isInstall = true;
-      }
-      return { result: 0, isInstall: isInstall };
-
-  - if (!${response.isInstall:false} && !${settings.install:false}):
-      return:
-        type: warning
-        message: Add-on does not provide restore and recovery for a non-cluster topologies.
-
+  - clusterValidate
+  - if (!${settings.install:false}): authValidate
   - getReplicaUser
   - if (!${settings.install:false}): init
   - generate-share-keys
@@ -95,6 +81,31 @@ responses:
       Follow the [Galera Cluster Recovery](https://docs.jelastic.com/mariadb-galera-recovery/) guide to recover the cluster manually.
 
 actions:
+  clusterValidate:
+    - script: |
+        var nodeGroups, resp, isCluster = false;
+        resp = api.env.control.GetNodeGroups("${env.name}", session);
+        if (resp.result != 0) return resp;
+        nodeGroups = resp.object;
+        for (var i = 0, n = nodeGroups.length; i < n; i++) {
+          if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled)
+            isCluster = true;
+        }
+        return { result: 0, isCluster: isCluster };
+
+    - if (!${response.isCluster:false} && !${settings.install:false}):
+        return:
+          type: warning
+          message: Add-on does not provide restore and recovery for a non-cluster topologies.
+  
+  
+  authValidate:
+    - cmd[${nodes.sqldb.master.id}]: mysqladmin ping -u${settings.user} -p${settings.password} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
+    - if (!${response.out:false}):
+        return:
+          type: warning
+          message: Authentication failed, please check service status or credentials.
+
   diagnostic:
     script: /scripts/db-recovery.js
     exec: ' --diagnostic'
