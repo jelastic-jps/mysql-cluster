@@ -11,7 +11,7 @@ targetNodes:
   nodeGroup: sqldb
 
 mixins:
-  - /../../scripts/common.yml
+  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/common.yml
 
 globals:
   ssh_root: /root/.ssh/
