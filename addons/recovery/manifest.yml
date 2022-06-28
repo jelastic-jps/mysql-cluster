@@ -101,16 +101,14 @@ actions:
   
   
   authValidate:
-    - cmd[${nodes.sqldb.master.id}]: mysqladmin ping -u${settings.user} -p${settings.password} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
-    - if ('${response.out}' != '0'):
-        return:
-          type: warning
-          message: Service does not running on master node.
-    - cmd[${nodes.sqldb.master.id}]: mysql -u${settings.user} -p${settings.password} -e "EXIT" 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
-    - if ('${response.out}' != '0'):
-        return:
-          type: warning
-          message: Authentication failed, please check User/Password.
+    - forEach(i:nodes.sqldb):
+      - cmd[${@i.id}]: mysqladmin ping -u${settings.user} -p${settings.password} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
+      - if ('${response.out}' == '0'):
+        - cmd[${@i.id}]: mysql -u${settings.user} -p${settings.password} -e "EXIT" 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
+        - if ('${response.out}' != '0'):
+            return:
+              type: warning
+              message: Authentication failed, please check User/Password.
 
   diagnostic:
     script: /scripts/db-recovery.js
