@@ -13,13 +13,15 @@ In case of automated recovery has failed you can follow this guide to recover cr
 Check whether _/etc/mysql/conf.d/\*.cnf_ is available or not on the node marked as **FAILED** after cluster diagnostic. For example:
 
 <p align="left"> 
-<img src="../images/failed-slave.png" width="250">
+<img src="../images/failed-slave.png" width="300">
 </p>
 
-For Primary-Secondary topology there should be a ***/etc/mysql/conf.d/master.cnf*** file on the Primary node and ***/etc/mysql/conf.d/slave.cnf*** file on the Secondary node, for example we have a topology:
+For Primary-Secondary topology there should be a ***/etc/mysql/conf.d/master.cnf*** file on the Primary node and ***/etc/mysql/conf.d/slave.cnf*** file on the Secondary node. 
+
+For example we have a topology:
 	 
 <p align="left"> 
-<img src="../images/primary-secondary-topology.png" width="250">
+<img src="../images/primary-secondary-topology.png" width="300">
 </p>
 
 Where the ***master.cnf*** for Primary node of Primary-Secondary topology:
@@ -40,7 +42,7 @@ read_only = 0
 report_host = node344119
 ```
 
-***slave.cnf*** for any Secondary node of of Primary-Secondary topology:
+and ***slave.cnf*** for any Secondary node of of Primary-Secondary topology:
 ```
 [mysqld]
 server-id = 344120
@@ -75,7 +77,7 @@ read_only = 0
 report_host = node344133
 ```
 
-For Primary-Primary topology each Secondary node should contain the same  ***slave.cnf*** file as for Primary-Secondary topology
+For Primary-Primary topology each Secondary node should contain the same  ***slave.cnf*** file as for Primary-Secondary topology.
 
 For Galera cluster replication topology each node contains ***/etc/mysql/conf.d/galera.cnf*** and looks as follows:
 
@@ -111,7 +113,7 @@ If mentioned files are OK just download them localy.
 
 #### Container redeploy
 
-The next step is to do [Container redeploy](https://www.virtuozzo.com/application-platform-docs/container-redeploy/) for failed databaser server node.  This action will lead that you will have clean database node.
+The next step is to do [Container redeploy](https://www.virtuozzo.com/application-platform-docs/container-redeploy/) for failed databaser server node.  This action will result in you having a clean database node.
 
 <p align="left"> 
 <img src="../images/redeploy.png" width="550">
@@ -127,7 +129,7 @@ Make sure that the redeploy tag coincides with the tag of other database nodes i
 
 #### Container recovery
 
-After successful redeployment check whether the mentioned above configuration files are available. If not see chapter below [Configuration file restoration](#configuration-file-restoration)
+After successful redeployment check whether the mentioned above configuration files are available. If not see chapter below [Configuration file restoration](#configuration-file-restoration).
 
 Then open WebSSH session and stop **mysql** service with command:
 
@@ -136,7 +138,7 @@ Then open WebSSH session and stop **mysql** service with command:
 After that, go to the Add-Ons tab, find the **Restore and Recovery Add-On** and press **Recovery** button.
 
 <p align="left"> 
-<img src="../images/recovery-button.png" width="550">
+<img src="../images/recovery-button.png" width="750">
 </p>
 
 That's it, if you have successfull information window the databse cluster recovered just make sure the database can handle reads/writes operations properly.
@@ -148,13 +150,14 @@ That's it, if you have successfull information window the databse cluster recove
 In case you are still experiencing probelms with database go and check ***/var/log/db-recovery.log*** file and apply to our support with it.
 
 <p align="left"> 
-<img src="../images/db-recovery-log.png" width="550">
+<img src="../images/db-recovery-log.png" width="750">
 </p> 
 
 
 #### Configuration file restoration
 
-In case the configuration file is broken or even absent you can restore it.
+In case the configuration file is broken or even absent you can restore it either from file you downloaded at the first step of chapter [Integrity of Configuration Files](#integrity-of-configuration-files) or manually as described below.  
+
 For the Primary-Secondary topology you can use the code provided in this document. For other topologies you can copy respected config file from a healthy node.
 
 Then you must replace the nodeID and IP address with the correct ones that belong to your FAILED database server for the parameters depending on replication topology:
