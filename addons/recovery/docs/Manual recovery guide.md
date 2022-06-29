@@ -116,7 +116,7 @@ If mentioned files are OK just download them localy.
 The next step is to do [Container redeploy](https://www.virtuozzo.com/application-platform-docs/container-redeploy/) for failed databaser server node.  This action will result in you having a clean database node.
 
 <p align="left"> 
-<img src="../images/redeploy.png" width="550">
+<img src="../images/redeploy.png" width="750">
 </p>
 
 Once you invoked redeploy dialogue window, swtich the **Keep volume data** toggle into **Off** position. It is required to make sure that the database server will be created from scratch.
@@ -131,7 +131,7 @@ Make sure that the redeploy tag coincides with the tag of other database nodes i
 
 After successful redeployment check whether the mentioned above configuration files are available. If not see chapter below [Configuration file restoration](#configuration-file-restoration).
 
-Then open WebSSH session and stop **mysql** service with command:
+Then open [WebSSH](https://www.virtuozzo.com/application-platform-docs/web-ssh-client/) session and stop **mysql** service with command:
 
 ***sudo jem service stop***
 
@@ -144,13 +144,13 @@ After that, go to the Add-Ons tab, find the **Restore and Recovery Add-On** and 
 That's it, if you have successfull information window the databse cluster recovered just make sure the database can handle reads/writes operations properly.
 
 <p align="left"> 
-<img src="../images/success-recovery.png" width="250">
+<img src="../images/success-recovery.png" width="350">
 </p>
 
 In case you are still experiencing probelms with database go and check ***/var/log/db-recovery.log*** file and apply to our support with it.
 
 <p align="left"> 
-<img src="../images/db-recovery-log.png" width="750">
+<img src="../images/db-recovery-log.png" width="800">
 </p> 
 
 
