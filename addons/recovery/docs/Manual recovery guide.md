@@ -158,7 +158,7 @@ In case you are still experiencing probelms with database go and check ***/var/l
 
 In case the configuration file is broken or even absent you can restore it either from file you downloaded at the first step of chapter [Integrity of Configuration Files](#integrity-of-configuration-files) or manually as described below.  
 
-For the Primary-Secondary topology you can use the code provided in this document. For other topologies you can copy respected config file from a healthy node.
+For the Primary-Secondary topology you can use the content of config files provided in this document. For other topologies you can just copy respective config file from a healthy node of the same role.
 
 Then you must replace the nodeID and IP address with the correct ones that belong to your FAILED database server for the parameters depending on replication topology:
 
