@@ -22,7 +22,7 @@ For Primary-Secondary topology there should be a ***/etc/mysql/conf.d/master.cnf
 <img src="../images/primary-secondary-topology.png" width="250">
 </p>
 
-***master.cnf*** for Primary node of Primary-Secondary topology:
+Where the ***master.cnf*** for Primary node of Primary-Secondary topology:
 ```
 [mysqld]
 server-id = 344119
