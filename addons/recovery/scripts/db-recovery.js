@@ -67,7 +67,6 @@ if (isRestore) {
     }
 
     api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
-
     if (!failedNodes.length) {
         return {
             result: !isRestore ? 200 : RESTORE_SUCCESS,
@@ -75,7 +74,7 @@ if (isRestore) {
         };
     }
 
-    if (!scenario || !donorIps[scheme]) {
+    if (!donorIps[scheme]) { //!scenario ||
         return {
             result: UNABLE_RESTORE_CODE,
             type: SUCCESS
@@ -207,6 +206,7 @@ function parseOut(data, restoreMaster) {
                                             address: item.address,
                                             scenario: scenario
                                         });
+                                        restoreMaster = true;
                                     } else {
                                         failedNodes.push({
                                             address: item.address,
@@ -351,25 +351,30 @@ function parseOut(data, restoreMaster) {
                 }
             }
 
-            resp = getNodeIdByIp(failedPrimary[0].address);
-            if (resp.result != 0) return resp;
+            if (failedPrimary[0]) {
+                resp = getNodeIdByIp(failedPrimary[0].address);
+                if (resp.result != 0) return resp;
 
-            resp = execRecovery(failedPrimary[0].scenario, donorIps[scheme], resp.nodeid);
-            if (resp.result != 0) return resp;
-            resp = parseOut(resp.responses);
-            if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
+                resp = execRecovery(failedPrimary[0].scenario, donorIps[scheme], resp.nodeid);
+                if (resp.result != 0) return resp;
+                resp = parseOut(resp.responses);
+                if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
 
-            if (failedNodes.length) {
-                i = failedNodes.length;
-                while (i--) {
-                    if (failedNodes[i].address == failedPrimary[0].address) {
-                        failedNodes.splice(i, 1);
-                        break;
+                if (failedNodes.length) {
+                    i = failedNodes.length;
+                    while (i--) {
+                        if (failedNodes[i].address == failedPrimary[0].address) {
+                            failedNodes.splice(i, 1);
+                            break;
+                        }
                     }
                 }
             }
             failedPrimary = [];
-            donorIps[scheme] = primaryDonorIp;
+
+            if (primaryDonorIp) {
+                donorIps[scheme] = primaryDonorIp;
+            }
         }
 
         return {
