@@ -224,8 +224,10 @@ function parseOut(data, restoreMaster) {
                             }
 
                             if (item.service_status == UP && item.status == OK) {
-                                donorIps[PRIMARY] = item.address;
-                                primaryMasterAddress = item.address;
+                                if (item.node_type == PRIMARY) {
+                                    primaryMasterAddress = item.address;
+                                    donorIps[PRIMARY] = item.address;
+                                }
 
                                 resp = setFailedDisplayNode(item.address, true);
                                 if (resp.result != 0) return resp;
@@ -328,6 +330,10 @@ function parseOut(data, restoreMaster) {
             }
         }
 
+        api.marketplace.console.WriteLog("failedPrimary-> "+ failedPrimary);
+        api.marketplace.console.WriteLog("failedNodes-> "+ failedNodes);
+        api.marketplace.console.WriteLog("primaryMasterAddress-> "+ primaryMasterAddress);
+        api.marketplace.console.WriteLog("donorIps-> "+ donorIps);
         if (isRestore && restoreMaster && failedPrimary.length) { //restoreAll
             if (failedPrimary.length > 1) {
                 primaryEnabledService = primaryMasterAddress || donorIps[scheme];
