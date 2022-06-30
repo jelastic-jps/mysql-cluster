@@ -2,9 +2,13 @@
 <img style="padding: 0 15px; float: left;" src="../images/mysql-mariadb-recovery-white-bg.png" width="70">
 </p>
 
-## Manual Recovery Guide for MariaDB/MySQL Clusters
+## Manual Recovery Guide of Database Servers for MariaDB/MySQL Clusters
 
-In case of automated recovery has failed you can follow this guide to recover crashed database server manualy.
+This guide is an addition to the automatic database recovery flow that is carried out using the [Database Cluster Recovery addon](https://github.com/jelastic-jps/mysql-cluster/tree/master/addons/recovery) within Virtuozzo Appplication Platform. If the automatic recovery fails, the user can use this guide and try to restore the failed database server manually.
+Supported topologies:
+  - [MySQL/MariaDB Primary-Secondary](https://jelastic.com/blog/master-master-slave-replication-mysql-mariadb-auto-clustering/)
+  - [MySQL/MariaDB Primary-Primary](https://jelastic.com/blog/master-master-slave-replication-mysql-mariadb-auto-clustering/)
+  - [MariaDB Galera Cluster](https://jelastic.com/blog/mariadb-galera-cluster-replication/)
 
 ### Recovery steps
 
@@ -16,7 +20,7 @@ Check whether _/etc/mysql/conf.d/\*.cnf_ is available or not on the node marked 
 <img src="../images/failed-slave.png" width="300">
 </p>
 
-For Primary-Secondary topology there should be a ***/etc/mysql/conf.d/master.cnf*** file on the Primary node and ***/etc/mysql/conf.d/slave.cnf*** file on the Secondary node. 
+For the Primary-Secondary topology there should be a ***/etc/mysql/conf.d/master.cnf*** file on the Primary node and ***/etc/mysql/conf.d/slave.cnf*** file on the Secondary node. 
 
 For example we have a topology:
 	 
@@ -24,7 +28,7 @@ For example we have a topology:
 <img src="../images/primary-secondary-topology.png" width="300">
 </p>
 
-Where the ***master.cnf*** for Primary node of Primary-Secondary topology:
+Where the ***master.cnf*** for Primary node of the Primary-Secondary topology:
 ```
 [mysqld]
 server-id = 344119
@@ -42,7 +46,7 @@ read_only = 0
 report_host = node344119
 ```
 
-and ***slave.cnf*** for any Secondary node of of Primary-Secondary topology:
+and ***slave.cnf*** for any Secondary node of the Primary-Secondary topology:
 ```
 [mysqld]
 server-id = 344120
@@ -56,7 +60,7 @@ read_only = 1
 report_host = node344120
 ```
 
-For Primary-Primary topology each Primary node should contain ***master.cnf*** file that looks like:
+For the Primary-Primary topology each Primary node should contain ***master.cnf*** file that looks like:
 
 ```
 [mysqld]
@@ -77,9 +81,9 @@ read_only = 0
 report_host = node344133
 ```
 
-For Primary-Primary topology each Secondary node should contain the same  ***slave.cnf*** file as for Primary-Secondary topology.
+For the Primary-Primary topology each Secondary node should contain the same  ***slave.cnf*** file as for Primary-Secondary topology.
 
-For Galera cluster replication topology each node contains ***/etc/mysql/conf.d/galera.cnf*** and looks as follows:
+For the Galera cluster replication topology each node contains ***/etc/mysql/conf.d/galera.cnf*** and looks as follows:
 
 ```
 [mysqld]
@@ -119,7 +123,7 @@ The next step is to do [Container redeploy](https://www.virtuozzo.com/applicatio
 <img src="../images/redeploy.png" width="750">
 </p>
 
-Once you invoked redeploy dialogue window, swtich the **Keep volume data** toggle into **Off** position. It is required to make sure that the database server will be created from scratch.
+Once you invoked redeploy dialogue window, switch the **Keep volume data** toggle into **Off** position. It is required to make sure that the database server will be created from scratch.
 
 <p align="left"> 
 <img src="../images/keep-volumes-data-off.png" width="350">
@@ -129,13 +133,13 @@ Make sure that the redeploy tag coincides with the tag of other database nodes i
 
 #### Container recovery
 
-After successful redeployment check whether the mentioned above configuration files are available. If not see chapter below [Configuration file restoration](#configuration-file-restoration).
+After successful redeployment check whether the mentioned above configuration files are available. If not, see the chapter below [Configuration file restoration](#configuration-file-restoration).
 
 Then open [WebSSH](https://www.virtuozzo.com/application-platform-docs/web-ssh-client/) session and stop **mysql** service with command:
 
 ***sudo jem service stop***
 
-After that, go to the Add-Ons tab, find the **Restore and Recovery Add-On** and press **Recovery** button.
+After that, go to the Add-Ons tab, find the **Database Cluster Recovery Add-On** and press **Cluster Recovery** button.
 
 <p align="left"> 
 <img src="../images/recovery-button.png" width="750">
