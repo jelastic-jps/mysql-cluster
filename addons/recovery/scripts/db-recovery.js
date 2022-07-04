@@ -48,7 +48,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-api.marketplace.console.WriteLog("start4-> ");
+api.marketplace.console.WriteLog("start5-> ");
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("scheme-> " + scheme);
 resp = execRecovery();
@@ -59,7 +59,8 @@ api.marketplace.console.WriteLog("parseOut resp-> " + resp);
 
 if (isRestore) {
     if (resp.result == AUTH_ERROR_CODE) return resp;
-
+    if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
+    
     if (isMasterFailed) {
         resp = getSlavesOnly();
         if (resp.result != 0) return resp;
