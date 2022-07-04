@@ -52,11 +52,13 @@ api.marketplace.console.WriteLog("start-> ");
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("scheme-> " + scheme);
 resp = execRecovery();
+if (resp.result != 0) return resp;
 
 resp = parseOut(resp.responses, true);
 
 if (isRestore) {
     if (resp.result == AUTH_ERROR_CODE) return resp;
+    if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
 
     if (isMasterFailed) {
         resp = getSlavesOnly();
@@ -100,6 +102,7 @@ function parseOut(data, restoreMaster) {
     var resp,
         nodeid,
         statusesUp = false,
+        clusterFailed = false,
         primaryMasterAddress = "",
         primaryEnabledService = "",
         failedPrimary = [];
@@ -127,10 +130,14 @@ function parseOut(data, restoreMaster) {
                     };
                 }
 
-                if (!item.node_type && !isRestore) {
-                    resp = setFailedDisplayNode(item.address);
-                    if (resp.result != 0) return resp;
-                    continue;
+                if (!item.node_type) {
+                    clusterFailed = true;
+
+                    if (!isRestore) {
+                        resp = setFailedDisplayNode(item.address);
+                        if (resp.result != 0) return resp;
+                        continue;
+                    }
                 }
 
                 if (item.result == 0) {
@@ -381,6 +388,13 @@ function parseOut(data, restoreMaster) {
             if (primaryDonorIp) {
                 donorIps[scheme] = primaryDonorIp;
             }
+        }
+
+        if (clusterFailed) {
+            return {
+                result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
+                type: SUCCESS
+            };
         }
 
         return {
