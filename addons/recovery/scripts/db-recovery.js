@@ -48,7 +48,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-api.marketplace.console.WriteLog("start-> ");
+api.marketplace.console.WriteLog("start0-> ");
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("scheme-> " + scheme);
 resp = execRecovery();
@@ -130,6 +130,7 @@ function parseOut(data, restoreMaster) {
                 if (!item.node_type && !isRestore) {
                     resp = setFailedDisplayNode(item.address);
                     if (resp.result != 0) return resp;
+                    resp.result = FAILED_CLUSTER_CODE;
                     continue;
                 }
 
