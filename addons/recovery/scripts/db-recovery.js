@@ -48,7 +48,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-api.marketplace.console.WriteLog("start1-> ");
+api.marketplace.console.WriteLog("start2-> ");
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("scheme-> " + scheme);
 resp = execRecovery();
@@ -132,7 +132,6 @@ function parseOut(data, restoreMaster) {
                 if (!item.node_type && !isRestore) {
                     resp = setFailedDisplayNode(item.address);
                     if (resp.result != 0) return resp;
-                    resp.result = FAILED_CLUSTER_CODE;
                     clusterFailed = true;
                     continue;
                 }
@@ -386,7 +385,7 @@ function parseOut(data, restoreMaster) {
                 donorIps[scheme] = primaryDonorIp;
             }
         }
-        
+
         if (clusterFailed) {
             return {
                 result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
