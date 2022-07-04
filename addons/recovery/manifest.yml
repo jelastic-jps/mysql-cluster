@@ -28,7 +28,8 @@ buttons:
     action: diagnostic
     
   - name: recovery
-    confirmText: Run cluster recovery?
+    confirmText: |-
+      It is recommended to create <u><i><b><a href="https://www.virtuozzo.com/application-platform-docs/database-backups/">database backup</a></b></i></u> before recovery. Run cluster recovery?
     caption: Cluster Recovery
     loadingText: Cluster recovery is in progress...
     successText: Cluster recovery is finished successfully!
