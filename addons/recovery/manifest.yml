@@ -1,4 +1,5 @@
 type: update
+jpsVersion: 1.5.2
 name: Database Cluster Recovery
 id: db-recovery
 description:
