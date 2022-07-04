@@ -48,13 +48,14 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-api.marketplace.console.WriteLog("start2-> ");
+api.marketplace.console.WriteLog("start3-> ");
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("scheme-> " + scheme);
 resp = execRecovery();
 if (resp.result != 0) return resp;
 
 resp = parseOut(resp.responses, true);
+api.marketplace.console.WriteLog("parseOut resp-> " + resp);
 
 if (isRestore) {
     if (resp.result == AUTH_ERROR_CODE) return resp;
