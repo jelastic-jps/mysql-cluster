@@ -10,7 +10,7 @@ Supported topologies:
   - [MySQL/MariaDB Primary-Primary](https://jelastic.com/blog/master-master-slave-replication-mysql-mariadb-auto-clustering/)
   - [MariaDB Galera Cluster](https://jelastic.com/blog/mariadb-galera-cluster-replication/)
 
-### Recovery steps
+### Recovery Steps
 
 #### Integrity of Configuration Files
 
@@ -115,7 +115,7 @@ wsrep_node_name = node344128
 
 If mentioned files are OK just download them localy.
 
-#### Container redeploy
+#### Container Redeploy
 
 The next step is to do [Container redeploy](https://www.virtuozzo.com/application-platform-docs/container-redeploy/) for failed databaser server node.  This action will result in you having a clean database node.
 
@@ -158,7 +158,7 @@ In case you are still experiencing probelms with database go and check ***/var/l
 </p> 
 
 
-#### Configuration file restoration
+#### Configuration File Restoration
 
 In case the configuration file is broken or even absent you can restore it either from file you downloaded at the first step of chapter [Integrity of Configuration Files](#integrity-of-configuration-files) or manually as described below.  
 
@@ -177,3 +177,41 @@ Then you must replace the nodeID and IP address with the correct ones that belon
  - report_host = node344128
  - wsrep_node_address = 172.25.2.254
  - wsrep_node_name = node344128
+
+### Cluster Recovery When All Nodes Fail
+
+In case of all the nodes in the database cluster are failed it is not possible to recover cluster for the topologies:
+  - MySQL/MariaDB Primary-Secondary
+  - MySQL/MariaDB Primary-Primary  
+
+In such a case you can re-create cluster from scratch using database backup if you have one.
+
+But for Galera cluster you can try to follow three simple steps to get it back. Open WebSSH session on each cluster node and stop mariadb service:
+
+***$ sudo jem service stop*** 
+
+Then issue the command as follows on each cluster node in order to obtain **Recovered position** value:
+
+***$ mysqld --wsrep-recover***
+
+then go to the log file */var/log/mysql/mysqld.log* and get the value:
+
+<p align="left"> 
+<img src="../images/wsrep-position-log.png" width="750">
+</p>
+
+In the example the value is **8**.
+Compare the *Recovered position* on all nodes. The one with the highest value should be used for bootstrap. Once again, choose any node if multiple ones have the highest value. Next, set the **safe_to_bootstrap** variable to **1** in the ***/var/lib/mysql/grastate.dat*** file: 
+
+***$ vim /var/lib/mysql/grastate.dat***
+
+<p align="left"> 
+<img src="../images/bootstrap.png" width="350">
+</p>
+
+and bootstrap from this node issuing command on each node one by one:
+
+***$ sudo jem service start***
+
+Thus cluster will be initialized from the node with the highest *Recovered postion*.
+Press diagnostic button on the add-on to make sure the cluster got back into operation.
