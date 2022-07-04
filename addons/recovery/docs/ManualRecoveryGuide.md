@@ -203,6 +203,8 @@ then go to the log file */var/log/mysql/mysqld.log* and get the value:
 In the example the value is **8**.
 Compare the *Recovered position* on all nodes. The one with the highest value should be used for bootstrap. Once again, choose any node if multiple ones have the highest value. Next, set the **safe_to_bootstrap** variable to **1** in the ***/var/lib/mysql/grastate.dat*** file: 
 
+***$ vim /var/lib/mysql/grastate.dat***
+
 <p align="left"> 
 <img src="../images/bootstrap.png" width="350">
 </p>
