@@ -48,10 +48,11 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
         }
     }
 }
-api.marketplace.console.WriteLog("start0-> ");
+api.marketplace.console.WriteLog("start1-> ");
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("scheme-> " + scheme);
 resp = execRecovery();
+if (resp.result != 0) return resp;
 
 resp = parseOut(resp.responses, true);
 
@@ -100,6 +101,7 @@ function parseOut(data, restoreMaster) {
     var resp,
         nodeid,
         statusesUp = false,
+        clusterFailed = false,
         primaryMasterAddress = "",
         primaryEnabledService = "",
         failedPrimary = [];
@@ -131,6 +133,7 @@ function parseOut(data, restoreMaster) {
                     resp = setFailedDisplayNode(item.address);
                     if (resp.result != 0) return resp;
                     resp.result = FAILED_CLUSTER_CODE;
+                    clusterFailed = true;
                     continue;
                 }
 
@@ -382,6 +385,13 @@ function parseOut(data, restoreMaster) {
             if (primaryDonorIp) {
                 donorIps[scheme] = primaryDonorIp;
             }
+        }
+        
+        if (clusterFailed) {
+            return {
+                result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
+                type: SUCCESS
+            };
         }
 
         return {
