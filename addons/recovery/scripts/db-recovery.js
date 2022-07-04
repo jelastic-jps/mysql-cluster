@@ -130,11 +130,14 @@ function parseOut(data, restoreMaster) {
                     };
                 }
 
-                if (!item.node_type && !isRestore) {
-                    resp = setFailedDisplayNode(item.address);
-                    if (resp.result != 0) return resp;
+                if (!item.node_type) {
                     clusterFailed = true;
-                    continue;
+
+                    if (!isRestore) {
+                        resp = setFailedDisplayNode(item.address);
+                        if (resp.result != 0) return resp;
+                        continue;
+                    }
                 }
 
                 if (item.result == 0) {
@@ -387,6 +390,7 @@ function parseOut(data, restoreMaster) {
             }
         }
 
+        api.marketplace.console.WriteLog("clusterFailed-> "+ clusterFailed);
         if (clusterFailed) {
             return {
                 result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
