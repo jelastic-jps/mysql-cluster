@@ -617,7 +617,7 @@ init(){
   execAction 'setReplicaUserFromEnv' 'Set replica user from environment variables'
 }
 
-which jq >/dev/null 2>&1 || { yum -y -q install jq >/dev/null 2>&1 || echo '{"result":99,"scenario":"init","address":"","error":"Install jq utility failed"}'; }
+which jq >/dev/null 2>&1 || { yum -q -y --disablerepo='*' --enablerepo='epel' install jq >/dev/null 2>&1 || echo '{"result":99,"scenario":"init","address":"","error":"Install jq utility failed"}'; }
 
 if [[ "${diagnostic}" == "YES" ]]; then
   log ">>>BEGIN DIAGNOSTIC"
