@@ -120,10 +120,8 @@ actions:
     script: /scripts/db-recovery.js
     
   init:
-    - cmd[sqldb]: |-
-        curl --silent ${baseUrl}/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
-        bash /tmp/db-recovery.sh --mysql-user ${settings.user} --mysql-password ${settings.password} --scenario init;
-      user: root
+    script: /scripts/db-recovery.js
+    init: ' --mysql-user ${settings.user} --mysql-password ${settings.password} --scenario init'
 
   generate-share-keys:
     - cmd[${nodes.sqldb.master.id}]: |-
