@@ -37,6 +37,7 @@ if (init) {
     if (resp.result != 0) return resp;
 
     resp = parseOut(resp.responses);
+    if (resp.result != 0) return resp;
 }
 
 if (!exec) isRestore = true;
