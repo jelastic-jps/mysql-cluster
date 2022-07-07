@@ -1,5 +1,6 @@
 var SQLDB = "sqldb",
     AUTH_ERROR_CODE = 701,
+    ERROR_INIT_ACTION = 97,
     UNABLE_RESTORE_CODE = 98,
     FAILED_CLUSTER_CODE = 99,
     RESTORE_SUCCESS = 201,
@@ -141,7 +142,7 @@ function parseOut(data, restoreMaster) {
                 if (!item.node_type) {
                     clusterFailed = true;
 
-                    if (!isRestore) {
+                    if (!isRestore && item.address) {
                         resp = setFailedDisplayNode(item.address);
                         if (resp.result != 0) return resp;
                         continue;
@@ -169,7 +170,7 @@ function parseOut(data, restoreMaster) {
                                     scenario: scenario
                                 });
 
-                                if (!isRestore) {
+                                if (!isRestore && item.address) {
                                     resp = setFailedDisplayNode(item.address);
                                     if (resp.result != 0) return resp;
                                 }
@@ -182,7 +183,7 @@ function parseOut(data, restoreMaster) {
                             //     };
                             // }
 
-                            if (item.service_status == UP && item.status == OK) {
+                            if (item.service_status == UP && item.status == OK && item.address) {
                                 resp = setFailedDisplayNode(item.address, true);
                                 if (resp.result != 0) return resp;
                             }
@@ -206,7 +207,7 @@ function parseOut(data, restoreMaster) {
                                     }
                                 }
 
-                                if (!isRestore) {
+                                if (!isRestore && item.address) {
                                     resp = setFailedDisplayNode(item.address);
                                     if (resp.result != 0) return resp;
                                 }
@@ -244,8 +245,10 @@ function parseOut(data, restoreMaster) {
                                     donorIps[PRIMARY] = item.address;
                                 }
 
-                                resp = setFailedDisplayNode(item.address, true);
-                                if (resp.result != 0) return resp;
+                                if (item.address) {
+                                    resp = setFailedDisplayNode(item.address, true);
+                                    if (resp.result != 0) return resp;
+                                }
                             }
 
                             break;
@@ -253,7 +256,7 @@ function parseOut(data, restoreMaster) {
                         case SECONDARY:
                             if (item.service_status == DOWN || item.status == FAILED) {
 
-                                if (!isRestore) {
+                                if (!isRestore && item.address) {
                                     resp = setFailedDisplayNode(item.address);
                                     if (resp.result != 0) return resp;
                                 }
@@ -306,8 +309,10 @@ function parseOut(data, restoreMaster) {
                                 donorIps[SECONDARY] = item.address;
                                 statusesUp = true;
 
-                                resp = setFailedDisplayNode(item.address, true);
-                                if (resp.result != 0) return resp;
+                                if (item.address) {
+                                    resp = setFailedDisplayNode(item.address, true);
+                                    if (resp.result != 0) return resp;
+                                }
                             } else if (!statusesUp && item.node_type == SECONDARY && item.service_status == UP) {
                                 donorIps[SECONDARY] = item.address;
                             }
@@ -321,7 +326,7 @@ function parseOut(data, restoreMaster) {
                 } else {
                     if (init && item.result == FAILED_CLUSTER_CODE) {
                         return {
-                            result: FAILED_CLUSTER_CODE,
+                            result: ERROR_INIT_ACTION,
                             message: item.error,
                             type: WARNING
                         }
