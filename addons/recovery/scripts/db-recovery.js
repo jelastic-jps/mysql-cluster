@@ -32,7 +32,10 @@ var SQLDB = "sqldb",
     resp;
 
 if (init) {
-    return execRecovery(init);
+    resp = execRecovery(init);
+    if (resp.result != 0) return resp;
+
+    resp = parseOut(resp.responses);
 }
 
 if (!exec) isRestore = true;
@@ -316,6 +319,14 @@ function parseOut(data, restoreMaster) {
                             break;
                     }
                 } else {
+                    if (init && item.result == FAILED_CLUSTER_CODE) {
+                        return {
+                            result: FAILED_CLUSTER_CODE,
+                            message: item.error,
+                            type: WARNING
+                        }
+                    }
+
                     return {
                         result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
                         type: SUCCESS
