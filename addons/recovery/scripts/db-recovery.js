@@ -5,6 +5,7 @@ var SQLDB = "sqldb",
     RESTORE_SUCCESS = 201,
     envName = "${env.name}",
     exec = getParam('exec', ''),
+    init = getParam('init', ''),
     failedNodes = [],
     isMasterFailed = false,
     GALERA = "galera",
@@ -29,6 +30,10 @@ var SQLDB = "sqldb",
     scheme,
     item,
     resp;
+
+if (init) {
+    return execRecovery(init);
+}
 
 if (!exec) isRestore = true;
 exec = exec || " --diagnostic";
@@ -482,7 +487,11 @@ function execRecovery(scenario, donor, nodeid) {
     if (scenario && donor) {
         action = scenario + " --donor-ip " +  donor;
     } else {
-        action = exec;
+        if (scenario && !donor) {
+            action = scenario;
+        } else {
+            action = exec;
+        }
     }
 
     api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
