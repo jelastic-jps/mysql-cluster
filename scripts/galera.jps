@@ -3,7 +3,7 @@ id: mysql-galera-cluster
 name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-63275
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-63374
 
 success:
   text: /texts/phpmyadmin-credentials.md
