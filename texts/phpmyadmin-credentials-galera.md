@@ -12,4 +12,4 @@ Keep in mind the Galera cluster database shall comply with the requirements:
   
 **Note**: Ignoring these requirements will result in replication failure.
 
-**Note**: "Check the database add-ons tab to be aware about extended functionality available".
+**Note**: Check the database add-ons tab to be aware about extended functionality available.
