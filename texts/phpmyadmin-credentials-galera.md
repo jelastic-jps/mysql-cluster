@@ -11,3 +11,5 @@ Keep in mind the Galera cluster database shall comply with the requirements:
   2. **Primary Keys**.  Every table that is to be replicated must have an explicit primary key, either a single or a multi-column index.  
   
 **Note**: Ignoring these requirements will result in replication failure.
+
+**Note**: "Check the database add-ons tab to be aware about extended functionality available".
