@@ -10,8 +10,11 @@ logo: /images/database-recovery.png
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery
 
 targetNodes:
-  nodeGroup: sqldb
-
+  nodeType:
+    - mysql
+    - mariadb-dockerized
+    - mariadb
+    
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/common.yml
 
@@ -75,12 +78,14 @@ responses:
       An error occurs while recovering the Database Cluster.  
       Please check the **/var/log/db_recovery.log** log file for details.
       Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+
   99:
     type: success
     message: |
       Errors were discovered during the Database Cluster diagnostic.
       Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
       Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+
 actions:
   clusterValidate:
     - script: |
@@ -93,6 +98,7 @@ actions:
             isCluster = true;
         }
         return { result: 0, isCluster: isCluster };
+
     - if (!${response.isCluster:false} && !${settings.install:false}):
         return:
           type: warning
@@ -117,8 +123,10 @@ actions:
     script: /scripts/db-recovery.js
     
   init:
-    script: /scripts/db-recovery.js
-    init: ' --mysql-user ${settings.user} --mysql-password ${settings.password} --scenario init'
+    - cmd[sqldb]: |-
+        curl --silent ${baseUrl}/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        bash /tmp/db-recovery.sh --mysql-user ${settings.user} --mysql-password ${settings.password} --scenario init;
+      user: root
 
   generate-share-keys:
     - cmd[${nodes.sqldb.master.id}]: |-
