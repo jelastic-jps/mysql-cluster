@@ -70,14 +70,14 @@ responses:
     message: Database Cluster recovery has been finished successfully!
 
   98:
-    type: success
+    type: warning
     message: |
       An error occurs while recovering the Database Cluster.  
       Please check the **/var/log/db_recovery.log** log file for details.
       Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
   99:
-    type: success
+    type: warning
     message: |
       Errors were discovered during the Database Cluster diagnostic.
       Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
