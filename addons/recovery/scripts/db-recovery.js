@@ -79,7 +79,7 @@ if (isRestore) {
     if (!donorIps[scheme]) { //!scenario ||
         return {
             result: UNABLE_RESTORE_CODE,
-            type: SUCCESS
+            type: WARNING
         }
     }
 
@@ -313,7 +313,7 @@ function parseOut(data, restoreMaster) {
                 } else {
                     return {
                         result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
-                        type: SUCCESS
+                        type: WARNING
                     };
                 }
             }
@@ -322,7 +322,7 @@ function parseOut(data, restoreMaster) {
         if (!isRestore && (failedNodes.length || failedPrimary.length)) {
             return {
                 result: FAILED_CLUSTER_CODE,
-                type: SUCCESS
+                type: WARNING
             };
         }
 
@@ -333,7 +333,7 @@ function parseOut(data, restoreMaster) {
         if ((!scenario || !donorIps[scheme]) && failedNodes.length) {
             return {
                 result: UNABLE_RESTORE_CODE,
-                type: SUCCESS
+                type: WARNING
             }
         }
 
@@ -393,7 +393,7 @@ function parseOut(data, restoreMaster) {
         if (clusterFailed) {
             return {
                 result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
-                type: SUCCESS
+                type: WARNING
             };
         }
 
