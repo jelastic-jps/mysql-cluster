@@ -99,6 +99,7 @@ REPLICATION_INFO='/var/lib/mysql/primary-position.info'
 SUCCESS_CODE=0
 FAIL_CODE=99
 AUTHORIZATION_ERROR_CODE=701
+CORRUPT_CHECK_FAIL_CODE=97
 NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
 
 
@@ -227,6 +228,8 @@ execAction(){
   local result=${FAIL_CODE}
 
   [[ "${action}" == 'checkAuth' ]] && result=${AUTHORIZATION_ERROR_CODE}
+  [[ "${action}" == 'liveMysqlCheck' ]] && result=${CORRUPT_CHECK_FAIL_CODE}
+  [[ "${action}" == 'offlineMysqlCheck' ]] && result=${CORRUPT_CHECK_FAIL_CODE}
   stderr=$( { ${action}; } 2>&1 ) && { log "${message}...done"; } || {
     error="${message} failed, please check ${RUN_LOG} for details"
     execResponse "${result}" "${error}"
