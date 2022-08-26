@@ -16,37 +16,39 @@ mixins:
   - /scripts/common.yml
 
 globals:
-  PATH: "${settings.path}"
-  DB_USER: "${settings.db_user}"
-  DB_PASS: "${settings.db_pass}"
-  SCHEME: "${settings.scheme}"
-  CUSTOM_CONF: "${settings.custom_conf}"
+  PATH: ${settings.path}
+  DB_USER: ${settings.db_user}
+  DB_PASS: ${settings.db_pass}
+  SCHEME: ${settings.scheme}
 
-onBeforeCloneNodes[sqldb]:
-  - getReplicaUser
-  - importGlobalsFromNodeGroup: sqldb
-  - script: |
-      var nodeCount = [];
-      for (var i = 0, n = ${event.params.count}; i < n; i ++) 
-        nodeCount.push(i);
-      return { result : 0, nodeCount: nodeCount}
-  - forEach(response.nodeCount):
-    - cloneSlave
-  - exportsGlobalsToNodeGroup
-  - stopEvent:
-      type: success
-      message: New secondaries successfully added
+onAfterScaleOut[sqldb]:
+  - forEach(event.response.nodes):
+    - setupSlave: ${@i.id}
+    - addSlave: ${@i.id}
+
+onAfterMigrate:
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    settings:
+      path: ${globals.PATH}
+      nodeGroup: ${settings.nodeGroup}
+      clone: true
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
-    envName: ${event.response.env.envName}    
-    settings: 
-      nodeGroup: ${settings.nodeGroup}      
+    envName: ${event.response.env.envName}
+    settings:
+      path: ${globals.PATH}
+      nodeGroup: ${settings.nodeGroup}
       clone: true
 
 onInstall:
   - getReplicaUser
+  - getMasterNodes
+  - setupMasters
+  
+  
   - if (${settings.clone:false}):
     - importGlobalsFromNodeGroup: sqldb
     - getMastersIDs
@@ -72,104 +74,45 @@ actions:
         id: "${globals.master2_id}"
         increment: 2
   
-  setMastersIDs:
+  getMasterNodes:
     - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
         setGlobals:
-          master1_id: ${nodes.sqldb.master.id}
-          master2_id: ${nodes.sqldb[1].id}
+          primary1_id: ${nodes.sqldb[0].id}
+          primary1_ip: ${nodes.sqldb[0].address}
+          primary2_id: ${nodes.sqldb[1].id}
+          primary2_ip: ${nodes.sqldb[1].address}
     - else:
         setGlobals:
-          master1_id: ${nodes.sqldb.master.id}
-          master2_id: ${nodes.sqldb.first.id}
-    - setGlobals:
-        master_id_for_new_slave: ${globals.master1_id}
-        node_id_for_new_slave: ${globals.master2_id}
-
-  getMastersIDs:
-    - script: |
-        var envInfo, resp, groups,
-            onAfterReturn = { setGlobals: {} },
-            glbs = onAfterReturn.setGlobals;
-        resp = jelastic.env.control.ExecCmdByGroup('${env.envName}', session, "sqldb", toJSON([{ "command": '[ -f "/etc/mysql/conf.d/master.cnf" ] && echo "YES" || echo "NO";' }]), false, false, "root");
-        if (resp.result != 0) return resp;
-        groups = resp.responses;
-        for (var i = 0, n = groups.length; i < n; i++) {
-          if (groups[i].out == "YES") {
-            envInfo = jelastic.env.control.GetEnvInfo('${env.envName}', session);
-            for (var node = 0, nodes = envInfo.nodes; node < nodes.length; node++) {
-              if (nodes[node].id == groups[i].nodeid)
-                nodes[node].ismaster ? glbs["master1_id"] = groups[i].nodeid : glbs["master2_id"] = groups[i].nodeid;
-            }
-          }
-        }
-        return { result: 0, onAfterReturn: onAfterReturn };
-    - setGlobals:
-        master_id_for_new_slave: ${globals.master1_id}
-        node_id_for_new_slave: ${globals.master2_id}
-
-  setMasterForNewSlave:
-    - script: |
-        var onAfterReturn = { setGlobals: {} },
-            glbs = onAfterReturn.setGlobals;
-        if ('${globals.master_id_for_new_slave}' == '${globals.master1_id}') {
-          glbs["master_id_for_new_slave"] = '${globals.master2_id}';
-          glbs["node_id_for_new_slave"] = '${globals.master1_id}';
-        }
-        else {
-          glbs["master_id_for_new_slave"] = '${globals.master1_id}';
-          glbs["node_id_for_new_slave"] = '${globals.master2_id}';
-        }
-        return { result: 0, onAfterReturn: onAfterReturn };
+          primary1_id: ${nodes.sqldb.master.id}
+          primary1_ip: ${nodes.sqldb.master.address}
+          primary2_id: ${nodes.sqldb[1].id}
+          primary2_ip: ${nodes.sqldb[1].address}
 
   setupMasters:
     - setupMaster:
-        id: "${globals.master1_id}"
+        id: ${globals.primary1_id}
         increment: 1
     - setupMaster:
-        id: "${globals.master2_id}"
+        id: ${globals.primary2_id}
         increment: 2
-    - setupReplication:
-        id: "${globals.master1_id}"
-        masterId: "${globals.master2_id}"
-    - setupReplication:
-        id: "${globals.master2_id}"
-        masterId: "${globals.master1_id}"
     
-  setupReplication:
-    - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
-        cmd[${this.id}]: |-
-          yum install https://downloads.mysql.com/archives/get/p/29/file/mysql-connector-python-8.0.11-1.el7.x86_64.rpm -y &>> /var/log/run.log
-          yum install https://downloads.mysql.com/archives/get/p/30/file/mysql-utilities-1.6.5-1.el7.noarch.rpm -y &>> /var/log/run.log
-          ln -s /usr/lib/python2.7/site-packages/mysql/utilities /usr/lib64/python2.7/site-packages/mysql/utilities
-        user: root
-    - cmd[${this.id}]: |-
-        wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
-        bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICA_USER} ${globals.REPLICA_PSWD} &>> /var/log/run.log
-      user: root
-
   setupMaster:
-    - addCustomConfig:
-        id: "${this.id}"
     - cmd[${this.id}]: |-
-        [ -f "/etc/mysql/conf.d/slave.cnf" ] && rm -f /etc/mysql/conf.d/slave.cnf;
         wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf; 
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
         sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf
     - setupUsers:
-        id: "${this.id}"
+        id: ${this.id}
     - setNodeDisplayName[${this.id}]: Primary
 
   setupSlave:
-    - addCustomConfig:
-        id: "${this.id}"
     - cmd[${this.id}]: |-
-        [ -f "/etc/mysql/conf.d/master.cnf" ] && rm -f /etc/mysql/conf.d/master.cnf;
         wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log;
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf;
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
     - setupUsers:
-        id: "${this.id}"
+        id: ${this.id}
     - setNodeDisplayName[${this.id}]: Secondary
   
   addSlaves:
