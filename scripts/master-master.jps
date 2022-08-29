@@ -112,7 +112,7 @@ actions:
             id: ${this}
 
   setupSecondaryReplication:
-    cmd[${this}]: |-
+    cmd[${this.id}]: |-
       mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
       if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "STOP ALL SLAVES;;"; fi;
       if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CHANGE MASTER 'PRIM1' TO MASTER_HOST='${globals.primary1_ip}', MASTER_USER='${globals.REPLICA_USER}', MASTER_PASSWORD='${globals.REPLICA_PSWD}';"; fi;
