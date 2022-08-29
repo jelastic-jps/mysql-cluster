@@ -7,11 +7,11 @@ description:
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 logo: /images/database-recovery.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-63333/addons/recovery
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-62800-test/addons/recovery
 
 targetNodes:
   nodeGroup: sqldb
-
+    
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/common.yml
 
@@ -19,6 +19,14 @@ globals:
   ssh_root: /root/.ssh/
   ssh-key: id_rsa_db_monitoring
   tmp: /tmp/
+  DIAGNOSTIC_FAILED: |-
+    Errors were discovered during the Database Cluster diagnostic.
+    Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
+    Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+  RECOVERY_FAILED: |-
+    An error occurs while recovering the Database Cluster.  
+    Please check the **/var/log/db_recovery.log** log file for details.
+    Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
 buttons:
   - name: diagnostic
@@ -50,16 +58,64 @@ settings:
       inputType: password
       required: true
 
-onAfterScaleOut[sqldb]: generate-share-keys
+onAfterScaleOut[sqldb]: generate-share-keys  
 
-onAfterRedeployContainer[sqldb]: generate-share-keys
+onBeforeStart:
+  if (!${event.params.internal:false}):
+    - api: env.control.StartEnv
+      internal: true
+    - diagnostic:
+        event: true
+    - if (response.isDiagnosticsResultOk == false):
+        stopEvent:
+          type: warning
+          message: ${globals.DIAGNOSTIC_FAILED}
 
-onAfterClone:
-  install: ${baseUrl}/manifest.yml?_r=${fn.random}
-  envName: ${event.response.env.envName}
-  nodeGroup: ${targetNodes.nodeGroup}
-  settings:
-    user: ${settings.user}
+onBeforeRestartNode[sqldb]:
+  if (!${event.params.internal:false}):
+    - api: env.control.RestartNodes
+      nodeGroup: sqldb
+      internal: true
+    - diagnostic:
+        event: true
+    - if (response.isDiagnosticsResultOk == false):
+        stopEvent:
+          type: warning
+          message: ${globals.DIAGNOSTIC_FAILED}
+
+onBeforeChangeTopology:
+  if (!${event.params.internal:false}):
+    - api: env.control.ChangeTopology
+      envName: ${env.name}
+      env: ${event.params.env}
+      nodes: ${event.params.nodes}
+      internal: true
+    - diagnostic:
+        event: true
+    - if (response.isDiagnosticsResultOk == false):
+        stopEvent:
+          type: warning
+          message: ${globals.DIAGNOSTIC_FAILED}
+
+onBeforeRedeployContainer[sqldb]: 
+  - generate-share-keys
+  - if (!${event.params.internal:false}):
+      - api: env.control.RedeployContainers
+        nodeGroup: sqldb
+        internal: true
+      - diagnostic:
+          event: true
+      - if (response.isDiagnosticsResultOk == false):
+          stopEvent:
+            type: warning
+            message: ${globals.DIAGNOSTIC_FAILED}
+
+onAfterClone:	
+  install: ${baseUrl}/manifest.yml?_r=${fn.random}	
+  envName: ${event.response.env.envName}	
+  nodeGroup: ${targetNodes.nodeGroup}	
+  settings:	
+    user: ${settings.user}	
     password: ${settings.password}
 
 onInstall:
@@ -79,18 +135,12 @@ responses:
     message: Database Cluster recovery has been finished successfully!
 
   98:
-    type: warning
-    message: |
-      An error occurs while recovering the Database Cluster.  
-      Please check the **/var/log/db_recovery.log** log file for details.
-      Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+    type: success
+    message: ${globals.RECOVERY_FAILED}
 
   99:
-    type: warning
-    message: |
-      Errors were discovered during the Database Cluster diagnostic.
-      Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
-      Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+    type: success
+    message: ${globals.DIAGNOSTIC_FAILED}
 
 actions:
   clusterValidate:
@@ -124,6 +174,7 @@ actions:
   diagnostic:
     script: /scripts/db-recovery.js
     exec: ' --diagnostic'
+    event: ${this.event:}
 
   recovery:
     script: /scripts/db-recovery.js
