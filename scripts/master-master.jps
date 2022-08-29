@@ -47,7 +47,7 @@ onInstall:
   - getReplicaUser
   - getMasterNodes
   - setupMasters
-  - setupPrimaryPrimaryReplication
+  - addSlaves
 
 actions:
 
@@ -72,6 +72,7 @@ actions:
     - setupMaster:
         id: ${globals.primary2_id}
         increment: 2
+    - setupPrimaryPrimaryReplication
     
   setupMaster:
     - cmd[${this.id}]: |-
@@ -104,11 +105,16 @@ actions:
         addNewSlave: ${@n.id}
   
   addNewSlave:
-    - if (('${this}' != '${globals.master1_id}') && ('${this}' != '${globals.master2_id}')):
+    - if (('${this}' != '${globals.primary1_id}') && ('${this}' != '${globals.primary2_id}')):
         - setupSlave:
             id: ${this}
-        - setupReplication:
+        - setupSecondaryReplication:
             id: ${this}
-            masterId: "${globals.master_id_for_new_slave}"
 
-      
+  setupSecondaryReplication:
+    cmd[${this}]: |-
+      mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
+      if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "STOP ALL SLAVES;;"; fi;
+      if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CHANGE MASTER 'PRIM1' TO MASTER_HOST='${globals.primary1_ip}', MASTER_USER='${globals.REPLICA_USER}', MASTER_PASSWORD='${globals.REPLICA_PSWD}';"; fi;
+      if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CHANGE MASTER 'PRIM2' TO MASTER_HOST='${globals.primary2_ip}', MASTER_USER='${globals.REPLICA_USER}', MASTER_PASSWORD='${globals.REPLICA_PSWD}';"; fi;
+      if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "START ALL SLAVES;"; fi;
