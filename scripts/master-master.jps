@@ -47,33 +47,10 @@ onInstall:
   - getReplicaUser
   - getMasterNodes
   - setupMasters
-  
-  
-  - if (${settings.clone:false}):
-    - importGlobalsFromNodeGroup: sqldb
-    - getMastersIDs
-    - if (('${globals.master2_id}' != '${nodes.sqldb[0].id}') && ('${globals.master2_id}' != '${nodes.sqldb[1].id}')):
-      - assignNewMaster
-    - reconfigureMasters
-    - reconfigureSlaves
-    - exportsGlobalsToNodeGroup
-  - else:
-    - setMastersIDs
-    - setupMasters
-    - addSlaves
-    - exportsGlobalsToNodeGroup
-    - setScalingMode
+  - setupPrimaryPrimaryReplication
 
 actions:
 
-  assignNewMaster:
-    - setupSlave:
-        id: ${globals.master2_id}
-    - setMastersIDs
-    - setupMaster:
-        id: "${globals.master2_id}"
-        increment: 2
-  
   getMasterNodes:
     - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
         setGlobals:
@@ -100,8 +77,9 @@ actions:
     - cmd[${this.id}]: |-
         wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf; 
-        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
-        sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf
+        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf;
+        sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf;
+        sed -i '/log-slave-updates/d' /etc/mysql/conf.d/master.cnf;
     - setupUsers:
         id: ${this.id}
     - setNodeDisplayName[${this.id}]: Primary
@@ -111,9 +89,15 @@ actions:
         wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log;
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf;
         sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
+        sed -i '/log-slave-updates/d' /etc/mysql/conf.d/slave.cnf;
     - setupUsers:
         id: ${this.id}
     - setNodeDisplayName[${this.id}]: Secondary
+    
+  setupPrimaryPrimaryReplication:
+    cmd[${globals.primary2_id}]: |-
+      curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh;
+      bash /tmp/db-recovery.sh  --scenario restore_primary_from_primary --donor-ip ${globals.primary1_id}
   
   addSlaves:
     - forEach(n:nodes.sqldb):
@@ -126,90 +110,5 @@ actions:
         - setupReplication:
             id: ${this}
             masterId: "${globals.master_id_for_new_slave}"
-        - setMasterForNewSlave
 
-  reconfigureReplication:
-    cmd[${this.id}]: |-
-      rm -f /var/lib/mysql/auto.cnf;
-      sed -i "s/report_host.*/report_host = node${this.id}/" ${this.config};
-      sed -i "s/server-id.*/server-id = ${this.id}/" ${this.config};
-      mysqlreplicate --master=${globals.DB_USER}:${globals.DB_PASS}@node${this.master_id}:3306 --slave=${globals.DB_USER}:${globals.DB_PASS}@node${this.id}:3306 --rpl-user=${globals.REPLICA_USER}:${globals.REPLICA_PSWD}
-      sudo /etc/init.d/mysql restart;
-
-  reconfigureMasters:
-    - reconfigureReplication:
-        id: "${globals.master1_id}"
-        master_id: "${globals.master2_id}"
-        config: "/etc/mysql/conf.d/master.cnf"
-    - reconfigureReplication:
-        id: "${globals.master2_id}"
-        master_id: "${globals.master1_id}"
-        config: "/etc/mysql/conf.d/master.cnf"
-
-  reconfigureSlaves:
-    - forEach(n:nodes.sqldb):
-        reconfigureSlave: ${@n.id}
-    
-  reconfigureSlave:  
-    - if (('${this}' != '${globals.master1_id}') && ('${this}' != '${globals.master2_id}')):
-      - reconfigureReplication:
-          id: ${this}
-          master_id: "${globals.master_id_for_new_slave}"
-          config: "/etc/mysql/conf.d/slave.cnf"
-      - setMasterForNewSlave
-  
-  addCustomConfig:
-    if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
-      cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
       
-  cloneSlave:
-    - if (nodes.proxy):
-        cmd[proxy]: |-
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='OFFLINE_HARD' where hostname='node${globals.node_id_for_new_slave}';"
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
-    - cmd[${globals.node_id_for_new_slave}]: sudo /etc/init.d/mysql stop
-    - api: environment.control.AddNode
-      nodeGroup: sqldb
-      nodeid: ${globals.node_id_for_new_slave}
-      nodeType: ${nodes.sqldb.nodeType}
-      flexibleCloudlets: ${nodes.sqldb.flexibleCloudlets}
-      fixedCloudlets: ${nodes.sqldb.fixedCloudlets}
-    - set:
-        new_slave_id: ${response.node.id}
-    - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
-    - setupSlave:
-        id: "${this.new_slave_id}"
-    - reconfigureReplication:
-        id: "${this.new_slave_id}"
-        master_id: "${globals.master_id_for_new_slave}"
-        config: "/etc/mysql/conf.d/slave.cnf"
-    - cmd[${globals.node_id_for_new_slave}]: sudo /etc/init.d/mysql start
-    - if (nodes.proxy):
-        cmd[proxy]: |-
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='ONLINE' where hostname='node${globals.node_id_for_new_slave}';"
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
-    - setMasterForNewSlave
-    
-  setScalingMode:
-    - api: jelastic.env.control.ApplyNodeGroupData
-      nodeGroup: sqldb
-      data:
-        scalingMode: STATEFUL
-
-  importGlobalsFromNodeGroup:
-    - script: |
-        var resp = api.env.control.GetNodeGroups("${env.name}", session);
-        if (resp.result != 0) return resp;
-        var groups = resp.object, globals;
-        for (var i = 0, n = groups.length; i < n; i++)
-          if (groups[i].name == "${this}" && groups[i].globals) {
-            globals = new org.yaml.snakeyaml.Yaml().load(groups[i].globals);
-            break;
-          }
-        return { result: 0, onAfterReturn: { setGlobals: globals } };
-
-  exportsGlobalsToNodeGroup:
-    - env.control.ApplyNodeGroupData [sqldb]:
-        data: 
-          globals: "${globals.toJSON()}" 
-  
