@@ -54,16 +54,16 @@ actions:
   getMasterNodes:
     - if ('${nodes.sqldb.master.id}' == '${nodes.sqldb.first.id}'):
         setGlobals:
-          primary1_id: ${nodes.sqldb[0].id}
-          primary1_ip: ${nodes.sqldb[0].address}
+          primary1_id: ${nodes.sqldb.master.id}
+          primary1_ip: ${nodes.sqldb.master.address}
           primary2_id: ${nodes.sqldb[1].id}
           primary2_ip: ${nodes.sqldb[1].address}
     - else:
         setGlobals:
           primary1_id: ${nodes.sqldb.master.id}
           primary1_ip: ${nodes.sqldb.master.address}
-          primary2_id: ${nodes.sqldb[1].id}
-          primary2_ip: ${nodes.sqldb[1].address}
+          primary2_id: ${nodes.sqldb.first.id}
+          primary2_ip: ${nodes.sqldb.first.address}
 
   setupMasters:
     - setupMaster:
