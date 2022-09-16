@@ -34,7 +34,7 @@ settings:
 buttons:
   - name: corruption
     caption: Corruption Diagnostic
-    confirmText: Run cluster corruption diagnostic?
+    confirmText: Run cluster corruption diagnostic? It will temporarily stop all database services.
     loadingText: Corruption diagnostic is in progress...
     logsPath: /var/log/db_recovery.log
     action: corruption
