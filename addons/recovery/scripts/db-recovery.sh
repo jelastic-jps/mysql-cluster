@@ -20,6 +20,11 @@ case $key in
     shift
     shift
     ;;
+    --additional-primary)
+    ADDITIONAL_PRIMARY=$2
+    shift
+    shift
+    ;;
     --scenario)
     SCENARIO=$2
     shift
@@ -49,6 +54,7 @@ echo "              --mysql-user - MySQL user with the LOCK TABLES privileges [U
 echo "              --mysql-password - MySQL user password [USED FOR INIT ONLY]"
 echo "              --donor-ip - IP address of the operable MySQL server from which the failed node will be restored"
 echo "                           In the case of Galera cluster recovery, skip this parameter"
+echo "              --additional-primary - IP address of additional primary MySQL server. This parameter should be used in multi slave configuration"
 echo "              --scenario - Restoration scenario; the following arguments are supported:"
 echo "                           restore_primary_from_primary - restore failed primary node from another primary"
 echo "                           restore_secondary_from_primary - restore secondary node from primary"
@@ -270,11 +276,17 @@ setReplicaUserFromEnv(){
 
 getPrimaryPosition(){
   local node=$1
+  local masterName=$2
   echo "File=$(mysqlCommandExec 'show master status\G;' ${node} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
   echo "Position=$(mysqlCommandExec 'show master status\G;' ${node}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
-  echo "ReportHost=$(mysqlCommandExec 'show variables like "report_host" \G;' ${node}|grep 'Value'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  if [[ -n "${ADDITIONAL_PRIMARY}" ]]; then
+    echo "ReportHost=${node}" >> ${REPLICATION_INFO}
+  else
+    echo "ReportHost=$(mysqlCommandExec 'show variables like "report_host" \G;' ${node}|grep 'Value'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  fi
   echo "ReplicaUser=${REPLICA_USER}" >> ${REPLICATION_INFO}
   echo "ReplicaPassword=${REPLICA_PSWD}" >> ${REPLICATION_INFO}
+  echo "MasterName=${masterName}" >> ${REPLICATION_INFO}
 }
 
 
@@ -357,6 +369,23 @@ restoreSecondaryPosition(){
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
   mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
+}
+
+restoreMultiSecondaryPosition(){
+  local node=$1
+  source ${REPLICATION_INFO};
+  rm -f ${REPLICATION_INFO}
+  mysqlCommandExec "CHANGE MASTER '${MasterName}' TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position};" ${node}
+}
+
+stopAllSlaves(){
+  local node=$1
+  mysqlCommandExec "STOP ALL SLAVES; RESET SLAVE ALL;" ${node}
+}
+
+startAllSlaves(){
+  local node=$1
+  mysqlCommandExec "START ALL SLAVES;" ${node}
 }
 
 
@@ -593,11 +622,20 @@ restore_secondary_from_primary(){
   execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
   execAction "setPrimaryReadonly ${DONOR_IP}" "[Node: ${DONOR_IP}] Set primary readonly"
   execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} lock"
-  execAction "getPrimaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Get primary position"
   execAction "setPrimaryWriteMode ${DONOR_IP}" "[Node: ${DONOR_IP}] Set donor to read write mode"
   startMysqlService "localhost"
   execAction "checkMysqlOperable localhost" "[Node: localhost] Mysql service operable check"
-  execAction 'restoreSecondaryPosition localhost' '[Node: localhost] Restore primary position on self node'
+  if [[ -n "${ADDITIONAL_PRIMARY}" ]]; then
+    execAction "stopAllSlaves localhost" '[Node: localhost] Stop all slaves'
+    execAction "getPrimaryPosition ${DONOR_IP} PRIM1" "[Node: ${DONOR_IP}] Get primary PRIM1 position"
+    execAction 'restoreMultiSecondaryPosition localhost' '[Node: localhost] Restore primary PRIM1 position on self node'
+    execAction "getPrimaryPosition ${ADDITIONAL_PRIMARY} PRIM2" "[Node: ${ADDITIONAL_PRIMARY}] Get primary PRIM2 position"
+    execAction 'restoreMultiSecondaryPosition localhost' '[Node: localhost] Restore primary PRIM2 position on self node'
+    execAction "startAllSlaves localhost" '[Node: localhost] Start all slaves'
+  else
+    execAction "getPrimaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Get primary position"
+    execAction 'restoreSecondaryPosition localhost' '[Node: localhost] Restore primary position on self node'
+  fi
 }
 
 restore_primary_from_secondary(){
@@ -641,6 +679,7 @@ if [[ "${diagnostic}" == "YES" ]]; then
 else
   log ">>>BEGIN RESTORE SCENARIO [${SCENARIO}]"
   $SCENARIO
+  sleep 10
   nodeDiagnostic
   log ">>>END RESTORE SCENARIO [${SCENARIO}]"
 fi
