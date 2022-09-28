@@ -93,8 +93,8 @@ REPLICATION_INFO='/var/lib/mysql/primary-position.info'
 SUCCESS_CODE=0
 FAIL_CODE=99
 AUTHORIZATION_ERROR_CODE=701
-NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
-
+#NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
+NODE_ADDRESS=$(host $(hostname) | awk '/has.*address/{print $NF; exit}')
 
 mysqlCommandExec(){
   command="$1"
