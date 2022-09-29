@@ -71,11 +71,11 @@ if (isRestore) {
     if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
 
     if (isMasterFailed) {
-        resp = getSlavesOnly();
+        scenario = " --scenario restore_primary_from_secondary";
+        resp = getSlavesOnly(scenario);
         if (resp.result != 0) return resp;
 
         failedNodes = resp.nodes;
-        scenario = " --scenario restore_secondary_from_primary";
     }
 
     api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
@@ -255,6 +255,7 @@ function parseOut(data, restoreMaster) {
                             break;
 
                         case SECONDARY:
+                            isMasterFailed = false;
                             if (item.service_status == DOWN || item.status == FAILED) {
 
                                 if (!isRestore && item.address) {
