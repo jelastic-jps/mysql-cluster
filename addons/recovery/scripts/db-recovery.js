@@ -1,10 +1,11 @@
 var SQLDB = "sqldb",
     AUTH_ERROR_CODE = 701,
     UNABLE_RESTORE_CODE = 98,
-    FAILED_CLUSTER_CODE = 99,
+    FAILED_CLUSTER_CODE = 97,
     RESTORE_SUCCESS = 201,
     envName = "${env.name}",
     exec = getParam('exec', ''),
+    isEvent = getParam('event', false),
     failedNodes = [],
     isMasterFailed = false,
     GALERA = "galera",
@@ -95,6 +96,10 @@ if (isRestore) {
     }
 
 } else {
+    if (isEvent) {
+        resp.result = 0;
+        resp.isDiagnosticsResultOk = false;
+    }
     return resp;
 }
 
