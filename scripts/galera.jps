@@ -58,7 +58,7 @@ onAfterClone:
 
 onBeforeStop:
   - forEach(i:nodes.sqldb):
-      env.control.StopNode [${@i.id}]
+      cmd[${@i.id}]: sudo jem service stop
       
 onAfterStart:   
   - if (nodes.proxy):
