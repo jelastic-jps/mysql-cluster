@@ -1,4 +1,14 @@
 actions:
+  
+  isEnvRunning:
+    script: |
+      import com.hivext.api.server.system.service.utils.EnvironmentStatus;
+      var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+      if (resp.result != 0) return resp;
+      var status = resp.env.status;
+      var isEnvRunning = status == EnvironmentStatus['ENV_STATUS_TYPE_RUNNING'].getValue() ? true : false;
+      return {result: 0, isEnvRunning: isEnvRunning}
+
   getReplicaUser:
     - env.control.GetContainerEnvVarsByGroup[sqldb]
     - setGlobals:
