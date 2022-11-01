@@ -41,7 +41,7 @@ onInstall:
         SCHEME: ${settings.scheme}
 
   - install: 
-      jps: baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64510/addons/recovery/manifest.yml?_r=${fn.random}
+      jps: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64510/addons/recovery/manifest.yml?_r=${fn.random}
       nodeGroup: sqldb
       targetNodes: sqldb
       settings:
