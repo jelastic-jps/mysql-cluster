@@ -19,7 +19,7 @@ globals:
   DB_USER: ${settings.db_user}
   DB_PASS: ${settings.db_pass}
   CLUSTER_NAME: galera-${env.name}
-  CLUSTER_CONF: /etc/mysql/conf.d/xtradb.cnf
+  CLUSTER_CONF: /etc/my.cnf.d/xtradb.cnf
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
