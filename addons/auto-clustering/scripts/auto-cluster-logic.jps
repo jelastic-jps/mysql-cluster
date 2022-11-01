@@ -134,4 +134,26 @@ actions:
           - if ('${settings.is_proxysql}' == 'true'):    
             - install-jps:
                 jps: "${globals.scripts}/proxy-master-slave.jps?_r=${fn.random}"
+
+    - if (/percona/.test("${nodes.sqldb.nodeType}")):
+        - if ('${settings.scheme}'.toLowerCase() == 'xtradb'):  
+          - install-jps:
+              jps: "${globals.scripts}/xtradb.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-galera.jps?_r=${fn.random}"
+      
+        - if ('${settings.scheme}'.toLowerCase() == 'master'):
+          - install-jps:
+              jps: "${globals.scripts}/master-master.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-master-slave.jps?_r=${fn.random}"
+        
+        - if ('${settings.scheme}'.toLowerCase() == 'slave'):
+          - install-jps:
+              jps: "${globals.scripts}/master-slave.jps?_r=${fn.random}"
+          - if ('${settings.is_proxysql}' == 'true'):    
+            - install-jps:
+                jps: "${globals.scripts}/proxy-master-slave.jps?_r=${fn.random}"
  
