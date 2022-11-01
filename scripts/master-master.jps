@@ -3,7 +3,7 @@ id: mysql-master-master-replication-cluster
 name: MySQL/MariaDB Primary-Primary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-53135
 
 success:
    text: /texts/phpmyadmin-credentials.md
@@ -21,6 +21,20 @@ globals:
   DB_PASS: "${settings.db_pass}"
   SCHEME: "${settings.scheme}"
   CUSTOM_CONF: "${settings.custom_conf}"
+
+onBeforeMigrate:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before migration, otherwise the database cluster will be broken."
+
+onBeforeClone:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before cloning, otherwise the database cluster will be broken."
 
 onBeforeCloneNodes[sqldb]:
   - getReplicaUser
