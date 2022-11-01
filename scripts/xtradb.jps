@@ -92,6 +92,9 @@ actions:
         id: ${this.id}
     - setNodeDisplayName[${this.id}]: XtraDB
     - cmd[${this.id}]: |-
+        chown jelastic ${globals.CLUSTER_CONF}
+      user: root
+    - cmd[${this.id}]: |-
         wget ${globals.PATH}/configs/xtradb.cnf -O ${globals.CLUSTER_CONF} &>> /var/log/run.log
  
   setupSeeds:
