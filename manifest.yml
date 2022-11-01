@@ -30,7 +30,9 @@ settings:
           caption: MySQL CE
         - value: mariadb-dockerized
           caption: MariaDB
-      
+        - value: perconadb
+          caption: Percona 
+ 
     - caption: Topology
       type: list
       name: scheme
@@ -51,6 +53,15 @@ settings:
               - value: galera
                 caption: Galera Cluster
 
+            perconadb:
+              - value: slave
+                caption: Primary-Secondary with scalable secondaries
+              - value: master
+                caption: Primary-Primary with scalable secondaries
+              - value: xtradb
+                caption: XtraDB Cluster
+
+
     - type: checkbox
       name: is_proxysql
       caption: Add ProxySQL for SQL Load Balancing
@@ -67,6 +78,8 @@ settings:
               - value: mysql
             mariadb-dockerized:    
               - value: mariadb-dockerized
+            perconadb:
+              - value: perconadb
               
     - caption: None
       inputType: hidden
@@ -80,6 +93,8 @@ settings:
             master:    
               - value: 2
             galera:    
+              - value: 3
+            xtradb:
               - value: 3
               
     - type: displayfield
