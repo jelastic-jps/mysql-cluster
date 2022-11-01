@@ -16,7 +16,7 @@ logo: /images/icon.png?_r=1
 
 onBeforeInit: /scripts/settings.js?_r=${fn.random}
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v2.5.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-53135
 
 settings:
   fields:
