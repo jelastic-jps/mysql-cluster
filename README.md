@@ -33,7 +33,7 @@ The topologies *primary*-*secondary* or *primary*-*primary* are improved with a 
 ## Deployment to the Cloud
 
 To get started, log in to Jelastic dashboard, import the required manifest using the link from GitHub:
-[https://github.com/jelastic-jps/mysql-cluster/blob/master/manifest.jps](https://github.com/jelastic-jps/mysql-cluster/blob/master/manifest.jps)
+[https://github.com/VGrafVirtuozzo/mysql-cluster/blob/master/manifest.jps](https://github.com/VGrafVirtuozzo/mysql-cluster/blob/master/manifest.jps)
 
 <p align="left">
 <img src="images/import-maria-mysql.png" width="500">
@@ -41,7 +41,7 @@ To get started, log in to Jelastic dashboard, import the required manifest using
 
 Or you can click the **Deploy to Jelastic** button, specify your email address within the widget, choose one of the [Jelastic Public Cloud](https://jelastic.cloud/) providers and press **Install**.
 
-[![Deploy](https://github.com/jelastic-jps/git-push-deploy/raw/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/manifest.jps)
+[![Deploy](https://github.com/jelastic-jps/git-push-deploy/raw/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/VGrafVirtuozzo/mysql-cluster/master/manifest.jps)
 
 **Note:** If you are already registered at Jelastic, you can deploy this cluster from Marketplace.
 

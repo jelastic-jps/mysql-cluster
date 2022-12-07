@@ -7,7 +7,7 @@ description:
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 logo: /images/database-recovery.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery
+baseUrl: https://raw.githubusercontent.com/VGrafVirtuozzo/mysql-cluster/master/addons/recovery
 
 targetNodes:
   nodeType:
@@ -16,7 +16,7 @@ targetNodes:
     - mariadb
     
 mixins:
-  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/common.yml
+  - https://raw.githubusercontent.com/VGrafVirtuozzo/mysql-cluster/v2.5.0/scripts/common.yml
 
 globals:
   ssh_root: /root/.ssh/
@@ -77,14 +77,14 @@ responses:
     message: |
       An error occurs while recovering the Database Cluster.  
       Please check the **/var/log/db_recovery.log** log file for details.
-      Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+      Follow the [Manual Recovery](https://github.com/VGrafVirtuozzo/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
   99:
     type: success
     message: |
       Errors were discovered during the Database Cluster diagnostic.
       Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
-      Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+      Follow the [Manual Recovery](https://github.com/VGrafVirtuozzo/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
 actions:
   clusterValidate:

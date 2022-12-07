@@ -512,9 +512,9 @@ function execRecovery(scenario, donor, nodeid) {
         }
     }
 
-    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
+    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/VGrafVirtuozzo/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
     return cmd({
-        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action,
+        command: "curl --silent https://raw.githubusercontent.com/VGrafVirtuozzo/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action,
         nodeid: nodeid || ""
     });
 }
