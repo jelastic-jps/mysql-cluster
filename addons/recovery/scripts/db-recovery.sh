@@ -373,7 +373,7 @@ restoreSecondaryPosition(){
 
 getMysqlServerName(){
   local serverName
-  [[ "$(mysqld --version |grep -i mariadb)" == "x" ]] && serverName=mysql || serverName=mariadb
+  [[ x"$(mysqld --version |grep -i mariadb)" == "x" ]] && serverName=mysql || serverName=mariadb
   echo $serverName
 }
 
