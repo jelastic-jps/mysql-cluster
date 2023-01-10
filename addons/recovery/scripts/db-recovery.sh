@@ -396,7 +396,7 @@ stopAllSlaves(){
   if [[ "${serverName}" == "mariadb" ]]; then
     mysqlCommandExec "STOP ALL SLAVES; RESET SLAVE ALL;" ${node}
   else
-    mysqlCommandExec "STOP SLAVE; RESET SLAVE;" ${node}
+    mysqlCommandExec "STOP SLAVE; RESET SLAVE ALL;" ${node}
   fi
 }
 
