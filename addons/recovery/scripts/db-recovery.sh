@@ -371,21 +371,43 @@ restoreSecondaryPosition(){
   mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
 }
 
+getMysqlServerName(){
+  local serverName
+  [[ "$(mysqld --version |grep -i mariadb)" == "x" ]] && serverName=mysql || serverName=mariadb
+  echo $serverName
+}
+
 restoreMultiSecondaryPosition(){
   local node=$1
+  local primNane=$2
+  local serverName="$(getMysqlServerName)"
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
-  mysqlCommandExec "CHANGE MASTER '${MasterName}' TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position};" ${node}
+  if [[ "${serverName}" == "mariadb" ]]; then
+    mysqlCommandExec "CHANGE MASTER '${MasterName}' TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position};" ${node}
+  else
+    mysqlCommandExec "CHANGE MASTER '${MasterName}' TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position} FOR CHANNEL "${primNane}";" ${node}
+  fi
 }
 
 stopAllSlaves(){
   local node=$1
-  mysqlCommandExec "STOP ALL SLAVES; RESET SLAVE ALL;" ${node}
+  local serverName="$(getMysqlServerName)"
+  if [[ "${serverName}" == "mariadb" ]]; then
+    mysqlCommandExec "STOP ALL SLAVES; RESET SLAVE ALL;" ${node}
+  else
+    mysqlCommandExec "STOP SLAVE; RESET SLAVE;" ${node}
+  fi
 }
 
 startAllSlaves(){
   local node=$1
-  mysqlCommandExec "START ALL SLAVES;" ${node}
+  local serverName="$(getMysqlServerName)"
+  if [[ "${serverName}" == "mariadb" ]]; then
+    mysqlCommandExec "START ALL SLAVES;" ${node}
+  else
+    mysqlCommandExec "START SLAVE;" ${node}
+  fi
 }
 
 
@@ -628,9 +650,9 @@ restore_secondary_from_primary(){
   if [[ -n "${ADDITIONAL_PRIMARY}" ]]; then
     execAction "stopAllSlaves localhost" '[Node: localhost] Stop all slaves'
     execAction "getPrimaryPosition ${DONOR_IP} PRIM1" "[Node: ${DONOR_IP}] Get primary PRIM1 position"
-    execAction 'restoreMultiSecondaryPosition localhost' '[Node: localhost] Restore primary PRIM1 position on self node'
+    execAction 'restoreMultiSecondaryPosition localhost PRIM1' '[Node: localhost] Restore primary PRIM1 position on self node'
     execAction "getPrimaryPosition ${ADDITIONAL_PRIMARY} PRIM2" "[Node: ${ADDITIONAL_PRIMARY}] Get primary PRIM2 position"
-    execAction 'restoreMultiSecondaryPosition localhost' '[Node: localhost] Restore primary PRIM2 position on self node'
+    execAction 'restoreMultiSecondaryPosition localhost PRIM2' '[Node: localhost] Restore primary PRIM2 position on self node'
     execAction "startAllSlaves localhost" '[Node: localhost] Start all slaves'
   else
     execAction "getPrimaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Get primary position"
