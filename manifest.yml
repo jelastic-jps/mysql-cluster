@@ -16,7 +16,7 @@ logo: /images/icon.png?_r=1
 
 onBeforeInit: /scripts/settings.js?_r=${fn.random}
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64510
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v3.0.0
 
 settings:
   fields:
@@ -58,9 +58,6 @@ settings:
                 caption: Primary-Secondary with scalable secondaries
               - value: master
                 caption: Primary-Primary with scalable secondaries
-              - value: xtradb
-                caption: XtraDB Cluster
-
 
     - type: checkbox
       name: is_proxysql
@@ -93,8 +90,6 @@ settings:
             master:    
               - value: 2
             galera:    
-              - value: 3
-            xtradb:
               - value: 3
               
     - type: displayfield
