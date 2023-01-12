@@ -51,6 +51,8 @@ onInstall:
 actions:
   setupMaster:
     - cmd[${this}]: |-
+        [[ -d /etc/mysql/conf.d ]] || mkdir /etc/mysql/conf.d;
+        grep -q '^!includedir /etc/mysql/conf.d/' /etc/my.cnf || echo '!includedir /etc/mysql/conf.d/' >> /etc/my.cnf;
         wget ${baseUrl}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/master.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/master.cnf
@@ -62,6 +64,8 @@ actions:
 
   setupSlave:
     - cmd[${this}]: |-
+        [[ -d /etc/mysql/conf.d ]] || mkdir /etc/mysql/conf.d;
+        grep -q '^!includedir /etc/mysql/conf.d/' /etc/my.cnf || echo '!includedir /etc/mysql/conf.d/' >> /etc/my.cnf;
         wget ${baseUrl}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/slave.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/slave.cnf
