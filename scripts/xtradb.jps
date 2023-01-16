@@ -109,7 +109,7 @@ actions:
   
   resetCluster:
     - cmd[sqldb]: |-
-        [ -f ${globals.GALERA_CONF} ] && rm -f ${globals.GALERA_CONF}
+        [ -f ${globals.CLUSTER_CONF} ] && rm -f ${globals.CLUSTER_CONF}
         [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
         [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
