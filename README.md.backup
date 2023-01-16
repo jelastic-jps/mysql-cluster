@@ -57,7 +57,7 @@ In the opened confirmation window at VAP dashboard, choose MariaDB/MySQL/Percona
 
 After successful installation, you’ll receive a number of default emails based on your environment topology with access credentials.
 
-## MySQL/MariaDB/Percona Managed Hosting Business
+## MariaDB/MySQL Managed Hosting Business
 
 To start offering this solution to your customers please follow to [Auto-Scalable Clusters for Managed Cloud Business](https://www.virtuozzo.com/application-platform/?referer=jelastic)
 
