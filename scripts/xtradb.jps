@@ -80,19 +80,12 @@ onInstall:
           ip: ${@i.intIP}
       - wsrepSlaveThreads:
           id: ${@i.id}
-  - cmd[${nodes.sqldb.master.id}]: jem service stop; sleep 5; pkill -9 mysql; pkill -9 mariadb; service httpd start; galera_new_cluster;
-    user: root
-  - forEach(n:nodes.sqldb):
-      if (!${@n.ismaster}):
-        cmd[${@n.id}]: jem service restart
-        user: root
+  - startCluster
   - env.file.AddFavorite:
     nodeGroup: sqldb
     path: /var/lib/mysql/grastate.dat
     keyword: grastate.dat
     isDir: false
-
-
 
 actions:
   initialSetup:
@@ -142,6 +135,16 @@ actions:
   restartNodesInOrder:
     - forEach(i:nodes.sqldb):
         cmd [${@i.id}]: sudo jem service restart
+
+  startCluster:
+    - cmd[${nodes.sqldb.master.id}]: jem service stop; sleep 5; pkill -9 mysql; pkill -9 mariadb; service httpd start;
+      user: root
+    - cmd[${nodes.sqldb.master.id}]: |-
+        echo "safe_to_bootstrap: 1" > /var/lib/mysql/grastate.dat;
+        sudo jem service restart;
+    - forEach(n:nodes.sqldb):
+        if (!${@n.ismaster}):
+          cmd[${@n.id}]: sudo jem service restart
 
   redeployGalera:
     - forEach(nodes.sqldb):
