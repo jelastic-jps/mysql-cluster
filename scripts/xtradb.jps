@@ -15,11 +15,10 @@ mixins:
   - /scripts/common.yml
 
 globals:
-  PATH: ${settings.path}
-  DB_USER: ${settings.db_user}
-  DB_PASS: ${settings.db_pass}
+  DB_USER: ${settings.db_user:user-[fn.random]}
+  DB_PASS: ${settings.db_pass:[fn.password(20)]}
   CLUSTER_NAME: galera-${env.name}
-  CLUSTER_CONF: /etc/my.cnf.d/xtradb.cnf
+  CLUSTER_CONF: /etc/mysql/conf.d/xtradb.cnf
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
@@ -40,20 +39,12 @@ onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     nodeGroup: sqldb
-    settings:
-      db_user: jelastic-${fn.random}
-      db_pass: ${fn.password(20)}
-      path: ${globals.PATH}
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     envName: ${event.response.env.envName}
     nodeGroup: sqldb
-    settings:
-      db_user: jelastic-${fn.random}
-      db_pass: ${fn.password(20)}
-      path: ${globals.PATH}
 
 onBeforeStop:
   - forEach(i:nodes.sqldb):
@@ -92,10 +83,9 @@ actions:
         id: ${this.id}
     - setNodeDisplayName[${this.id}]: XtraDB
     - cmd[${this.id}]: |-
-        chown jelastic ${globals.CLUSTER_CONF}
-      user: root
-    - cmd[${this.id}]: |-
-        wget ${globals.PATH}/configs/xtradb.cnf -O ${globals.CLUSTER_CONF} &>> /var/log/run.log
+        [[ -d /etc/mysql/conf.d ]] || mkdir /etc/mysql/conf.d;
+        grep -q '^!includedir /etc/mysql/conf.d/' /etc/my.cnf || echo '!includedir /etc/mysql/conf.d/' >> /etc/my.cnf;
+        wget ${baseUrl}/configs/xtradb.cnf -O ${globals.CLUSTER_CONF} &>> /var/log/run.log;
  
   setupSeeds:
     script: |
@@ -111,15 +101,15 @@ actions:
   
   setupInstance:
     cmd[${this.id}]: |-
-      sed -i "s/bind-address.*/bind-address = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
-      sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_node_name.*/wsrep_node_name = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/" ${globals.GALERA_CONF}
+      sed -i "s/bind-address.*/bind-address = $(hostname | cut -d'-' -f 1)/" ${globals.CLUSTER_CONF}
+      sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.CLUSTER_CONF}
+      sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.CLUSTER_CONF}
+      sed -i "s/wsrep_node_name.*/wsrep_node_name = $(hostname | cut -d'-' -f 1)/" ${globals.CLUSTER_CONF}
+      sed -i "s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/" ${globals.CLUSTER_CONF}
   
   resetCluster:
     - cmd[sqldb]: |-
-        [ -f ${globals.GALERA_CONF} ] && rm -f ${globals.GALERA_CONF}
+        [ -f ${globals.CLUSTER_CONF} ] && rm -f ${globals.CLUSTER_CONF}
         [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
         [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
