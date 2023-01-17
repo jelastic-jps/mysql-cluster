@@ -1,6 +1,6 @@
 jpsType: install
 jpsVersion: '1.5.2'
-name: MySQL / MariaDB Cluster
+name: MySQL/MariaDB/Percona Cluster
 id: mysql-cluster-main
 
 categories:
@@ -12,7 +12,7 @@ description:
   text: "/texts/description.md?_r=1"
   short: A set of MySQL/MariaDB cluster topologies
   
-logo: /images/icon.png?_r=1
+logo: /images/mysql-mariadb-percona-logo.png?_r=1
 
 onBeforeInit: /scripts/settings.js?_r=${fn.random}
 
