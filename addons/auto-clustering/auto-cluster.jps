@@ -31,7 +31,7 @@ onInstall:
     if (String(auto_cluster || resp.object.AUTO_CLUSTER).toLowerCase() == "false") return {result:0};
     
     scheme = scheme || resp.object.SCHEME || "slave";
-    db_user = db_user || resp.object.DB_USER || "jelastic-${fn.random}";
+    db_user = db_user || resp.object.DB_USER || "user-${fn.random}";
     db_pass = db_pass || resp.object.DB_PASS || "${fn.password(20)}";
     is_proxysql = is_proxysql || resp.object.IS_PROXYSQL || "false";
     return {result:0, onAfterReturn:{setupReplica:{scheme:scheme, db_user:db_user, db_pass:db_pass, is_proxysql:is_proxysql}}}
