@@ -89,7 +89,7 @@ onInstall:
           ip: ${@i.intIP}
       - wsrepSlaveThreads:
           id: ${@i.id}
-  - firstStartCluster
+  
   - forEach(n:nodes.sqldb):
       if (!${@n.ismaster}):
         cmd[${@n.id}]: jem service restart
