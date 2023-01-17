@@ -90,10 +90,6 @@ onInstall:
       - wsrepSlaveThreads:
           id: ${@i.id}
   - firstStartCluster
-  - forEach(n:nodes.sqldb):
-      if (!${@n.ismaster}):
-        cmd[${@n.id}]: jem service restart
-        user: root
   - env.file.AddFavorite:
     nodeGroup: sqldb
     path: /var/lib/mysql/grastate.dat
@@ -154,7 +150,7 @@ actions:
         cmd [${@i.id}]: sudo jem service restart
 
   firstStartCluster:
-    - cmd[${nodes.sqldb.master.id}]: jem service stop; sleep 5; pkill -9 mysql; pkill -9 mariadb;
+    - cmd[${nodes.sqldb.master.id}]: jem service stop; sleep 5; pkill -9 'mariadb|mysql|mysqld' || exit 0;
       user: root
     - cmd[${nodes.sqldb.master.id}]: |-
         echo "safe_to_bootstrap: 1" > /var/lib/mysql/grastate.dat;

@@ -3,7 +3,7 @@ id: percona-xtradb-cluster
 name: Percona XtraDB Cluster
 description: Percona XtraDB Auto Clustering
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64510
 
 success:
   text: /texts/phpmyadmin-credentials.md
@@ -137,7 +137,7 @@ actions:
         cmd [${@i.id}]: sudo jem service restart
 
   firstStartCluster:
-    - cmd[${nodes.sqldb.master.id}]: jem service stop; sleep 5; pkill -9 mysql; pkill -9 mariadb;
+    - cmd[${nodes.sqldb.master.id}]: jem service stop; sleep 5; pkill -9 'mariadb|mysql|mysqld' || exit 0;
       user: root
     - cmd[${nodes.sqldb.master.id}]: |-
         echo "safe_to_bootstrap: 1" > /var/lib/mysql/grastate.dat;
