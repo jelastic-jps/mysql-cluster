@@ -1,7 +1,7 @@
 jpsType: update
 id: mysql-proxy-galera-cluster
-name: MariaDB Galera Cluster with ProxySQL
-description: MariaDB Galera Cluster
+name: Galera/XtraDB Cluster with ProxySQL
+description: Galera/XtraDB Cluster
 
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
