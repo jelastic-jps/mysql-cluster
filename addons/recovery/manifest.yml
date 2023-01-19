@@ -7,16 +7,17 @@ description:
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 logo: /images/database-recovery.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-65111/addons/recovery
 
 targetNodes:
   nodeType:
     - mysql
     - mariadb-dockerized
     - mariadb
+    - percona
     
 mixins:
-  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/scripts/common.yml
+  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
 
 globals:
   ssh_root: /root/.ssh/
