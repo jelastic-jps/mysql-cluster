@@ -1,9 +1,9 @@
 type: update
 id: mysql-master-slave-replication-cluster
-name: MySQL/MariaDB Primary-Secondary Replication Database Cluster
+name: MySQL/MariaDB/Percona Primary-Secondary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 success:
   text: /texts/phpmyadmin-credentials.md
@@ -51,8 +51,6 @@ onInstall:
 actions:
   setupMaster:
     - cmd[${this}]: |-
-        [[ -d /etc/mysql/conf.d ]] || mkdir /etc/mysql/conf.d;
-        grep -q '^!includedir /etc/mysql/conf.d/' /etc/my.cnf || echo '!includedir /etc/mysql/conf.d/' >> /etc/my.cnf;
         wget ${baseUrl}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/master.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/master.cnf
@@ -64,8 +62,6 @@ actions:
 
   setupSlave:
     - cmd[${this}]: |-
-        [[ -d /etc/mysql/conf.d ]] || mkdir /etc/mysql/conf.d;
-        grep -q '^!includedir /etc/mysql/conf.d/' /etc/my.cnf || echo '!includedir /etc/mysql/conf.d/' >> /etc/my.cnf;
         wget ${baseUrl}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/slave.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/slave.cnf
