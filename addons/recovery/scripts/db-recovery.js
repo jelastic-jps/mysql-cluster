@@ -115,10 +115,6 @@ if (isRestore) {
     return resp;
 }
 
-//message: "Errors were discovered during the Database Cluster diagnostic.\n" +
-//                 "Please check the **/var/log/db_recovery.log** log file for details. Click the \"Cluster Recovery\" button in the add-on's tab for automatic recovery.\n" +
-//                 "Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually."
-
 function parseOut(data, restoreMaster) {
     var resp,
         nodeid,
