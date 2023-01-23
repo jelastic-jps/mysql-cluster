@@ -22,6 +22,10 @@ globals:
   ssh_root: /root/.ssh/
   ssh-key: id_rsa_db_monitoring
   tmp: /tmp/
+  diagnostic-failed: |-
+    Errors were discovered during the Database Cluster diagnostic.
+    Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
+    llow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
 buttons:
   - name: diagnostic
@@ -52,6 +56,13 @@ settings:
       type: string
       inputType: password
       required: true
+
+onBeforeScaleOut[sqldb]: eventDiagnostic
+onBeforeStop:  eventDiagnostic
+onBeforeMigrate: eventDiagnostic
+onBeforeClone: eventDiagnostic
+onBeforeSetCloudletCount: eventDiagnostic
+  
 
 onAfterScaleOut[sqldb]: generate-share-keys
 onAfterRedeployContainer[sqldb]: generate-share-keys
@@ -118,6 +129,7 @@ actions:
   diagnostic:
     script: /scripts/db-recovery.js
     exec: ' --diagnostic'
+    event: ${this.event}
 
   recovery:
     script: /scripts/db-recovery.js
@@ -177,3 +189,11 @@ actions:
         mv ${globals.tmp}${globals.ssh-key}* ${globals.ssh_root}
         cat ${globals.ssh_root}${globals.ssh-key}.pub >> ${globals.ssh_root}authorized_keys
       user: root
+      
+  eventDiagnostic:
+      - diagnostic:
+          event: true
+      - if (${response.errors} == true):
+          stopEvent:
+            type: warning
+            message: ${globals.diagnostic-failed}
