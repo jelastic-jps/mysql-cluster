@@ -7,6 +7,7 @@ var SQLDB = "sqldb",
     envName = "${env.name}",
     exec = getParam('exec', ''),
     init = getParam('init', ''),
+    event = getParam('event', ''),
     failedNodes = [],
     isMasterFailed = false,
     GALERA = "galera",
@@ -105,8 +106,18 @@ if (isRestore) {
     }
 
 } else {
+    if (event && exec) {
+        return {
+            result: 0,
+            errors: resp.result == FAILED_CLUSTER_CODE ? true : false
+        };
+    }
     return resp;
 }
+
+//message: "Errors were discovered during the Database Cluster diagnostic.\n" +
+//                 "Please check the **/var/log/db_recovery.log** log file for details. Click the \"Cluster Recovery\" button in the add-on's tab for automatic recovery.\n" +
+//                 "Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually."
 
 function parseOut(data, restoreMaster) {
     var resp,
@@ -215,6 +226,10 @@ function parseOut(data, restoreMaster) {
 
                                 if (!donorIps[scheme] && item.service_status == UP) {
                                     donorIps[PRIMARY] = item.address;
+                                }
+
+                                if (item.node_type == PRIMARY) {
+
                                 }
 
                                 if (item.status == FAILED) {
