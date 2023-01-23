@@ -224,10 +224,6 @@ function parseOut(data, restoreMaster) {
                                     donorIps[PRIMARY] = item.address;
                                 }
 
-                                if (item.node_type == PRIMARY) {
-
-                                }
-
                                 if (item.status == FAILED) {
                                     if (item.node_type == PRIMARY) {
                                         failedPrimary.push({
