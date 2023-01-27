@@ -25,6 +25,7 @@ var SQLDB = "sqldb",
     nodeGroups,
     donorIps = {},
     primaryDonorIp = "",
+    additionalPrimary = "",
     scenario = "",
     scheme,
     item,
@@ -82,7 +83,7 @@ if (isRestore) {
         resp = getNodeIdByIp(failedNodes[k].address);
         if (resp.result != 0) return resp;
 
-        resp = execRecovery(failedNodes[k].scenario, donorIps[scheme], resp.nodeid);
+        resp = execRecovery(failedNodes[k].scenario, donorIps[scheme], resp.nodeid, additionalPrimary);
         if (resp.result != 0) return resp;
 
         resp = parseOut(resp.responses, false);
@@ -326,6 +327,10 @@ function parseOut(data, restoreMaster) {
                         resp = parseOut(resp.responses);
                         if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
 
+                        if (primaryEnabledService && scheme == PRIMARY) {
+                            additionalPrimary = failedPrimary[i].address;
+                        }
+
                         if (resp.result == RESTORE_SUCCESS) {
                             failedPrimary.splice(i, 1);
                         }
@@ -433,7 +438,7 @@ function getNodeIdByIp(address) {
     }
 }
 
-function execRecovery(scenario, donor, nodeid) {
+function execRecovery(scenario, donor, nodeid, additionalPrimary) {
     var action = "";
 
     if (scenario && donor) {
@@ -442,9 +447,13 @@ function execRecovery(scenario, donor, nodeid) {
         action = exec;
     }
 
-    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
+    if (additionalPrimary) {
+        action += " --additional-primary " + additionalPrimary;
+    }
+
+    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
     return cmd({
-        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action,
+        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action,
         nodeid: nodeid || ""
     });
 }
