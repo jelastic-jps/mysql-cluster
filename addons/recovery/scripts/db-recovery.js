@@ -50,13 +50,15 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
     }
 }
 resp = execRecovery();
+if (resp.result != 0) return resp;
 
 resp = parseOut(resp.responses, true);
-api.marketplace.console.WriteLog("failedNodes00000-> " + failedNodes);
+api.marketplace.console.WriteLog("failedNodes0000011-> " + failedNodes);
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("resp-> " + resp);
 if (isRestore) {
     if (resp.result == AUTH_ERROR_CODE) return resp;
+    if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
 
     if (isMasterFailed) {
         resp = getSlavesOnly();
@@ -75,10 +77,10 @@ if (isRestore) {
 
     api.marketplace.console.WriteLog("scenario-> " + scenario);
     api.marketplace.console.WriteLog("donorIps-> " + donorIps);
-    if (!scenario || !donorIps[scheme]) {
+    if (!donorIps[scheme]) { //!scenario ||
         return {
             result: UNABLE_RESTORE_CODE,
-            type: SUCCESS
+            type: WARNING
         }
     }
 
@@ -103,6 +105,7 @@ function parseOut(data, restoreMaster) {
     var resp,
         nodeid,
         statusesUp = false,
+        clusterFailed = false,
         primaryMasterAddress = "",
         primaryEnabledService = "",
         failedPrimary = [];
@@ -116,6 +119,8 @@ function parseOut(data, restoreMaster) {
     if (data.length) {
         for (var i = 0, n = data.length; i < n; i++) {
             nodeid = data[i].nodeid;
+
+            if (data[i] && data[i].out) {
             item = data[i].out;
             item = JSON.parse(item);
 
@@ -126,6 +131,15 @@ function parseOut(data, restoreMaster) {
                     message: item.error,
                     result: AUTH_ERROR_CODE
                 };
+            }
+
+            if (!item.node_type) {
+                clusterFailed = true;
+                if (!isRestore) {
+                    resp = setFailedDisplayNode(item.address);
+                    if (resp.result != 0) return resp;
+                    continue;
+                }
             }
 
             if (item.result == 0) {
