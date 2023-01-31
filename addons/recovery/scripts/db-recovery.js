@@ -52,7 +52,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
 resp = execRecovery();
 
 resp = parseOut(resp.responses, true);
-api.marketplace.console.WriteLog("failedNodes00-> " + failedNodes);
+api.marketplace.console.WriteLog("failedNodes00000-> " + failedNodes);
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
 api.marketplace.console.WriteLog("resp-> " + resp);
 if (isRestore) {
@@ -168,54 +168,56 @@ function parseOut(data, restoreMaster) {
                         break;
 
                     case PRIMARY:
-                        if (item.node_type == SECONDARY) {
-                            scenario = " --scenario restore_secondary_from_primary";
-                        } else {
-                            scenario = " --scenario restore_primary_from_primary";
-                        }
-
                         if (item.service_status == DOWN || item.status == FAILED) {
-                            scenario = " --scenario restore_primary_from_primary";
+                            if (item.node_type == SECONDARY) {
+                                scenario = " --scenario restore_secondary_from_primary";
+                            } else {
+                                scenario = " --scenario restore_primary_from_primary";
+                            }
 
-                            if (item.service_status == UP) {
-                                if (!donorIps[scheme]) {
+                            if (item.service_status == DOWN || item.status == FAILED) {
+                                scenario = " --scenario restore_primary_from_primary";
+
+                                if (item.service_status == UP) {
+                                    if (!donorIps[scheme]) {
+                                        donorIps[PRIMARY] = item.address;
+                                    }
+
+                                    if (item.address == "${nodes.sqldb.master.address}") {
+                                        primaryMasterAddress = item.address;
+                                    }
+                                }
+
+                                if (!isRestore) {
+                                    resp = setFailedDisplayNode(item.address);
+                                    if (resp.result != 0) return resp;
+                                }
+
+                                if (!donorIps[scheme] && item.service_status == UP) {
                                     donorIps[PRIMARY] = item.address;
                                 }
 
-                                if (item.address == "${nodes.sqldb.master.address}") {
-                                    primaryMasterAddress = item.address;
+                                if (item.status == FAILED) {
+                                    if (item.node_type == PRIMARY) {
+                                        failedPrimary.push({
+                                            address: item.address,
+                                            scenario: scenario
+                                        });
+                                    } else {
+                                        failedNodes.push({
+                                            address: item.address,
+                                            scenario: scenario
+                                        });
+                                    }
                                 }
-                            }
-
-                            if (!isRestore) {
-                                resp = setFailedDisplayNode(item.address);
-                                if (resp.result != 0) return resp;
-                            }
-
-                            if (!donorIps[scheme] && item.service_status == UP) {
-                                donorIps[PRIMARY] = item.address;
-                            }
-
-                            if (item.status == FAILED) {
-                                if (item.node_type == PRIMARY) {
-                                    failedPrimary.push({
-                                        address: item.address,
-                                        scenario: scenario
-                                    });
-                                } else {
-                                    failedNodes.push({
-                                        address: item.address,
-                                        scenario: scenario
-                                    });
+                                if (!isRestore) {
+                                    return {
+                                        result: FAILED_CLUSTER_CODE,
+                                        type: SUCCESS
+                                    };
                                 }
+                                restoreMaster = true;
                             }
-                            if (!isRestore) {
-                                return {
-                                    result: FAILED_CLUSTER_CODE,
-                                    type: SUCCESS
-                                };
-                            }
-                            restoreMaster = true;
                         }
 
                         if (item.service_status == UP && item.status == OK) {
