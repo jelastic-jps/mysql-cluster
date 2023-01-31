@@ -104,11 +104,11 @@ responses:
 
 actions:
   diagnostic:
-    script: /scripts/db-recovery.js
+    script: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=f160bfab8f657a493659db0988d05594&download
     exec: ' --diagnostic'
 
   recovery:
-    script: /scripts/db-recovery.js
+    script: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=f160bfab8f657a493659db0988d05594&download
     
   init:
     - cmd[sqldb]: |-
