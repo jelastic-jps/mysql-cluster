@@ -451,9 +451,9 @@ function execRecovery(scenario, donor, nodeid, additionalPrimary) {
         action += " --additional-primary " + additionalPrimary;
     }
 
-    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
+    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-63852/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
     return cmd({
-        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action,
+        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-63852/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action,
         nodeid: nodeid || ""
     });
 }
