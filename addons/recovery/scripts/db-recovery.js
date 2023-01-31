@@ -54,6 +54,7 @@ resp = execRecovery();
 resp = parseOut(resp.responses, true);
 api.marketplace.console.WriteLog("failedNodes00-> " + failedNodes);
 api.marketplace.console.WriteLog("isRestore-> " + isRestore);
+api.marketplace.console.WriteLog("resp-> " + resp);
 if (isRestore) {
     if (resp.result == AUTH_ERROR_CODE) return resp;
 
@@ -72,12 +73,15 @@ if (isRestore) {
         };
     }
 
+    api.marketplace.console.WriteLog("scenario-> " + scenario);
+    api.marketplace.console.WriteLog("donorIps-> " + donorIps);
     if (!scenario || !donorIps[scheme]) {
         return {
             result: UNABLE_RESTORE_CODE,
             type: SUCCESS
         }
     }
+
 
     for (var k = 0, l = failedNodes.length; k < l; k++) {
         resp = getNodeIdByIp(failedNodes[k].address);
@@ -87,6 +91,7 @@ if (isRestore) {
         if (resp.result != 0) return resp;
 
         resp = parseOut(resp.responses, false);
+        api.marketplace.console.WriteLog("resp12-> " + resp);
         if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
     }
 
@@ -305,6 +310,7 @@ function parseOut(data, restoreMaster) {
         }
 
         if ((!scenario || !donorIps[scheme]) && failedNodes.length) {
+            api.marketplace.console.WriteLog("failedNodes.length-> " + failedNodes.length);
             return {
                 result: UNABLE_RESTORE_CODE,
                 type: SUCCESS
