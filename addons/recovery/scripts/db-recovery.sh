@@ -100,8 +100,9 @@ SUCCESS_CODE=0
 FAIL_CODE=99
 AUTHORIZATION_ERROR_CODE=701
 CORRUPT_CHECK_FAIL_CODE=97
-NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
 
+#NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
+NODE_ADDRESS=$(host $(hostname) | awk '/has.*address/{print $NF; exit}')
 
 mysqlCommandExec(){
   command="$1"
@@ -401,8 +402,8 @@ checkMysqlOperable(){
 galeraSetBootstrap(){
   local node=$1
   local num=$2
-  local command="${SSH} ${node} \"sed -i 's/safe_to_bootstrap*/safe_to_bootstrap: ${num}/g' /var/lib/mysql/grastate.dat\""
-  local message="[Node: ${node}]: Set safe_to_bootstrap: ${num}"
+  local command="${SSH} ${node} \"[[ -f /var/lib/mysql/grastate.dat ]] && { sed -i 's/safe_to_bootstrap.*/safe_to_bootstrap: ${num}/g' /var/lib/mysql/grastate.dat; } || { echo 'safe_to_bootstrap: ${num}' > /var/lib/mysql/grastate.dat; chown mysql:mysql /var/lib/mysql/grastate.dat;}\""  local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
+  local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
   execSshAction "$command" "$message"
 }
 

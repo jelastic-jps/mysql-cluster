@@ -1,10 +1,12 @@
 var SQLDB = "sqldb",
     AUTH_ERROR_CODE = 701,
+    ERROR_INIT_ACTION = 97,
     UNABLE_RESTORE_CODE = 98,
     FAILED_CLUSTER_CODE = 99,
     RESTORE_SUCCESS = 201,
     envName = "${env.name}",
     exec = getParam('exec', ''),
+    init = getParam('init', ''),
     failedNodes = [],
     isMasterFailed = false,
     GALERA = "galera",
@@ -29,6 +31,14 @@ var SQLDB = "sqldb",
     scheme,
     item,
     resp;
+
+if (init) {
+    resp = execRecovery(init);
+    if (resp.result != 0) return resp;
+
+    resp = parseOut(resp.responses);
+    if (resp.result != 0) return resp;
+}
 
 if (!exec) isRestore = true;
 exec = exec || " --diagnostic";
@@ -61,11 +71,11 @@ if (isRestore) {
     if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
 
     if (isMasterFailed) {
-        resp = getSlavesOnly();
+        scenario = " --scenario restore_primary_from_secondary";
+        resp = getSlavesOnly(scenario);
         if (resp.result != 0) return resp;
 
         failedNodes = resp.nodes;
-        scenario = " --scenario restore_secondary_from_primary";
     }
 
     api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
@@ -133,7 +143,7 @@ function parseOut(data, restoreMaster) {
                 if (!item.node_type) {
                     clusterFailed = true;
 
-                    if (!isRestore) {
+                    if (!isRestore && item.address) {
                         resp = setFailedDisplayNode(item.address);
                         if (resp.result != 0) return resp;
                         continue;
@@ -161,7 +171,7 @@ function parseOut(data, restoreMaster) {
                                     scenario: scenario
                                 });
 
-                                if (!isRestore) {
+                                if (!isRestore && item.address) {
                                     resp = setFailedDisplayNode(item.address);
                                     if (resp.result != 0) return resp;
                                 }
@@ -174,7 +184,7 @@ function parseOut(data, restoreMaster) {
                             //     };
                             // }
 
-                            if (item.service_status == UP && item.status == OK) {
+                            if (item.service_status == UP && item.status == OK && item.address) {
                                 resp = setFailedDisplayNode(item.address, true);
                                 if (resp.result != 0) return resp;
                             }
@@ -198,7 +208,7 @@ function parseOut(data, restoreMaster) {
                                     }
                                 }
 
-                                if (!isRestore) {
+                                if (!isRestore && item.address) {
                                     resp = setFailedDisplayNode(item.address);
                                     if (resp.result != 0) return resp;
                                 }
@@ -236,16 +246,19 @@ function parseOut(data, restoreMaster) {
                                     donorIps[PRIMARY] = item.address;
                                 }
 
-                                resp = setFailedDisplayNode(item.address, true);
-                                if (resp.result != 0) return resp;
+                                if (item.address) {
+                                    resp = setFailedDisplayNode(item.address, true);
+                                    if (resp.result != 0) return resp;
+                                }
                             }
 
                             break;
 
                         case SECONDARY:
+                            isMasterFailed = false;
                             if (item.service_status == DOWN || item.status == FAILED) {
 
-                                if (!isRestore) {
+                                if (!isRestore && item.address) {
                                     resp = setFailedDisplayNode(item.address);
                                     if (resp.result != 0) return resp;
                                 }
@@ -298,8 +311,10 @@ function parseOut(data, restoreMaster) {
                                 donorIps[SECONDARY] = item.address;
                                 statusesUp = true;
 
-                                resp = setFailedDisplayNode(item.address, true);
-                                if (resp.result != 0) return resp;
+                                if (item.address) {
+                                    resp = setFailedDisplayNode(item.address, true);
+                                    if (resp.result != 0) return resp;
+                                }
                             } else if (!statusesUp && item.node_type == SECONDARY && item.service_status == UP) {
                                 donorIps[SECONDARY] = item.address;
                             }
@@ -311,6 +326,14 @@ function parseOut(data, restoreMaster) {
                             break;
                     }
                 } else {
+                    if (init && item.result == FAILED_CLUSTER_CODE) {
+                        return {
+                            result: ERROR_INIT_ACTION,
+                            message: item.error,
+                            type: WARNING
+                        }
+                    }
+
                     return {
                         result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
                         type: WARNING
@@ -482,7 +505,11 @@ function execRecovery(scenario, donor, nodeid) {
     if (scenario && donor) {
         action = scenario + " --donor-ip " +  donor;
     } else {
-        action = exec;
+        if (scenario && !donor) {
+            action = scenario;
+        } else {
+            action = exec;
+        }
     }
 
     api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + action);
