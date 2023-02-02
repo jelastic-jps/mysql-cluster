@@ -105,8 +105,10 @@ REPLICATION_INFO='/var/lib/mysql/primary-position.info'
 SUCCESS_CODE=0
 FAIL_CODE=99
 AUTHORIZATION_ERROR_CODE=701
-NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
+CORRUPT_CHECK_FAIL_CODE=97
 
+#NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
+NODE_ADDRESS=$(host $(hostname) | awk '/has.*address/{print $NF; exit}')
 
 mysqlCommandExec(){
   command="$1"
@@ -239,6 +241,8 @@ execAction(){
   local result=${FAIL_CODE}
 
   [[ "${action}" == 'checkAuth' ]] && result=${AUTHORIZATION_ERROR_CODE}
+  [[ "${action}" == 'liveMysqlCheck' ]] && result=${CORRUPT_CHECK_FAIL_CODE}
+  [[ "${action}" == 'offlineMysqlCheck' ]] && result=${CORRUPT_CHECK_FAIL_CODE}
   stderr=$( { ${action}; } 2>&1 ) && { log "${message}...done"; } || {
     error="${message} failed, please check ${RUN_LOG} for details"
     execResponse "${result}" "${error}"
@@ -251,29 +255,6 @@ execAction(){
 setPrimaryReadonly(){
   local mysql_src_ip=$1
   mysqlCommandExec 'flush tables with read lock;' "${mysql_src_ip}"
-}
-
-resetReplicaPassword(){
-  local node=$1
-  local replica_data
-  local rep_user
-  local rep_host
-  if [[ -z "${REPLICA_PSWD}" ]]; then
-    echo "Environment variable REPLICA_PSWD do not set"
-    return ${FAIL_CODE}
-  fi
-  replica_data=$(mysqlCommandExec 'select CONCAT(User, "=>", Host) AS replicaUser from mysql.user where User like "repl-%" and Host="%" \G;' ${node}|grep replicaUser|awk -F: '{print $2}'|xargs)
-  for user_info in $replica_data
-  do
-    rep_user=$(echo $user_info|awk -F '=>' '{print $1}');
-    rep_host=$(echo $user_info|awk -F '=>' '{print $2}');
-
-    stderr=$( { mysqlCommandExec "ALTER USER '${rep_user}'@'${rep_host}' IDENTIFIED BY '${REPLICA_PSWD}';" "${node}"; } 2>&1 ) || {
-      log "[Node: ${node}] Reset password for '${rep_user}'@'${rep_host}'...failed\n${stderr}"
-      return ${FAIL_CODE}
-    }
-    log "[Node: ${node}] Reset password for '${rep_user}'@'${rep_host}'...ok"
-  done
 }
 
 setReplicaUserFromEnv(){
@@ -318,11 +299,11 @@ getSecondaryStatus(){
 
   if [[ ${secondary_running_values} != ${slave_ok} ]]; then
     echo "failed"
-    log "[Node: ${node}] Secondary is not running...failed\n ${secondary_running_values}"
+    log "[Node: ${node}]: Secondary is not running...failed\n ${secondary_running_values}"
     return ${FAIL_CODE}
   fi
   echo "ok"
-  log "[Node: ${node}] Secondary is running...done"
+  log "[Node: ${node}]: Secondary is running...done"
 }
 
 removeSecondaryFromPrimary(){
@@ -341,7 +322,7 @@ getPrimaryStatus(){
   is_primary_have_secondary=$(mysqlCommandExec "SHOW SLAVE STATUS \G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
   if [[ ${is_primary_have_binlog} == 2 ]] && [[ ${is_primary_have_secondary} == 0 ]]; then
     echo 'ok'
-    log "[Node: ${node}] Primary status...ok"
+    log "[Node: ${node}]: Primary status...ok"
     return ${SUCCESS_CODE}
   elif [[ ${is_primary_have_binlog} == 2 ]] && [[ ${is_primary_have_secondary} == 2 ]]; then
     status=$(getSecondaryStatus "${node}")
@@ -349,7 +330,7 @@ getPrimaryStatus(){
     return ${SUCCESS_CODE}
   fi
   echo "${status}"
-  log "[Node: ${node}] Looks like primary not configured, SHOW MASTER STATUS command returned empty result...failed"
+  log "[Node: ${node}]: Looks like primary not configured, SHOW MASTER STATUS command returned empty result...failed"
 }
 
 
@@ -366,7 +347,7 @@ getGaleraStatus(){
     return ${SUCCESS_CODE}
   fi
   echo ${status}
-  log "[Node: ${node}] Galera node status is ${wsrep_cluster_status}...ok";
+  log "[Node: ${node}]: Galera node status is ${wsrep_cluster_status}...ok";
 }
 
 
@@ -426,11 +407,11 @@ startAllSlaves(){
 checkMysqlServiceStatus(){
   local node=$1
   stderr=$( { timeout 20 mysqladmin -u${MYSQL_USER} -p${MYSQL_PASSWORD} -h ${node} status; } 2>&1 ) || {
-    log "[Node: ${node}] MySQL Service down...failed\n==============ERROR==================\n${stderr}\n============END ERROR================";
+    log "[Node: ${node}]: MySQL Service down...failed\n==============ERROR==================\n${stderr}\n============END ERROR================";
     echo "down"
     return ${FAIL_CODE}
   }
-  log "[Node: ${node}] MySQL Service up...ok"
+  log "[Node: ${node}]: MySQL Service up...ok"
   echo "up"
 }
 
@@ -444,11 +425,11 @@ galeraCheckClusterSize(){
   nodes_count_status=$(mysqlCommandExec "show global status like 'wsrep_cluster_size'\G;" localhost|grep -i value|awk -F ':' '{print $2}'|xargs)
   if [[ "${nodes_count_in_conf}" != "${nodes_count_status}" ]]; then
     echo "failed"
-    log "[Node: localhost] Galera cluster size check failed, wsrep_cluster_size=${nodes_count_status}, that is lower then physical nodes count: ${nodes_count_in_conf}...failed"
+    log "[Node: localhost]: Galera cluster size check failed, wsrep_cluster_size=${nodes_count_status}, that is lower then physical nodes count: ${nodes_count_in_conf}...failed"
     return ${SUCCESS_CODE}
   fi
   echo "ok"
-  log "[Node: localhost] Galera cluster size...ok"
+  log "[Node: localhost]: Galera cluster size...ok"
 }
 
 
@@ -456,11 +437,11 @@ stopMysqlService(){
   local node=$1
 
   local command="${SSH} ${node} \"/usr/bin/jem service stop\""
-  local message="[Node: ${node}] Stop MySQL service"
+  local message="[Node: ${node}]: Stop MySQL service"
   execSshAction "$command" "$message" || return ${FAIL_CODE}
 
   command="${SSH} ${node} \"pkill 'mariadb|mysql|mysqld'\"|| exit 0"
-  message="[Node: ${node}] Detect and kill non closed mysql process"
+  message="[Node: ${node}]: Detect and kill non closed mysql process"
   execSshAction "$command" "$message"
 }
 
@@ -468,7 +449,7 @@ stopMysqlService(){
 startMysqlService(){
   local node=$1
   local command="${SSH} ${node} \"/usr/bin/jem service start\""
-  local message="[Node: ${node}] Start MySQL service"
+  local message="[Node: ${node}]: Start MySQL service"
   execSshAction "$command" "$message"
 }
 
@@ -477,7 +458,7 @@ checkMysqlOperable(){
   for retry in $(seq 1 10)
   do
     stderr=$( { mysqlCommandExec "exit" "${node}"; } 2>&1 ) && return ${SUCCESS_CODE}
-    log "[Node: ${node}] [Retry: ${retry}/10] MySQL service operable check...waiting"
+    log "[Node: ${node}]: [Retry: ${retry}/10] MySQL service operable check...waiting"
     sleep 5
   done
   echo -e ${stderr}
@@ -487,7 +468,7 @@ checkMysqlOperable(){
 galeraSetBootstrap(){
   local node=$1
   local num=$2
-  local command="${SSH} ${node} \"sed -i 's/safe_to_bootstrap*/safe_to_bootstrap: ${num}/g' /var/lib/mysql/grastate.dat\""
+  local command="${SSH} ${node} \"[[ -f /var/lib/mysql/grastate.dat ]] && { sed -i 's/safe_to_bootstrap.*/safe_to_bootstrap: ${num}/g' /var/lib/mysql/grastate.dat; } || { echo 'safe_to_bootstrap: ${num}' > /var/lib/mysql/grastate.dat; chown mysql:mysql /var/lib/mysql/grastate.dat;}\""  local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
   local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
   execSshAction "$command" "$message"
 }
@@ -512,9 +493,9 @@ galeraGetClusterStatus(){
   service_status=$(checkMysqlServiceStatus "${node}")
   if [[ ${service_status} == "up" ]]; then
     wsrep_cluster_status=$(mysqlCommandExec "show global status like 'wsrep_cluster_status'\G;" "${node}" |grep -i value|awk -F ':' '{print $2}'|xargs)
-    log "[Node: ${node}] wsrep_cluster_status=${wsrep_cluster_status}"
+    log "[Node: ${node}]: wsrep_cluster_status=${wsrep_cluster_status}"
   else
-    log "[Node: ${node}] Can't define wsrep_cluster_status, mysql service is down"
+    log "[Node: ${node}]: Can't define wsrep_cluster_status, mysql service is down"
   fi
 
   echo "${wsrep_cluster_status}"
@@ -531,8 +512,8 @@ galeraGetPrimaryNode(){
   do
       [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
       command="${SSH} ${node} 'grep safe_to_bootstrap /var/lib/mysql/grastate.dat'"
-      safe_bootstrap=$(execSshReturn "$command" "[Node: ${node}] Get safe_to_bootstrap"|awk -F : '{print $2}'|xargs )
-      log "[Node: ${node}] safe_to_bootstrap=${safe_bootstrap}"
+      safe_bootstrap=$(execSshReturn "$command" "[Node: ${node}]: Get safe_to_bootstrap"|awk -F : '{print $2}'|xargs )
+      log "[Node: ${node}]: safe_to_bootstrap=${safe_bootstrap}"
       if [[ ${safe_bootstrap} == 1 ]]; then
         primary_node="${node}"
         stopMysqlService "${node}"
@@ -540,8 +521,8 @@ galeraGetPrimaryNode(){
         stopMysqlService "${node}"
         [[ ${primary_node} == 'undefined' ]] || continue
         command="${SSH} ${node} 'mysqld --wsrep-recover > /dev/null 2>&1 && tail -2 /var/log/mysql/mysqld.log |grep \"Recovered position\"'"
-        cur_seq_num=$(execSshReturn "$command" "[Node: ${node}] Get seqno"|awk -F 'Recovered position:' '{print $2}'|awk -F : '{print $2}' )
-        log "[Node: ${node}] seqno=${cur_seq_num}"
+        cur_seq_num=$(execSshReturn "$command" "[Node: ${node}]: Get seqno"|awk -F 'Recovered position:' '{print $2}'|awk -F : '{print $2}' )
+        log "[Node: ${node}]: seqno=${cur_seq_num}"
       fi
 
       if [ "${seq_num}" -lt "${cur_seq_num}" ]; then
@@ -551,7 +532,7 @@ galeraGetPrimaryNode(){
   done
 
   [[ ${primary_node} == 'undefined' ]] && primary_node=${primary_node_by_seq}
-  log "[Node: ${primary_node}] Set as primary...done"
+  log "[Node: ${primary_node}]: Set as primary...done"
   echo "${primary_node}"
 }
 
@@ -560,10 +541,10 @@ galeraMyisamCheck(){
   local sql="SELECT CONCAT(table_schema,'.',table_name) as MyISAM_Db_Tables FROM information_schema.tables WHERE engine='MyISAM' AND table_schema NOT IN ('information_schema','mysql','performance_schema');"
   stdout=$( { mysqlCommandExec "${sql}" "${node}"; } 2>&1 ) || { log "${stdout}"; return ${FAIL_CODE}; }
   if [[ -z ${stdout} ]]; then
-    log "[Node: ${node}] MyISAM tables not found...ok"
+    log "[Node: ${node}]: MyISAM tables not found...ok"
     echo "ok"
   else
-    log "[Node: ${node}] MyISAM tables exist...warning\n==============WARNING==================\n${stdout}\n============END WARNING================";
+    log "[Node: ${node}]: MyISAM tables exist...warning\n==============WARNING==================\n${stdout}\n============END WARNING================";
     echo "warning"
   fi
   return ${SUCCESS_CODE}
@@ -592,6 +573,8 @@ galeraFix(){
     galeraFixWithActivePrimary ${nodes_to_fix[@]}
   fi
 }
+
+
 
 diagnosticResponse(){
   local result=$1
@@ -630,7 +613,7 @@ nodeDiagnostic(){
     log "${error}"
     return ${SUCCESS_CODE}
   }
-  log "[Node: localhost] Detected node type: ${node_type}...done"
+  log "[Node: localhost]: Detected node type: ${node_type}...done"
 
 
   service_status=$(checkMysqlServiceStatus 'localhost') || {
@@ -675,22 +658,22 @@ restore_secondary_from_primary(){
 restore_primary_from_secondary(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
-  execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
+  execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost]: Sync data from donor ${DONOR_IP} with delete flag"
   stopMysqlService "${DONOR_IP}"
-  execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} service stop"
+  execAction "resyncData ${DONOR_IP}" "[Node: localhost]: Resync data after donor ${DONOR_IP} service stop"
   startMysqlService "localhost"
-  execAction "checkMysqlOperable localhost" "[Node: localhost] Mysql service operable check"
+  execAction "checkMysqlOperable localhost" "[Node: localhost]: Mysql service operable check"
   startMysqlService "${DONOR_IP}"
-  execAction "checkMysqlOperable ${DONOR_IP}" "[Node: ${DONOR_IP}] Mysql service operable check"
-  execAction "getPrimaryPosition localhost" '[Node: localhost] Get primary position'
-  execAction "removeSecondaryFromPrimary localhost" '[Node: localhost] Disable secondary'
-  execAction "restoreSecondaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Restore primary position on donor"
+  execAction "checkMysqlOperable ${DONOR_IP}" "[Node: ${DONOR_IP}]: Mysql service operable check"
+  execAction "getPrimaryPosition localhost" '[Node: localhost]: Get primary position'
+  execAction "removeSecondaryFromPrimary localhost" '[Node: localhost]: Disable secondary'
+  execAction "restoreSecondaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}]: Restore primary position on donor"
 }
 
 restore_primary_from_primary(){
   restore_secondary_from_primary
-  execAction "getPrimaryPosition localhost" '[Node: localhost] Get self primary position'
-  execAction "restoreSecondaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Restore primary position on donor"
+  execAction "getPrimaryPosition localhost" '[Node: localhost]: Get self primary position'
+  execAction "restoreSecondaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}]: Restore primary position on donor"
 }
 
 restore_galera(){
@@ -719,8 +702,7 @@ liveMysqlCheck(){
     for tb in ${tables};
       do
         stderr=$( { mysqlcheck -u${REPLICA_USER} -p${REPLICA_PSWD} -c $db $tb; } 2>&1 ) 
-	if [[ "x$(echo -e $stderr |grep -iE 'error +: +Corrupt')" != "x" ]]; then
-	
+	      if [[ "x$(echo -e $stderr |grep -iE 'error +: +Corrupt')" != "x" ]]; then
           echo -e "${db}.${tb}\n${stderr}"
           log "[Node: localhost]: Checking ${db}.${tb}...failed";
           hasCorrupts=1

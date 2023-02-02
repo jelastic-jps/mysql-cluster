@@ -71,11 +71,11 @@ if (isRestore) {
     if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
 
     if (isMasterFailed) {
-        resp = getSlavesOnly();
+        scenario = " --scenario restore_primary_from_secondary";
+        resp = getSlavesOnly(scenario);
         if (resp.result != 0) return resp;
 
         failedNodes = resp.nodes;
-        scenario = " --scenario restore_secondary_from_primary";
     }
 
     api.marketplace.console.WriteLog("failedNodes-> " + failedNodes);
@@ -89,7 +89,7 @@ if (isRestore) {
     if (!donorIps[scheme]) { //!scenario ||
         return {
             result: UNABLE_RESTORE_CODE,
-            type: SUCCESS
+            type: WARNING
         }
     }
 
@@ -255,6 +255,7 @@ function parseOut(data, restoreMaster) {
                             break;
 
                         case SECONDARY:
+                            isMasterFailed = false;
                             if (item.service_status == DOWN || item.status == FAILED) {
 
                                 if (!isRestore && item.address) {
@@ -335,7 +336,7 @@ function parseOut(data, restoreMaster) {
 
                     return {
                         result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
-                        type: SUCCESS
+                        type: WARNING
                     };
                 }
             }
@@ -344,7 +345,7 @@ function parseOut(data, restoreMaster) {
         if (!isRestore && (failedNodes.length || failedPrimary.length)) {
             return {
                 result: FAILED_CLUSTER_CODE,
-                type: SUCCESS
+                type: WARNING
             };
         }
 
@@ -355,7 +356,7 @@ function parseOut(data, restoreMaster) {
         if ((!scenario || !donorIps[scheme]) && failedNodes.length) {
             return {
                 result: UNABLE_RESTORE_CODE,
-                type: SUCCESS
+                type: WARNING
             }
         }
 
@@ -415,7 +416,7 @@ function parseOut(data, restoreMaster) {
         if (clusterFailed) {
             return {
                 result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
-                type: SUCCESS
+                type: WARNING
             };
         }
 
