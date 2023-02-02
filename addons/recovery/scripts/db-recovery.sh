@@ -20,6 +20,11 @@ case $key in
     shift
     shift
     ;;
+    --additional-primary)
+    ADDITIONAL_PRIMARY=$2
+    shift
+    shift
+    ;;
     --scenario)
     SCENARIO=$2
     shift
@@ -54,6 +59,7 @@ echo "              --mysql-user - MySQL user with the LOCK TABLES privileges [U
 echo "              --mysql-password - MySQL user password [USED FOR INIT ONLY]"
 echo "              --donor-ip - IP address of the operable MySQL server from which the failed node will be restored"
 echo "                           In the case of Galera cluster recovery, skip this parameter"
+echo "              --additional-primary - IP address of additional primary MySQL server. This parameter should be used in multi slave configuration"
 echo "              --scenario - Restoration scenario; the following arguments are supported:"
 echo "                           restore_primary_from_primary - restore failed primary node from another primary"
 echo "                           restore_secondary_from_primary - restore secondary node from primary"
@@ -111,6 +117,12 @@ mysqlCommandExec(){
 }
 
 mysqlNoTablesCommandExec(){
+  command="$1"
+  server_ip=$2
+  MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -sNe "$command"
+}
+
+mysqlCommandExec2(){
   command="$1"
   server_ip=$2
   MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -sNe "$command"
@@ -257,20 +269,35 @@ setReplicaUserFromEnv(){
 
 getPrimaryPosition(){
   local node=$1
+  local masterName=$2
   echo "File=$(mysqlCommandExec 'show master status\G;' ${node} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
   echo "Position=$(mysqlCommandExec 'show master status\G;' ${node}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
-  echo "ReportHost=$(mysqlCommandExec 'show variables like "report_host" \G;' ${node}|grep 'Value'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  if [[ -n "${ADDITIONAL_PRIMARY}" ]]; then
+    echo "ReportHost=${node}" >> ${REPLICATION_INFO}
+  else
+    echo "ReportHost=$(mysqlCommandExec 'show variables like "report_host" \G;' ${node}|grep 'Value'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  fi
   echo "ReplicaUser=${REPLICA_USER}" >> ${REPLICATION_INFO}
   echo "ReplicaPassword=${REPLICA_PSWD}" >> ${REPLICATION_INFO}
+  echo "MasterName=${masterName}" >> ${REPLICATION_INFO}
 }
 
 
 getSecondaryStatus(){
   local node=$1
   local secondary_running_values
+  local secondary_count
+  local slave_ok
 
-  secondary_running_values=$(mysqlCommandExec "SHOW SLAVE STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
-  if [[ ${secondary_running_values} != 2 ]]; then
+  secondary_count=$(mysqlCommandExec2 "SELECT VARIABLE_VALUE from information_schema.global_status where VARIABLE_NAME='SLAVES_RUNNING'" ${node})
+  slave_ok=$((2*$secondary_count))
+  if [[ $secondary_count == 1 ]]; then
+    secondary_running_values=$(mysqlCommandExec "SHOW SLAVE STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
+  else
+    secondary_running_values=$(mysqlCommandExec "SHOW ALL SLAVES STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
+  fi
+
+  if [[ ${secondary_running_values} != ${slave_ok} ]]; then
     echo "failed"
     log "[Node: ${node}]: Secondary is not running...failed\n ${secondary_running_values}"
     return ${FAIL_CODE}
@@ -335,6 +362,45 @@ restoreSecondaryPosition(){
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
   mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
+}
+
+getMysqlServerName(){
+  local serverName
+  [[ x"$(mysqld --version |grep -i mariadb)" == "x" ]] && serverName=mysql || serverName=mariadb
+  echo $serverName
+}
+
+restoreMultiSecondaryPosition(){
+  local node=$1
+  local primNane=$2
+  local serverName="$(getMysqlServerName)"
+  source ${REPLICATION_INFO};
+  rm -f ${REPLICATION_INFO}
+  if [[ "${serverName}" == "mariadb" ]]; then
+    mysqlCommandExec "CHANGE MASTER '${MasterName}' TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position};" ${node}
+  else
+    mysqlCommandExec "CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position} FOR CHANNEL '${primNane}';" ${node}
+  fi
+}
+
+stopAllSlaves(){
+  local node=$1
+  local serverName="$(getMysqlServerName)"
+  if [[ "${serverName}" == "mariadb" ]]; then
+    mysqlCommandExec "STOP ALL SLAVES; RESET SLAVE ALL;" ${node}
+  else
+    mysqlCommandExec "STOP SLAVE; RESET SLAVE ALL;" ${node}
+  fi
+}
+
+startAllSlaves(){
+  local node=$1
+  local serverName="$(getMysqlServerName)"
+  if [[ "${serverName}" == "mariadb" ]]; then
+    mysqlCommandExec "START ALL SLAVES;" ${node}
+  else
+    mysqlCommandExec "START SLAVE;" ${node}
+  fi
 }
 
 
@@ -570,14 +636,23 @@ nodeDiagnostic(){
 restore_secondary_from_primary(){
   execAction "checkAuth" 'Authentication check'
   stopMysqlService "localhost"
-  execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost]: Sync data from donor ${DONOR_IP} with delete flag"
-  execAction "setPrimaryReadonly ${DONOR_IP}" "[Node: ${DONOR_IP}]: Set primary readonly"
-  execAction "resyncData ${DONOR_IP}" "[Node: localhost]: Resync data after donor ${DONOR_IP} lock"
-  execAction "getPrimaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}]: Get primary position"
-  execAction "setPrimaryWriteMode ${DONOR_IP}" "[Node: ${DONOR_IP}]: Set donor to read write mode"
+  execAction "cleanSyncData ${DONOR_IP}" "[Node: localhost] Sync data from donor ${DONOR_IP} with delete flag"
+  execAction "setPrimaryReadonly ${DONOR_IP}" "[Node: ${DONOR_IP}] Set primary readonly"
+  execAction "resyncData ${DONOR_IP}" "[Node: localhost] Resync data after donor ${DONOR_IP} lock"
+  execAction "setPrimaryWriteMode ${DONOR_IP}" "[Node: ${DONOR_IP}] Set donor to read write mode"
   startMysqlService "localhost"
-  execAction "checkMysqlOperable localhost" "[Node: localhost]: Mysql service operable check"
-  execAction 'restoreSecondaryPosition localhost' '[Node: localhost]: Restore primary position on self node'
+  execAction "checkMysqlOperable localhost" "[Node: localhost] Mysql service operable check"
+  if [[ -n "${ADDITIONAL_PRIMARY}" ]]; then
+    execAction "stopAllSlaves localhost" '[Node: localhost] Stop all slaves'
+    execAction "getPrimaryPosition ${DONOR_IP} PRIM1" "[Node: ${DONOR_IP}] Get primary PRIM1 position"
+    execAction 'restoreMultiSecondaryPosition localhost PRIM1' '[Node: localhost] Restore primary PRIM1 position on self node'
+    execAction "getPrimaryPosition ${ADDITIONAL_PRIMARY} PRIM2" "[Node: ${ADDITIONAL_PRIMARY}] Get primary PRIM2 position"
+    execAction 'restoreMultiSecondaryPosition localhost PRIM2' '[Node: localhost] Restore primary PRIM2 position on self node'
+    execAction "startAllSlaves localhost" '[Node: localhost] Start all slaves'
+  else
+    execAction "getPrimaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}] Get primary position"
+    execAction 'restoreSecondaryPosition localhost' '[Node: localhost] Restore primary position on self node'
+  fi
 }
 
 restore_primary_from_secondary(){
@@ -619,23 +694,24 @@ liveMysqlCheck(){
   databases=$(mysqlNoTablesCommandExec 'SHOW DATABASES' 'localhost')
   log "[Node: localhost]: ##### Live check with mysqlcheck utility #####";
   for db in ${databases};
-	do
+  do
     log "[Node: localhost]: Checking database [$db]...progress";
     tables=$(mysqlNoTablesCommandExec "use $db;show tables" 'localhost')
     [[ -z "${tables}" ]] && { log "[Node: localhost]: Database [$db] have no tables...skipped"; continue; }
     hasCorrupts=0
     for tb in ${tables};
       do
-        stderr=$( { mysqlcheck -u${REPLICA_USER} -p${REPLICA_PSWD} -c $db $tb; } 2>&1 ) || {
+        stderr=$( { mysqlcheck -u${REPLICA_USER} -p${REPLICA_PSWD} -c $db $tb; } 2>&1 ) 
+	      if [[ "x$(echo -e $stderr |grep -iE 'error +: +Corrupt')" != "x" ]]; then
           echo -e "${db}.${tb}\n${stderr}"
           log "[Node: localhost]: Checking ${db}.${tb}...failed";
           hasCorrupts=1
           retValue=1
-        }
-      done;
+        fi
+    done;
     [[ $hasCorrupts == 0 ]] && log "[Node: localhost]: Checking database [$db]...ok" || log "[Node: localhost]: Checking database [$db]...failed"
-	done;
-	return ${hasCorrupts}
+  done;
+  return ${hasCorrupts}
 }
 
 offlineMysqlCheck(){
@@ -675,6 +751,7 @@ elif [[ "${check_corrupts}" == "YES" ]]; then
 else
   log ">>>BEGIN RESTORE SCENARIO [${SCENARIO}]"
   $SCENARIO
+  sleep 10
   nodeDiagnostic
   log ">>>END RESTORE SCENARIO [${SCENARIO}]"
 fi
