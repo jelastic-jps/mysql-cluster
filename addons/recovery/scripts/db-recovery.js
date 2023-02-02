@@ -10,6 +10,7 @@ var SQLDB = "sqldb",
     failedNodes = [],
     isMasterFailed = false,
     GALERA = "galera",
+    XTRADB = "xtradb",
     PRIMARY = "primary",
     SECONDARY = "secondary",
     FAILED = "failed",
@@ -54,6 +55,7 @@ for (var i = 0, n = nodeGroups.length; i < n; i++) {
             scheme = nodeGroups[i].cluster.settings.scheme;
             if (scheme == SLAVE) scheme = SECONDARY;
             if (scheme == MASTER) scheme = PRIMARY;
+            if (scheme == XTRADB) scheme = GALERA;
             break;
         }
     }
