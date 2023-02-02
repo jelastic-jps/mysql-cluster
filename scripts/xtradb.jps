@@ -3,7 +3,7 @@ id: percona-xtradb-cluster
 name: Percona XtraDB Cluster
 description: Percona XtraDB Auto Clustering
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64510
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 success:
   text: /texts/phpmyadmin-credentials.md
@@ -18,7 +18,7 @@ globals:
   DB_USER: ${settings.db_user:user-[fn.random]}
   DB_PASS: ${settings.db_pass:[fn.password(20)]}
   CLUSTER_NAME: xtradb-${env.name}
-  CLUSTER_CONF: /etc/mysql/conf.d/xtradb.cnf
+  CLUSTER_CONF: /etc/mysql/conf.d/galera.cnf
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
