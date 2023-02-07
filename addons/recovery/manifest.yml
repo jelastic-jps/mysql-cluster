@@ -56,6 +56,14 @@ settings:
 onAfterScaleOut[sqldb]: generate-share-keys
 onAfterRedeployContainer[sqldb]: generate-share-keys
 
+onAfterClone:
+  install: ${baseUrl}/manifest.yml?_r=${fn.random}
+  envName: ${event.response.env.envName}
+  nodeGroup: ${targetNodes.nodeGroup}
+  settings:
+    user: ${settings.user}
+    password: ${settings.password}
+
 onInstall:
   - clusterValidate
   - if (!${settings.install:false}): authValidate
