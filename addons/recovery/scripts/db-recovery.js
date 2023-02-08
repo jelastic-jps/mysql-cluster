@@ -33,7 +33,6 @@ function DBRecovery() {
         if (resp.result != 0) return resp;
 
         resp = me.parseResponse(resp.responses, true);
-        if (resp.result != 0) return resp;
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
@@ -50,7 +49,15 @@ function DBRecovery() {
 
             resp = me.recoveryNodes();
             if (resp.result != 0) return resp;
+        } else {
+            if (me.getEvent() && me.getAction()) {
+                return {
+                    result: 0,
+                    errors: resp.result == FAILED_CLUSTER_CODE ? true : false
+                };
+            }
         }
+        if (resp.result != 0) return resp;
 
         return {
             result: !isRestore ? 200 : 201,
@@ -85,11 +92,24 @@ function DBRecovery() {
 
     me.defineRestore = function() {
         let exec = getParam('exec', '');
+        let init = getParam('init', '');
+        let event = getParam('event', '');
 
         if (!exec) isRestore = true;
         exec = exec || " --diagnostic";
-        me.setAction(exec);
 
+        if (init) {
+            me.setInitialize(true);
+            let resp = me.execRecovery();
+            if (resp.result != 0) return resp;
+            me.setInitialize(false);
+
+            resp = me.parseResponse(resp.responses);
+            if (resp.result != 0) return resp;
+        }
+
+        me.setAction(exec);
+        me.setEvent(event);
         me.setScenario();
 
         let resp = me.defineScheme();
@@ -117,6 +137,22 @@ function DBRecovery() {
 
     me.getScenario = function(scenario) {
         return config.scenarios[scenario];
+    };
+
+    me.getInitialize = function() {
+        return config.initialize || false;
+    };
+
+    me.setInitialize = function(init) {
+        config.initialize = init;
+    };
+
+    me.getEvent = function() {
+        return config.event || false;
+    };
+
+    me.setEvent = function(event) {
+        config.event = event;
     };
 
     me.getAction = function() {
@@ -424,8 +460,11 @@ function DBRecovery() {
         let donor = me.getDonorIp();
         let action = "";
 
-        if (!me.primaryRestored() && me.getFailedPrimaries().length) {
+        if (me.getInitialize()) {
+            return action = "init";
+        }
 
+        if (!me.primaryRestored() && me.getFailedPrimaries().length) {
             scenario = me.getScenario(PRIMARY + "_" + ((me.getScheme() == SECONDARY) ? SECONDARY : PRIMARY));
         } else {
             if (me.getAdditionalPrimary()) {
