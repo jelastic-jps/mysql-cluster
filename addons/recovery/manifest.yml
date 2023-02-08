@@ -122,7 +122,7 @@ actions:
               message: Authentication failed, please check User/Password.
 
   diagnostic:
-    script: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=5d83d2d37c56181a4cac27c7529ac210&download
+    script: /scripts/db-recovery.js
     exec: ' --diagnostic'
     event: ${this.event:}
     
@@ -135,7 +135,7 @@ actions:
             message: ${globals.diagnostic-failed}
 
   recovery:
-    script: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=5d83d2d37c56181a4cac27c7529ac210&download
+    script: /scripts/db-recovery.js
     
   init:
     - cmd[sqldb]: |-
