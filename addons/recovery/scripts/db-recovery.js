@@ -261,7 +261,7 @@ function DBRecovery() {
                 } else {
                     return {
                         result: isRestore ? UNABLE_RESTORE_CODE : FAILED_CLUSTER_CODE,
-                        type: SUCCESS
+                        type: WARNING
                     };
                 }
             }
@@ -297,17 +297,13 @@ function DBRecovery() {
         if (!isRestore && me.getFailedNodes().length) {
             return {
                 result: FAILED_CLUSTER_CODE,
-                type: SUCCESS
+                type: WARNING
             };
         }
 
         if (item.service_status == UP && item.status == OK) {
             let resp = nodeManager.setFailedDisplayNode(item.address, true);
             if (resp.result != 0) return resp;
-        }
-
-        return {
-            result: 0
         }
     };
 
