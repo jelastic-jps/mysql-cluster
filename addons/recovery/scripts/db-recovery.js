@@ -305,6 +305,10 @@ function DBRecovery() {
             let resp = nodeManager.setFailedDisplayNode(item.address, true);
             if (resp.result != 0) return resp;
         }
+        
+        return {
+            result: 0
+        }
     };
 
     me.checkPrimary = function(item) {
