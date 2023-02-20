@@ -3,6 +3,7 @@ function DBRecovery() {
         UNABLE_RESTORE_CODE = 98,
         FAILED_CLUSTER_CODE = 99,
         RESTORE_SUCCESS = 201,
+        XTRADB = "xtradb",
         GALERA = "galera",
         SECONDARY = "secondary",
         PRIMARY = "primary",
@@ -80,6 +81,7 @@ function DBRecovery() {
                     let scheme = nodeGroups[i].cluster.settings.scheme;
                     if (scheme == SLAVE || scheme == SECONDARY) scheme = SECONDARY;
                     if (scheme == MASTER || scheme == PRIMARY) scheme = PRIMARY;
+                    if (scheme == XTRADB) scheme = GALERA;
                     me.setScheme(scheme);
                     log("me.getScheme->" + me.getScheme());
                     break;
