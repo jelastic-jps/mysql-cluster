@@ -282,22 +282,12 @@ getPrimaryPosition(){
   echo "MasterName=${masterName}" >> ${REPLICATION_INFO}
 }
 
-
 getSecondaryStatus(){
   local node=$1
   local secondary_running_values
-  local secondary_count
-  local slave_ok
 
-  secondary_count=$(mysqlCommandExec2 "SELECT VARIABLE_VALUE from information_schema.global_status where VARIABLE_NAME='SLAVES_RUNNING'" ${node})
-  slave_ok=$((2*$secondary_count))
-  if [[ $secondary_count == 1 ]]; then
-    secondary_running_values=$(mysqlCommandExec "SHOW SLAVE STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
-  else
-    secondary_running_values=$(mysqlCommandExec "SHOW ALL SLAVES STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
-  fi
-
-  if [[ ${secondary_running_values} != ${slave_ok} ]]; then
+  secondary_running_values=$(mysqlCommandExec "SHOW SLAVE STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
+  if [[ ${secondary_running_values} != 2 ]]; then
     echo "failed"
     log "[Node: ${node}]: Secondary is not running...failed\n ${secondary_running_values}"
     return ${FAIL_CODE}
@@ -305,6 +295,7 @@ getSecondaryStatus(){
   echo "ok"
   log "[Node: ${node}]: Secondary is running...done"
 }
+
 
 removeSecondaryFromPrimary(){
   local node=$1
