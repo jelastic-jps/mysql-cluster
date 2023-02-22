@@ -287,7 +287,7 @@ getSecondaryStatus(){
   local secondary_running_values
 
   schema_name=$(mysqlCommandExec2 "SELECT TABLE_SCHEMA FROM information_schema.TABLES WHERE TABLE_NAME = 'global_status'" ${node})
-  if [[ "x${schema_name}" == "information_schema" ]]; then
+  if [[ "x${schema_name}" == "xinformation_schema" ]]; then
     secondary_count=$(mysqlCommandExec2 "SELECT VARIABLE_VALUE from information_schema.global_status where VARIABLE_NAME='SLAVES_RUNNING'" ${node})
   else
     secondary_count=$(mysqlCommandExec2 "SELECT count(SERVICE_STATE) FROM performance_schema.replication_connection_status;" ${node})
@@ -296,7 +296,7 @@ getSecondaryStatus(){
   slave_ok=$((2*$secondary_count))
   if [[ $secondary_count == 1 ]]; then
     SHOW_SLAVE_COMMAND='SHOW SLAVE STATUS \G'
-  elif [[ $secondary_count > 1 ]] && [[ "x${schema_name}" != "information_schema" ]]; then
+  elif [[ $secondary_count > 1 ]] && [[ "x${schema_name}" != "xinformation_schema" ]]; then
     SHOW_SLAVE_COMMAND='SHOW SLAVE STATUS \G'
   else
     SHOW_SLAVE_COMMAND='SHOW ALL SLAVES STATUS \G'
