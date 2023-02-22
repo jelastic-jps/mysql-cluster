@@ -286,8 +286,25 @@ getSecondaryStatus(){
   local node=$1
   local secondary_running_values
 
-  secondary_running_values=$(mysqlCommandExec "SHOW SLAVE STATUS \G" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
-  if [[ ${secondary_running_values} != 2 ]]; then
+  schema_name=$(mysqlCommandExec2 "SELECT TABLE_SCHEMA FROM information_schema.TABLES WHERE TABLE_NAME = 'global_status'" ${node})
+  if [[ "x${schema_name}" == "information_schema" ]]; then
+    secondary_count=$(mysqlCommandExec2 "SELECT VARIABLE_VALUE from information_schema.global_status where VARIABLE_NAME='SLAVES_RUNNING'" ${node})
+  else
+    secondary_count=$(mysqlCommandExec2 "SELECT count(SERVICE_STATE) FROM performance_schema.replication_connection_status;" ${node})
+  fi
+
+  slave_ok=$((2*$secondary_count))
+  if [[ $secondary_count == 1 ]]; then
+    SHOW_SLAVE_COMMAND='SHOW SLAVE STATUS \G'
+  elif [[ $secondary_count > 1 ]] && [[ "x${schema_name}" != "information_schema" ]]; then
+    SHOW_SLAVE_COMMAND='SHOW SLAVE STATUS \G'
+  else
+    SHOW_SLAVE_COMMAND='SHOW ALL SLAVES STATUS \G'
+  fi
+
+  secondary_running_values=$(mysqlCommandExec "${SHOW_SLAVE_COMMAND}" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |grep -i yes|wc -l)
+
+  if [[ ${secondary_running_values} != ${slave_ok} ]]; then
     echo "failed"
     log "[Node: ${node}]: Secondary is not running...failed\n ${secondary_running_values}"
     return ${FAIL_CODE}
@@ -295,6 +312,7 @@ getSecondaryStatus(){
   echo "ok"
   log "[Node: ${node}]: Secondary is running...done"
 }
+
 
 
 removeSecondaryFromPrimary(){
