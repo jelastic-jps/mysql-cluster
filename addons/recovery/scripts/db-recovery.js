@@ -610,6 +610,8 @@ function DBRecovery() {
             resp = me.getNodeInfoById(resp.nodeid);
             if (resp.result != 0) return resp;
             node = resp.node;
+            
+            node.displayName = node.displayName || ("Node ID: " + node.id);
 
             if (!isRestore && node.displayName.indexOf(FAILED_UPPER_CASE) != -1) return { result: 0 }
 
