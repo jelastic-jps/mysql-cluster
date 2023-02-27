@@ -323,7 +323,7 @@ function DBRecovery() {
     };
 
     me.checkPrimary = function(item) {
-        let resp;
+        let resp, failed;
 
         if (item.service_status == DOWN || item.status == FAILED) {
             if (item.node_type == SECONDARY) {
@@ -342,8 +342,7 @@ function DBRecovery() {
                 }
             }
 
-            log("isRestore->" + isRestore);
-            if (!isRestore) {
+            if (!isRestore && item.status == FAILED && item.service_status == DOWN) {
                 resp = nodeManager.setFailedDisplayNode(item.address);
                 if (resp.result != 0) return resp;
 
@@ -353,10 +352,7 @@ function DBRecovery() {
                 };
             }
 
-            log("item.status->" + item.status);
             if (item.status == FAILED) {
-                log("item.node_type == PRIMARY->" + !!(item.node_type == PRIMARY));
-                log("item.service_status == DOWN->" + !!(item.service_status == DOWN));
                 if (item.node_type == PRIMARY && item.service_status == DOWN) {
                     me.setFailedPrimaries({
                         address: item.address
