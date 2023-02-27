@@ -335,6 +335,7 @@ function DBRecovery() {
                 }
             }
 
+            log("isRestore->" + isRestore);
             if (!isRestore) {
                 resp = nodeManager.setFailedDisplayNode(item.address);
                 if (resp.result != 0) return resp;
@@ -345,6 +346,7 @@ function DBRecovery() {
                 };
             }
 
+            log("item.status->" + item.status);
             if (item.status == FAILED) {
                 log("item.node_type == PRIMARY->" + !!(item.node_type == PRIMARY));
                 log("item.service_status == DOWN->" + !!(item.service_status == DOWN));
