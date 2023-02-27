@@ -286,7 +286,7 @@ getSecondaryStatus(){
   local node=$1
   local secondary_running_values
 
-  schema_name=$(mysqlCommandExec2 "SELECT TABLE_SCHEMA FROM information_schema.TABLES WHERE TABLE_NAME = 'global_status'" ${node})
+  schema_name=$(mysqlCommandExec2 "SELECT TABLE_SCHEMA FROM information_schema.TABLES WHERE TABLE_NAME = 'global_status' and TABLE_SCHEMA='information_schema';" ${node})
   if [[ "x${schema_name}" == "xinformation_schema" ]]; then
     secondary_count=$(mysqlCommandExec2 "SELECT VARIABLE_VALUE from information_schema.global_status where VARIABLE_NAME='SLAVES_RUNNING'" ${node})
   else
