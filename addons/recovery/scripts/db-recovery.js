@@ -346,6 +346,8 @@ function DBRecovery() {
             }
 
             if (item.status == FAILED) {
+                log("item.node_type == PRIMARY->" + !!(item.node_type == PRIMARY));
+                log("item.service_status == DOWN->" + !!(item.service_status == DOWN));
                 if (item.node_type == PRIMARY && item.service_status == DOWN) {
                     me.setFailedPrimaries({
                         address: item.address
