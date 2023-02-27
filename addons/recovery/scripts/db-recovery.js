@@ -35,8 +35,10 @@ function DBRecovery() {
 
         resp = me.parseResponse(resp.responses, true);
 
+        log("resp -> " + resp);
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
+            log("failedPrimaries.length -> " + failedPrimaries.length);
             if (failedPrimaries.length) {
                 resp = me.recoveryNodes(failedPrimaries);
                 if (resp.result != 0) return resp;
