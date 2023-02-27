@@ -606,6 +606,16 @@ diagnosticResponse(){
   echo "${response}"
 }
 
+checkSelfRestoreLoop(){
+  local error="Current node address:[${NODE_ADDRESS}] is the same as donor IP:[${DONOR_IP}]"
+
+  if [[ "${NODE_ADDRESS}" == "${DONOR_IP}" ]]; then
+    log "${error}"
+    return ${FAIL_CODE}
+  fi
+  return ${SUCCESS_CODE}
+}
+
 nodeDiagnostic(){
   local node_type=''
   local service_status=''
@@ -759,6 +769,7 @@ elif [[ "${check_corrupts}" == "YES" ]]; then
   log ">>>END CORRUPTION CHECK"
 else
   log ">>>BEGIN RESTORE SCENARIO [${SCENARIO}]"
+  execAction "checkSelfRestoreLoop" 'Check Self Restore Loop'
   $SCENARIO
   sleep 10
   nodeDiagnostic
