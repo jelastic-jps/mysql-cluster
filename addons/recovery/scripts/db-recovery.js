@@ -39,6 +39,13 @@ function DBRecovery() {
             let failedPrimaries = me.getFailedPrimaries();
             log("failedPrimaries.length -> " + failedPrimaries.length);
             if (failedPrimaries.length) {
+                if (!me.getDonorIp() && !me.getPrimaryDonor()) {
+                    return {
+                        result: UNABLE_RESTORE_CODE,
+                        type: WARNING
+                    };
+                }
+                
                 resp = me.recoveryNodes(failedPrimaries);
                 if (resp.result != 0) return resp;
 
