@@ -28,9 +28,11 @@ function DBRecovery() {
 
     me.process = function() {
         let resp = me.defineRestore();
+        log("resp0 -> " + resp);
         if (resp.result != 0) return resp;
 
         resp = me.execRecovery();
+        log("resp1 -> " + resp);
         if (resp.result != 0) return resp;
 
         resp = me.parseResponse(resp.responses, true);
