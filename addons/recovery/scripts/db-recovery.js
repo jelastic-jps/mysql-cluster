@@ -37,9 +37,7 @@ function DBRecovery() {
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
-            log("failedPrimaries.length -> " + failedPrimaries.length);
             if (failedPrimaries.length) {
-                log("me.getDonorIp() ->" + me.getDonorIp());
                 if (!me.getDonorIp()) {
                     return {
                         result: UNABLE_RESTORE_CODE,
