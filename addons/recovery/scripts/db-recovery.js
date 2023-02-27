@@ -40,8 +40,7 @@ function DBRecovery() {
             log("failedPrimaries.length -> " + failedPrimaries.length);
             if (failedPrimaries.length) {
                 log("me.getDonorIp() ->" + me.getDonorIp());
-                log("me.getPrimaryDonor() ->" + me.getPrimaryDonor());
-                if (!me.getDonorIp() && !me.getPrimaryDonor()) {
+                if (!me.getDonorIp()) {
                     return {
                         result: UNABLE_RESTORE_CODE,
                         type: WARNING
