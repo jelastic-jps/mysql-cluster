@@ -38,6 +38,13 @@ function DBRecovery() {
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
             if (failedPrimaries.length) {
+                if (!me.getDonorIp()) {
+                    return {
+                        result: UNABLE_RESTORE_CODE,
+                        type: WARNING
+                    };
+                }
+                
                 resp = me.recoveryNodes(failedPrimaries);
                 if (resp.result != 0) return resp;
 
@@ -333,7 +340,7 @@ function DBRecovery() {
                 }
             }
 
-            if (!isRestore) {
+            if (!isRestore && item.status == FAILED && item.service_status == DOWN) {
                 resp = nodeManager.setFailedDisplayNode(item.address);
                 if (resp.result != 0) return resp;
 
@@ -344,7 +351,7 @@ function DBRecovery() {
             }
 
             if (item.status == FAILED) {
-                if (item.node_type == PRIMARY) {
+                if (item.node_type == PRIMARY && item.service_status == DOWN) {
                     me.setFailedPrimaries({
                         address: item.address
                     });
