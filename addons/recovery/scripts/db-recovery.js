@@ -350,7 +350,7 @@ function DBRecovery() {
                     if (resp.result != 0) return resp;
                 }
                 
-                if (item.node_type == PRIMARY && item.service_status == DOWN) {
+                if (item.node_type == PRIMARY) {
                     me.setFailedPrimaries({
                         address: item.address
                     });
