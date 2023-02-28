@@ -321,15 +321,9 @@ function DBRecovery() {
     };
 
     me.checkPrimary = function(item) {
-        let resp;
+        let resp, setFailedLabel = false;
 
         if (item.service_status == DOWN || item.status == FAILED) {
-            if (item.node_type == SECONDARY) {
-                scenario = " --scenario restore_secondary_from_primary";
-            } else {
-                scenario = " --scenario restore_primary_from_primary";
-            }
-
             if (item.service_status == UP) {
                 if (!me.getDonorIp()) {
                     me.setDonorIp(item.address);
@@ -351,6 +345,11 @@ function DBRecovery() {
             }
 
             if (item.status == FAILED) {
+                if (!setFailedLabel) {
+                    resp = nodeManager.setFailedDisplayNode(item.address);
+                    if (resp.result != 0) return resp;
+                }
+                
                 if (item.node_type == PRIMARY && item.service_status == DOWN) {
                     me.setFailedPrimaries({
                         address: item.address
@@ -359,6 +358,13 @@ function DBRecovery() {
                     me.setFailedNodes({
                         address: item.address
                     });
+                }
+                
+                if (!isRestore) {
+                    return {
+                        result: FAILED_CLUSTER_CODE,
+                        type: WARNING
+                    };
                 }
             }
         }
