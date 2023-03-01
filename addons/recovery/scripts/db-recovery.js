@@ -50,8 +50,8 @@ function DBRecovery() {
                     resp = me.recoveryNodes(failedPrimaries);
                     if (resp.result != 0) return resp;
                 }
-                
-                log("before getFailedPrimariesByStatus");
+
+                log("before getFailedPrimariesByStatus22");
                 log("me.getFailedPrimariesByStatus()->" + me.getFailedPrimariesByStatus());
                 resp = me.recoveryNodes(me.getFailedPrimariesByStatus());
                 if (resp.result != 0) return resp;
@@ -516,7 +516,7 @@ function DBRecovery() {
             return " --diagnostic";
         }
 
-        if (!me.primaryRestored() && me.getFailedPrimaries().length) {
+        if (!me.primaryRestored() && (me.getFailedPrimaries().length || me.getFailedPrimariesByStatus().length)) {
             scenario = me.getScenario(PRIMARY + "_" + ((me.getScheme() == SECONDARY) ? SECONDARY : PRIMARY));
         } else {
             if (me.getAdditionalPrimary()) {
