@@ -37,7 +37,8 @@ function DBRecovery() {
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
-            if (failedPrimaries.length) {
+            let failedPrimariesByStatus = me.getFailedPrimariesByStatus();
+            if (failedPrimaries.length || failedPrimariesByStatus.length) {
                 if (!me.getDonorIp()) {
                     return {
                         result: UNABLE_RESTORE_CODE,
@@ -45,8 +46,10 @@ function DBRecovery() {
                     };
                 }
 
-                resp = me.recoveryNodes(failedPrimaries);
-                if (resp.result != 0) return resp;
+                if (failedPrimaries.length) {
+                    resp = me.recoveryNodes(failedPrimaries);
+                    if (resp.result != 0) return resp;
+                }
                 
                 log("before getFailedPrimariesByStatus");
                 log("me.getFailedPrimariesByStatus()->" + me.getFailedPrimariesByStatus());
