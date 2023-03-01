@@ -47,6 +47,11 @@ function DBRecovery() {
 
                 resp = me.recoveryNodes(failedPrimaries);
                 if (resp.result != 0) return resp;
+                
+                log("before getFailedPrimariesByStatus");
+                log("me.getFailedPrimariesByStatus()->" + me.getFailedPrimariesByStatus());
+                resp = me.recoveryNodes(me.getFailedPrimariesByStatus());
+                if (resp.result != 0) return resp;
 
                 resp = me.getSecondariesOnly();
                 if (resp.result != 0) return resp;
@@ -192,6 +197,15 @@ function DBRecovery() {
     me.setFailedPrimaries = function(node) {
         config.failedPrimaries = config.failedPrimaries || [];
         config.failedPrimaries.push(node);
+    };
+
+    me.setFailedPrimariesByStatus = function(node) {
+        config.failedPrimariesByStatus = config.failedPrimariesByStatus || [];
+        config.failedPrimariesByStatus.push(node);
+    };
+
+    me.getFailedPrimariesByStatus = function() {
+        return config.failedPrimariesByStatus;
     };
 
     me.primaryRestored = function(restored) {
@@ -354,6 +368,10 @@ function DBRecovery() {
                 if (item.node_type == PRIMARY) {
                     if (item.service_status == DOWN) {
                         me.setFailedPrimaries({
+                            address: item.address
+                        });
+                    } else {
+                        me.setFailedPrimariesByStatus({
                             address: item.address
                         });
                     }
