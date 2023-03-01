@@ -208,7 +208,7 @@ function DBRecovery() {
     };
 
     me.getFailedPrimariesByStatus = function() {
-        return config.failedPrimariesByStatus;
+        return config.failedPrimariesByStatus || [];
     };
 
     me.primaryRestored = function(restored) {
