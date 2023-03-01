@@ -189,7 +189,7 @@ function DBRecovery() {
             config.failedNodes = node;
         } else {
             config.failedNodes = config.failedNodes || [];
-            config.failedNodes.push(node);
+            node ? config.failedNodes.push(node) : config.failedNodes = [];
         }
     };
 
@@ -199,12 +199,12 @@ function DBRecovery() {
 
     me.setFailedPrimaries = function(node) {
         config.failedPrimaries = config.failedPrimaries || [];
-        config.failedPrimaries.push(node);
+        node ? config.failedPrimaries.push(node) : config.failedPrimaries = [];
     };
 
     me.setFailedPrimariesByStatus = function(node) {
         config.failedPrimariesByStatus = config.failedPrimariesByStatus || [];
-        config.failedPrimariesByStatus.push(node);
+        node ? config.failedPrimariesByStatus.push(node) : config.failedPrimariesByStatus = [];
     };
 
     me.getFailedPrimariesByStatus = function() {
@@ -244,6 +244,10 @@ function DBRecovery() {
 
     me.parseResponse = function parseResponse(response) {
         let resp;
+
+        me.setFailedPrimariesByStatus();
+        me.setFailedPrimaries();
+        me.setFailedNodes();
 
         for (let i = 0, n = response.length; i < n; i++) {
             if (response[i] && response[i].out) {
@@ -481,7 +485,7 @@ function DBRecovery() {
                 if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
             }
 
-            log("diagnostic");
+            log("diagnost");
             let resp = me.execRecovery({ diagnostic: true });
             if (resp.result != 0) return resp;
 
