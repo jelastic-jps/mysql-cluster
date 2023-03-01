@@ -33,7 +33,7 @@ function DBRecovery() {
         resp = me.execRecovery();
         if (resp.result != 0) return resp;
 
-        resp = me.parseResponse(resp.responses, true);
+        resp = me.parseResponse(resp.responses);
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
@@ -459,6 +459,12 @@ function DBRecovery() {
                 resp = me.parseResponse(resp.responses);
                 if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
             }
+            
+            let resp = me.execRecovery();
+            if (resp.result != 0) return resp;
+
+            resp = me.parseResponse(resp.responses);
+            if (resp.result != 0) return resp;
         }
 
         return  { result: 0 }
