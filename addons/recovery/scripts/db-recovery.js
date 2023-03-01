@@ -44,7 +44,7 @@ function DBRecovery() {
                         type: WARNING
                     };
                 }
-                
+
                 resp = me.recoveryNodes(failedPrimaries);
                 if (resp.result != 0) return resp;
 
@@ -314,7 +314,7 @@ function DBRecovery() {
             let resp = nodeManager.setFailedDisplayNode(item.address, true);
             if (resp.result != 0) return resp;
         }
-        
+
         return {
             result: 0
         }
@@ -350,7 +350,7 @@ function DBRecovery() {
                     resp = nodeManager.setFailedDisplayNode(item.address);
                     if (resp.result != 0) return resp;
                 }
-                
+
                 if (item.node_type == PRIMARY) {
                     if (item.service_status == DOWN) {
                         me.setFailedPrimaries({
@@ -362,7 +362,7 @@ function DBRecovery() {
                         address: item.address
                     });
                 }
-                
+
                 if (!isRestore) {
                     return {
                         result: FAILED_CLUSTER_CODE,
@@ -453,14 +453,15 @@ function DBRecovery() {
                 let resp = nodeManager.getNodeIdByIp(failedNodes[i].address);
                 if (resp.result != 0) return resp;
 
-                resp = me.execRecovery(resp.nodeid);
+                resp = me.execRecovery({ nodeid: resp.nodeid });
                 if (resp.result != 0) return resp;
 
                 resp = me.parseResponse(resp.responses);
                 if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
             }
-            
-            let resp = me.execRecovery();
+
+            log("diagnostic");
+            let resp = me.execRecovery({ diagnostic: true });
             if (resp.result != 0) return resp;
 
             resp = me.parseResponse(resp.responses);
@@ -470,22 +471,26 @@ function DBRecovery() {
         return  { result: 0 }
     };
 
-    me.execRecovery = function(nodeid) {
-        api.marketplace.console.WriteLog("nodeid->" + nodeid);
-        api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction());
+    me.execRecovery = function(values) {
+        api.marketplace.console.WriteLog("nodeid->" + nodeid.nodeid);
+        api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values));
         return nodeManager.cmd({
-            command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(),
-            nodeid: nodeid || ""
+            command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values),
+            nodeid: nodeid.nodeid || ""
         });
     };
 
-    me.formatRecoveryAction = function() {
+    me.formatRecoveryAction = function(values) {
         let scenario = me.getScenario(me.getScheme());
         let donor = me.getDonorIp();
         let action = "";
 
         if (me.getInitialize()) {
             return action = "init";
+        }
+
+        if (values.diagnostic) {
+            return " --diagnostic";
         }
 
         if (!me.primaryRestored() && me.getFailedPrimaries().length) {
@@ -632,7 +637,7 @@ function DBRecovery() {
             resp = me.getNodeInfoById(resp.nodeid);
             if (resp.result != 0) return resp;
             node = resp.node;
-            
+
             node.displayName = node.displayName || ("Node ID: " + node.id);
 
             if (!isRestore && node.displayName.indexOf(FAILED_UPPER_CASE) != -1) return { result: 0 }
