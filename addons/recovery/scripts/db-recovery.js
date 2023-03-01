@@ -337,6 +337,7 @@ function DBRecovery() {
             if (!isRestore && item.status == FAILED && item.service_status == DOWN) {
                 resp = nodeManager.setFailedDisplayNode(item.address);
                 if (resp.result != 0) return resp;
+                setFailedLabel = true;
 
                 return {
                     result: FAILED_CLUSTER_CODE,
