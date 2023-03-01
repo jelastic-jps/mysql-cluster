@@ -625,7 +625,7 @@ function DBRecovery() {
             }
         };
 
-        me.setFailedDisplayNode = function(address, D) {
+        me.setFailedDisplayNode = function(address, removeLabelFailed) {
             var REGEXP = new RegExp('\\b - ' + FAILED + '\\b', 'gi'),
                 displayName,
                 resp,
