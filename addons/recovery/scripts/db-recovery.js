@@ -351,9 +351,11 @@ function DBRecovery() {
                 }
                 
                 if (item.node_type == PRIMARY) {
-                    me.setFailedPrimaries({
-                        address: item.address
-                    });
+                    if (item.service_status == DOWN) {
+                        me.setFailedPrimaries({
+                            address: item.address
+                        });
+                    }
                 } else {
                     me.setFailedNodes({
                         address: item.address
