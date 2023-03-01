@@ -625,7 +625,7 @@ function DBRecovery() {
             }
         };
 
-        me.setFailedDisplayNode = function(address, removeLabelFailed) {
+        me.setFailedDisplayNode = function(address, D) {
             var REGEXP = new RegExp('\\b - ' + FAILED + '\\b', 'gi'),
                 displayName,
                 resp,
@@ -642,7 +642,7 @@ function DBRecovery() {
 
             node.displayName = node.displayName || ("Node ID: " + node.id);
 
-            if (!isRestore && node.displayName.indexOf(FAILED_UPPER_CASE) != -1) return { result: 0 }
+            if (!removeLabelFailed && node.displayName.indexOf(FAILED_UPPER_CASE) != -1) return { result: 0 }
 
             displayName = removeLabelFailed ? node.displayName.replace(REGEXP, "") : (node.displayName + " - " + FAILED_UPPER_CASE);
             return api.env.control.SetNodeDisplayName(envName, session, node.id, displayName);
