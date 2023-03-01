@@ -33,7 +33,7 @@ function DBRecovery() {
         resp = me.execRecovery();
         if (resp.result != 0) return resp;
 
-        resp = me.parseResponse(resp.responses, true);
+        resp = me.parseResponse(resp.responses);
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
@@ -44,7 +44,7 @@ function DBRecovery() {
                         type: WARNING
                     };
                 }
-                
+
                 resp = me.recoveryNodes(failedPrimaries);
                 if (resp.result != 0) return resp;
 
@@ -314,22 +314,16 @@ function DBRecovery() {
             let resp = nodeManager.setFailedDisplayNode(item.address, true);
             if (resp.result != 0) return resp;
         }
-        
+
         return {
             result: 0
         }
     };
 
     me.checkPrimary = function(item) {
-        let resp;
+        let resp, setFailedLabel = false;
 
         if (item.service_status == DOWN || item.status == FAILED) {
-            if (item.node_type == SECONDARY) {
-                scenario = " --scenario restore_secondary_from_primary";
-            } else {
-                scenario = " --scenario restore_primary_from_primary";
-            }
-
             if (item.service_status == UP) {
                 if (!me.getDonorIp()) {
                     me.setDonorIp(item.address);
@@ -343,6 +337,7 @@ function DBRecovery() {
             if (!isRestore && item.status == FAILED && item.service_status == DOWN) {
                 resp = nodeManager.setFailedDisplayNode(item.address);
                 if (resp.result != 0) return resp;
+                setFailedLabel = true;
 
                 return {
                     result: FAILED_CLUSTER_CODE,
@@ -351,14 +346,28 @@ function DBRecovery() {
             }
 
             if (item.status == FAILED) {
-                if (item.node_type == PRIMARY && item.service_status == DOWN) {
-                    me.setFailedPrimaries({
-                        address: item.address
-                    });
+                if (!setFailedLabel) {
+                    resp = nodeManager.setFailedDisplayNode(item.address);
+                    if (resp.result != 0) return resp;
+                }
+
+                if (item.node_type == PRIMARY) {
+                    if (item.service_status == DOWN) {
+                        me.setFailedPrimaries({
+                            address: item.address
+                        });
+                    }
                 } else {
                     me.setFailedNodes({
                         address: item.address
                     });
+                }
+
+                if (!isRestore) {
+                    return {
+                        result: FAILED_CLUSTER_CODE,
+                        type: WARNING
+                    };
                 }
             }
         }
@@ -444,33 +453,46 @@ function DBRecovery() {
                 let resp = nodeManager.getNodeIdByIp(failedNodes[i].address);
                 if (resp.result != 0) return resp;
 
-                resp = me.execRecovery(resp.nodeid);
+                resp = me.execRecovery({ nodeid: resp.nodeid });
                 if (resp.result != 0) return resp;
 
                 resp = me.parseResponse(resp.responses);
                 if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
             }
+
+            log("diagnostic");
+            let resp = me.execRecovery({ diagnostic: true });
+            if (resp.result != 0) return resp;
+
+            resp = me.parseResponse(resp.responses);
+            if (resp.result != 0) return resp;
         }
 
         return  { result: 0 }
     };
 
-    me.execRecovery = function(nodeid) {
-        api.marketplace.console.WriteLog("nodeid->" + nodeid);
-        api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction());
+    me.execRecovery = function(values) {
+        values = values || {};
+        log("values->" + values);
+        api.marketplace.console.WriteLog("nodeid->" + values.nodeid);
+        api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values));
         return nodeManager.cmd({
-            command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(),
-            nodeid: nodeid || ""
+            command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values),
+            nodeid: values.nodeid || ""
         });
     };
 
-    me.formatRecoveryAction = function() {
+    me.formatRecoveryAction = function(values) {
         let scenario = me.getScenario(me.getScheme());
         let donor = me.getDonorIp();
         let action = "";
 
         if (me.getInitialize()) {
             return action = "init";
+        }
+
+        if (values.diagnostic) {
+            return " --diagnostic";
         }
 
         if (!me.primaryRestored() && me.getFailedPrimaries().length) {
@@ -617,7 +639,7 @@ function DBRecovery() {
             resp = me.getNodeInfoById(resp.nodeid);
             if (resp.result != 0) return resp;
             node = resp.node;
-            
+
             node.displayName = node.displayName || ("Node ID: " + node.id);
 
             if (!isRestore && node.displayName.indexOf(FAILED_UPPER_CASE) != -1) return { result: 0 }
