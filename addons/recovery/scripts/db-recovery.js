@@ -242,6 +242,14 @@ function DBRecovery() {
         config.donorIp = donor;
     };
 
+    me.getPrimaryStatusFailed = function() {
+        return !!config.primaryStatus;
+    };
+
+    me.setPrimaryStatusFailed = function(value) {
+        config.primaryStatus = value;
+    };
+
     me.parseResponse = function parseResponse(response) {
         let resp;
 
@@ -294,6 +302,13 @@ function DBRecovery() {
                         type: WARNING
                     };
                 }
+            }
+        }
+        
+        if (me.getPrimaryStatusFailed()) {
+            return {
+                result: UNABLE_RESTORE_CODE,
+                type: WARNING
             }
         }
 
@@ -394,6 +409,8 @@ function DBRecovery() {
                         type: WARNING
                     };
                 }
+
+                me.setPrimaryStatusFailed(true);
             }
         }
 
