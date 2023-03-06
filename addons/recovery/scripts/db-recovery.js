@@ -304,8 +304,9 @@ function DBRecovery() {
                 }
             }
         }
-        
+
         if (me.getPrimaryStatusFailed()) {
+            log("in newww");
             return {
                 result: UNABLE_RESTORE_CODE,
                 type: WARNING
