@@ -34,6 +34,7 @@ function DBRecovery() {
         if (resp.result != 0) return resp;
 
         resp = me.parseResponse(resp.responses);
+        if (resp.result == UNABLE_RESTORE_CODE) return resp;
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
@@ -49,6 +50,7 @@ function DBRecovery() {
                 if (failedPrimaries.length) {
                     resp = me.recoveryNodes(failedPrimaries);
                     if (resp.result != 0) return resp;
+                    me.setPrimaryStatusFailed(false);
                 }
 
                 log("before getFailedPrimariesByStatus22");
@@ -306,7 +308,7 @@ function DBRecovery() {
         }
 
         if (me.getPrimaryStatusFailed() && isRestore) {
-            log("in newww");
+            log("in newww1");
             return {
                 result: UNABLE_RESTORE_CODE,
                 type: WARNING
