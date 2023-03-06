@@ -308,8 +308,8 @@ function DBRecovery() {
             }
         }
 
-        log("me.getPrimaryStatusFailed()->" + me.getPrimaryStatusFailed());
-        if (me.getPrimaryStatusFailed() == nodeManager.getSQLNodes() && isRestore) {
+        log("me.getPrimaryStatusFailed11()->" + me.getPrimaryStatusFailed());
+        if (me.getPrimaryStatusFailed() == nodeManager.getSQLNodes().nodes && isRestore) {
             log("in newww1");
             return {
                 result: UNABLE_RESTORE_CODE,
