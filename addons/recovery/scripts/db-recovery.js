@@ -245,11 +245,12 @@ function DBRecovery() {
     };
 
     me.getPrimaryStatusFailed = function() {
-        return config.primaryStatus || false;
+        return config.primaryStatuses || 0;
     };
 
     me.setPrimaryStatusFailed = function(value) {
-        config.primaryStatus = value;
+        config.primaryStatuses = config.primaryStatuses || 0;
+        config.primaryStatuses += value ? 1 : 0;
     };
 
     me.parseResponse = function parseResponse(response) {
@@ -307,7 +308,8 @@ function DBRecovery() {
             }
         }
 
-        if (me.getPrimaryStatusFailed() && isRestore) {
+        log("me.getPrimaryStatusFailed()->" + me.getPrimaryStatusFailed());
+        if (me.getPrimaryStatusFailed() == nodeManager.getSQLNodes() && isRestore) {
             log("in newww1");
             return {
                 result: UNABLE_RESTORE_CODE,
