@@ -522,6 +522,7 @@ function DBRecovery() {
 
         if (!me.primaryRestored() && (me.getFailedPrimaries().length || me.getFailedPrimariesByStatus().length)) {
             scenario = me.getScenario(PRIMARY + "_" + ((me.getScheme() == SECONDARY) ? SECONDARY : PRIMARY));
+            donor = me.getPrimaryDonor();
         } else {
             if (me.getAdditionalPrimary()) {
                 donor = me.getPrimaryDonor() + " --additional-primary " + me.getAdditionalPrimary();
