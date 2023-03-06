@@ -243,7 +243,7 @@ function DBRecovery() {
     };
 
     me.getPrimaryStatusFailed = function() {
-        return !!config.primaryStatus;
+        return config.primaryStatus || false;
     };
 
     me.setPrimaryStatusFailed = function(value) {
@@ -305,7 +305,7 @@ function DBRecovery() {
             }
         }
 
-        if (me.getPrimaryStatusFailed()) {
+        if (me.getPrimaryStatusFailed() && isRestore) {
             log("in newww");
             return {
                 result: UNABLE_RESTORE_CODE,
@@ -426,6 +426,7 @@ function DBRecovery() {
 
             resp = nodeManager.setFailedDisplayNode(item.address, true);
             if (resp.result != 0) return resp;
+            me.setPrimaryStatusFailed(false);
         }
 
         if (item.node_type == PRIMARY) {
