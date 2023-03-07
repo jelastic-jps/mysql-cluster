@@ -34,6 +34,7 @@ function DBRecovery() {
         if (resp.result != 0) return resp;
 
         resp = me.parseResponse(resp.responses);
+        if (resp.result == UNABLE_RESTORE_CODE) return resp;
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
@@ -49,10 +50,9 @@ function DBRecovery() {
                 if (failedPrimaries.length) {
                     resp = me.recoveryNodes(failedPrimaries);
                     if (resp.result != 0) return resp;
+                    me.setPrimaryStatusFailed(false);
                 }
 
-                log("before getFailedPrimariesByStatus22");
-                log("me.getFailedPrimariesByStatus()->" + me.getFailedPrimariesByStatus());
                 resp = me.recoveryNodes(me.getFailedPrimariesByStatus());
                 if (resp.result != 0) return resp;
 
@@ -98,7 +98,6 @@ function DBRecovery() {
                     if (scheme == MASTER || scheme == PRIMARY) scheme = PRIMARY;
                     if (scheme == XTRADB) scheme = GALERA;
                     me.setScheme(scheme);
-                    log("me.getScheme->" + me.getScheme());
                     break;
                 }
             }
@@ -242,6 +241,15 @@ function DBRecovery() {
         config.donorIp = donor;
     };
 
+    me.getPrimaryStatusFailed = function() {
+        return config.primaryStatuses || 0;
+    };
+
+    me.setPrimaryStatusFailed = function(value) {
+        config.primaryStatuses = config.primaryStatuses || 0;
+        config.primaryStatuses += value ? 1 : 0;
+    };
+
     me.parseResponse = function parseResponse(response) {
         let resp;
 
@@ -253,7 +261,7 @@ function DBRecovery() {
             if (response[i] && response[i].out) {
                 let item = response[i].out;
                 item = JSON.parse(item);
-                api.marketplace.console.WriteLog("item->" + item);
+                log("item->" + item);
 
                 if (item.result == AUTH_ERROR_CODE) {
                     return {
@@ -294,6 +302,13 @@ function DBRecovery() {
                         type: WARNING
                     };
                 }
+            }
+        }
+
+        if (me.getPrimaryStatusFailed() == nodeManager.getSQLNodes().nodes.length && isRestore) {
+            return {
+                result: UNABLE_RESTORE_CODE,
+                type: WARNING
             }
         }
 
@@ -394,6 +409,8 @@ function DBRecovery() {
                         type: WARNING
                     };
                 }
+
+                me.setPrimaryStatusFailed(true);
             }
         }
 
@@ -408,6 +425,7 @@ function DBRecovery() {
 
             resp = nodeManager.setFailedDisplayNode(item.address, true);
             if (resp.result != 0) return resp;
+            me.setPrimaryStatusFailed(false);
         }
 
         if (item.node_type == PRIMARY) {
@@ -485,7 +503,6 @@ function DBRecovery() {
                 if (resp.result == UNABLE_RESTORE_CODE || resp.result == FAILED_CLUSTER_CODE) return resp;
             }
 
-            log("diagnost");
             let resp = me.execRecovery({ diagnostic: true });
             if (resp.result != 0) return resp;
 
@@ -499,8 +516,7 @@ function DBRecovery() {
     me.execRecovery = function(values) {
         values = values || {};
         log("values->" + values);
-        api.marketplace.console.WriteLog("nodeid->" + values.nodeid);
-        api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values));
+        log("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values));
         return nodeManager.cmd({
             command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values),
             nodeid: values.nodeid || ""
