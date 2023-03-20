@@ -8,4 +8,3 @@ replicate-wild-ignore-table = information_schema.%
 replicate-wild-ignore-table = mysql.%
 read_only = 1
 report_host =
-innodb_fast_shutdown=2
