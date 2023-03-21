@@ -28,7 +28,7 @@
                }, {
                    "value": "xtradb",
                    "caption": "XtraDB",
-                   "tooltip": "<h3>Galera Cluster</h3>Multi-Primary synchronous replication which is performed at a transaction commit time. All servers can accept write transactions even if being issued concurrently. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mariadb/tip-cluster-gl.svg?sanitize=true'>"
+                   "tooltip": "<h3>XtraDB Cluster</h3>Multi-Primary synchronous replication which is performed at a transaction commit time. All servers can accept write transactions even if being issued concurrently. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mariadb/tip-cluster-gl.svg?sanitize=true'>"
                }
            ],
            "tipParams": {"dismissDelay":600000,"anchor":"l","hideOnOver":false,"showDelay":0,"text":"LT_Tip_Cluster_MariaDB_%(value)"}
