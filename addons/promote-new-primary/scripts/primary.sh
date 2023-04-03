@@ -11,36 +11,24 @@ log(){
   echo -e "[${timestamp}]: ${message}" >> ${RUN_LOG}
 }
 
-execAction(){
-  local action="$1"
-  local message="$2"
-  stdout=$( { ${action}; } 2>&1 ) && { log "${message}...done";  } || {
-    log "${message}...failed\n${stdout}\n";
-  }
-}
-
-execReturn(){
-  local action="$1"
-  local message="$2"
-  stdout=$( { ${action}; } 2>&1 ) && { log "${message}...done"; echo ${stdout}; } || {
-    log "${message}...failed\n${stdout}\n";
-  }
-}
-
 proxyCommandExec(){
   local command="$1"
-  mysql -uadmin -padmin -h127.0.0.1 -e "$command"
+  MYSQL_PWD=admin mysql -uadmin -h127.0.0.1 -P6032 -BNe "$command"
 }
 
 loadToRuntime(){
   local group="$1"
 }
 
-
-status (){
-  
-
-
+status(){
+  local cmd="select status from runtime_mysql_servers where hostgroup_id=10;"
+  local status=$(proxyCommandExec "${cmd}")
+  if [[ "x$status" != "xONLINE" ]]; then
+    log "Primary node status is OFFLINE"
+    echo OFFLINE
+  else
+    echo ONLINE
+  fi
 }
 
 case ${1} in
