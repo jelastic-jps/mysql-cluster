@@ -17,3 +17,4 @@ wsrep_node_name =
 wsrep_sst_method=rsync
 
 pxc_strict_mode=ENFORCING
+pxc_encrypt_cluster_traffic=OFF
