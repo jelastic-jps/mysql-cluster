@@ -20,20 +20,21 @@ loadToRuntime(){
   local group="$1"
 }
 
-status(){
+primaryStatus(){
   local cmd="select status from runtime_mysql_servers where hostgroup_id=10;"
   local status=$(proxyCommandExec "${cmd}")
   if [[ "x$status" != "xONLINE" ]]; then
     log "Primary node status is OFFLINE"
     echo OFFLINE
   else
+    log "Primary node status is ONLINE"
     echo ONLINE
   fi
 }
 
 case ${1} in
-    status)
-      status
+    primaryStatus)
+      primaryStatus
       ;;
 
     newPrimary)
