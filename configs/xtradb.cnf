@@ -14,7 +14,5 @@ wsrep_cluster_address = gcomm://
 wsrep_node_address =
 wsrep_node_name =
 
-wsrep_sst_method=rsync
-
 pxc_strict_mode=ENFORCING
 pxc_encrypt_cluster_traffic=OFF
