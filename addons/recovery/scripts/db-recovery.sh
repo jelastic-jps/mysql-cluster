@@ -690,6 +690,7 @@ configure_node_as_primary(){
     grep -q "log-bin" ${PRIMARY_CONF} && { sed -i "s/.*/log-bin = mysql-bin/" ${PRIMARY_CONF}; } || { echo "log-bin = mysql-bin" >> ${PRIMARY_CONF}; }
     grep -q "log-slave-updates" ${PRIMARY_CONF} && { sed -i "s/.*log-slave-updates = OFF/" ${PRIMARY_CONF}; } || { echo "log-slave-updates = OFF" >> ${PRIMARY_CONF}; }
     grep -q "read_only" ${PRIMARY_CONF} && { sed -i "s/.*read_only = 0/" ${PRIMARY_CONF}; } || { echo "read_only = 0" >> ${PRIMARY_CONF}; }
+    execAction "removeSecondaryFromPrimary localhost" '[Node: localhost]: Disable secondary'
     stopMysqlService "localhost"
     startMysqlService "localhost"
     return ${SUCCESS_CODE}
