@@ -9,10 +9,10 @@ function promoteNewPrimary() {
     let Response = com.hivext.api.Response;
 
     this.run = function() {
-        
+
         let resp = this.auth();
         if (resp.result != 0) return resp;
-        
+
         resp = this.newPrimaryOnProxy();
         log("newPrimaryOnProxy resp ->" + resp);
         if (resp.result != 0) return resp;
@@ -26,7 +26,7 @@ function promoteNewPrimary() {
 
         return resp;
     };
-    
+
     this.auth = function() {
         if (!session && String(getParam("token", "")).replace(/\s/g, "") != "${token}") {
             return {
@@ -36,6 +36,8 @@ function promoteNewPrimary() {
                 message:"Token [" + token + "] does not match",
                 response: { result: Response.PERMISSION_DENIED }
             };
+        } else {
+            session = signature;
         }
     };
 
