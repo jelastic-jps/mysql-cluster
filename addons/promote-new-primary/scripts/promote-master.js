@@ -1,4 +1,4 @@
-//@reg(envName)
+//@reg(envName, token)
 function promoteNewPrimary() {
     let envInfo;
     let ROOT = "root";
@@ -6,9 +6,14 @@ function promoteNewPrimary() {
     let SQLDB = "sqldb";
     let PRIMARY = "Primary";
     let SECONDARY = "secondary";
+    let Response = com.hivext.api.Response;
 
     this.run = function() {
-        let resp = this.newPrimaryOnProxy();
+        
+        let resp = this.auth();
+        if (resp.result != 0) return resp;
+        
+        resp = this.newPrimaryOnProxy();
         log("newPrimaryOnProxy resp ->" + resp);
         if (resp.result != 0) return resp;
 
@@ -20,6 +25,18 @@ function promoteNewPrimary() {
         log("restoreNodes resp ->" + resp);
 
         return resp;
+    };
+    
+    this.auth = function() {
+        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "${token}") {
+            return {
+                result: Response.PERMISSION_DENIED,
+                error: "wrong token",
+                type:"error",
+                message:"Token [" + token + "] does not match",
+                response: { result: Response.PERMISSION_DENIED }
+            };
+        }
     };
 
     this.diagnosticNodes = function() {
@@ -164,4 +181,5 @@ function promoteNewPrimary() {
 function log(message) {
     api.marketplace.console.WriteLog(message);
 }
+
 return new promoteNewPrimary().run();
