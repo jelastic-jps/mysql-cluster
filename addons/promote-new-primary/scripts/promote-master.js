@@ -25,7 +25,10 @@ function promoteNewPrimary() {
         log("restoreNodes resp ->" + resp);
         if (resp.result != 0) return resp;
 
-        return this.setContainerVar();
+        resp = this.setContainerVar();
+        if (resp.result != 0) return resp;
+
+        return this.addNode();
     };
 
     this.auth = function() {
@@ -122,6 +125,25 @@ function promoteNewPrimary() {
         return { result: 0, nodes: groupNodes }
     };
 
+    this.getSQLNodeById = function(nodeid) {
+        let node;
+        let resp = this.getNodesByGroup(SQLDB);
+        if (resp.result != 0) return resp;
+
+        if (resp.nodes) {
+            for (let i = 0, n = resp.nodes.length; i < n; i++) {
+                if (resp.nodes[i].id == nodeid) {
+                    node = resp.nodes[i];
+                }
+            }
+        }
+
+        return {
+            result: 0,
+            node: node
+        }
+    };
+
     this.newPrimaryOnProxy = function() {
         let resp = this.diagnosticNodes();
         if (resp.result != 0) return resp;
@@ -182,6 +204,24 @@ function promoteNewPrimary() {
 
         return { result: 0 }
     };
+
+    this.addNode = function() {
+        let resp = this.getSQLNodeById(this.getNewPrimaryNode().id);
+        if (resp.result != 0) return resp;
+
+        let node = resp.node;
+
+        return api.environment.control.AddNode({
+            envName: "${env.name}",
+            session: session,
+            displayName: SECONDARY,
+            cloudlets: node.cloudlets,
+            //flexibleCloudlets: node.flexibleCloudlets,
+            nodeType: node.nodeType,
+            nodeGroup: node.nodeGroup
+        });
+        //nodeGroupData=[string]&extIp=[boolean]&password=[string]&startService=[boolean]&engine=[string]&envName=[string]&options=[string]&fixedCloudlets=[int]&tag=[string]
+    }
 
     this.cmdByGroup = function(command, nodeGroup) {
         return api.env.control.ExecCmdByGroup(envName, session, nodeGroup, toJSON([{ command: command }]), true, false, ROOT);
