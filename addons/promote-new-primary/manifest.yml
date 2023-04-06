@@ -87,6 +87,5 @@ actions:
       java.lang.Thread.sleep(1000);
 
       //build script to avoid caching
-      api.dev.scripting.Build(appid, session, "${globals.scriptName}");
-      let cronCommand = "echo \"%(cronTime) su - root -c \\\"%(scriptPath) '${platformUrl}${globals.scriptName}?appid=" + appid + "&token=" + random + "'\\\"\" >> /var/spool/cron/root";
+      return api.dev.scripting.Build(appid, session, "${globals.scriptName}");
 
