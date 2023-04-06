@@ -11,6 +11,7 @@ function promoteNewPrimary() {
     this.run = function() {
 
         let resp = this.auth();
+        log("auth resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.newPrimaryOnProxy();
@@ -45,12 +46,12 @@ function promoteNewPrimary() {
             session = signature;
         }
 
-        return { result: 0}
+        return { result: 0 }
     };
 
     this.setContainerVar = function() {
         return api.environment.control.AddContainerEnvVars({
-            envName: "${env.name}",
+            envName: envName,
             session: session,
             nodeGroup: SQLDB,
             vars: {
@@ -190,8 +191,8 @@ function promoteNewPrimary() {
     };
 
     this.restoreNodes = function() {
+        log("restoreNodes in ->");
         let nodes = this.getParsedNodes();
-        if (nodes.result != 0) return nodes;
 
         let newPrimary = this.getNewPrimaryNode();
         log("restoreNodes newPrimary ->" + newPrimary);
@@ -214,8 +215,8 @@ function promoteNewPrimary() {
 
         let node = resp.node;
 
-        return api.environment.control.AddNode({
-            envName: "${env.name}",
+        resp =  api.environment.control.AddNode({
+            envName: envName,
             session: session,
             displayName: SECONDARY,
             cloudlets: node.cloudlets,
@@ -223,6 +224,21 @@ function promoteNewPrimary() {
             nodeType: node.nodeType,
             nodeGroup: node.nodeGroup
         });
+        log("addNode obj->" + {
+            envName: envName,
+            session: session,
+            displayName: SECONDARY,
+            cloudlets: node.cloudlets,
+            //flexibleCloudlets: node.flexibleCloudlets,
+            nodeType: node.nodeType,
+            nodeGroup: node.nodeGroup
+        });
+        log("addNode resp->" + resp);
+        if (resp.result != 0) return resp;
+
+        log("addNode resp.response->" + resp.response);
+        log("addNode resp.response.array->" + resp.response.array);
+        return api.env.control.SetNodeDisplayName(envName, session, resp.response.array[0].id, SECONDARY);
         //nodeGroupData=[string]&extIp=[boolean]&password=[string]&startService=[boolean]&engine=[string]&envName=[string]&options=[string]&fixedCloudlets=[int]&tag=[string]
     }
 
