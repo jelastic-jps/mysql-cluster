@@ -1,5 +1,7 @@
 #!/bin/bash
 
+USER_SCRIPT_PATH="https://app.demo.jelastic.com/env-6245726-promote-master?appid=496ed82ef1472ae752954cb1f0ae9c2a&token=Q4khotly89xeLno1NqxXK1klPHy1PLlgNYs23svZ5ImGMW1qbnGH0YGqpH67d4KO"
+
 SUCCESS_CODE=0
 FAIL_CODE=99
 RUN_LOG=/var/log/jcm.log
@@ -57,6 +59,79 @@ loadServersToRuntime(){
   proxyCommandExec "$cmd"
 }
 
+addSchedulerToProxy(){
+  local interval_ms="$1"
+  local filename="$2"
+  local arg1="$3"
+  local arg2="$4"
+  local arg3="$5"
+  local arg4="$6"
+  local arg5="$7"
+  local cmd="INSERT INTO scheduler(interval_ms,filename,arg1,arg2,arg3,arg4,arg5,active,comment) "
+  cmd+="VALUES ($interval_ms,'$filename', '$arg1', '$arg2', '$arg3', '$arg4', '$arg5',1,'jcm task');"
+  proxyCommandExec "$cmd"
+}
+
+loadSchedulerToRuntime(){
+  local cmd="LOAD SCHEDULER TO RUNTIME; SAVE SCHEDULER TO DISK;"
+  proxyCommandExec "$cmd"
+}
+
+
+addScheduler(){
+  for i in "$@"; do
+    case $i in
+      --interval-ms=*)
+      INTERVAL_MS=${i#*=}
+      shift
+      shift
+      ;;
+
+      --filename=*)
+      FILENAME=${i#*=}
+      shift
+      shift
+      ;;
+
+      --arg1=*)
+      ARG1=${i#*=}
+      shift
+      shift
+      ;;
+
+      --arg2=*)
+      ARG2=${i#*=}
+      shift
+      shift
+      ;;
+
+      --arg3=*)
+      ARG3=${i#*=}
+      shift
+      shift
+      ;;
+
+      --arg4=*)
+      ARG4=${i#*=}
+      shift
+      shift
+      ;;
+
+      --arg5=*)
+      ARG5=${i#*=}
+      shift
+      shift
+      ;;
+      *)
+        ;;
+    esac
+  done
+
+  execAction "addSchedulerToProxy $INTERVAL_MS $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5" "Adding crontask to Scheduler"
+  execAction "loadSchedulerToRuntime" "Loading cronjob task to runtime"
+
+}
+
 newPrimary(){
   for i in "$@"; do
     case $i in
@@ -83,6 +158,10 @@ case ${1} in
 
     newPrimary)
       newPrimary "$@"
+      ;;
+
+    addScheduler)
+      addScheduler "$@"
       ;;
 
     *)
