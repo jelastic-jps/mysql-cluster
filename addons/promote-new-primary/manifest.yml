@@ -65,12 +65,18 @@ actions:
       let Response = com.hivext.api.Response;
       let Transport = com.hivext.api.core.utils.Transport;
       let StrSubstitutor = org.apache.commons.lang3.text.StrSubstitutor;
-      let scriptBody = new Transport().get("${baseUrl}/promote-new-primary/scripts/promote-master.js");
+      let scriptBody = new Transport().get("${baseUrl}/scripts/promote-master.js");
       let random = com.hivext.api.utils.Random.getPswd(64);
+      let ROOT = "root";
 
       scriptBody = new StrSubstitutor({token: random}, "${", "}").replace(scriptBody);
 
-      let resp = api.dev.scripting.GetScript(appid, session, "${globals.scriptName}");
+      URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "\\&token=" + random;
+      command = "sed -ri 's|USER_SCRIPT_PATH=.*|USER_SCRIPT_PATH=\"" + URL + "\"|g' /usr/local/sbin/jcm.sh";
+      let resp = api.env.control.ExecCmdByGroup("${env.name}", session, "proxy", toJSON([{ command: command }]), true, false, ROOT);
+      if (resp.result != 0) return resp;
+
+      resp = api.dev.scripting.GetScript(appid, session, "${globals.scriptName}");
       if (resp.result == Response.OK) {
       //delete the script if it already exists
         api.dev.scripting.DeleteScript(appid, session, "${globals.scriptName}");
