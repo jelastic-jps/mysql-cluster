@@ -68,7 +68,7 @@ addSchedulerToProxy(){
   local arg4="$6"
   local arg5="$7"
   local cmd="INSERT INTO scheduler(interval_ms,filename,arg1,arg2,arg3,arg4,arg5,active,comment) "
-  cmd+="VALUES ($interval_ms,'$filename', '$arg1', '$arg2', '$arg3', '$arg4', '$arg5',1,'jcm task');"
+  cmd+="VALUES ($interval_ms,'$filename', '$arg1', '$arg2', '$arg3', '$arg4', '$arg5',1,'primaryStatus');"
   proxyCommandExec "$cmd"
 }
 
