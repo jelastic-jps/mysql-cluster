@@ -1,4 +1,4 @@
-//@reg(envName, token)
+//@reg(envName, token, uid)
 function promoteNewPrimary() {
     let envInfo;
     let ROOT = "root";
@@ -215,23 +215,25 @@ function promoteNewPrimary() {
 
         let node = resp.node;
 
-        resp =  api.environment.control.AddNode({
+        resp = api.environment.control.AddNode({
             envName: envName,
             session: session,
             displayName: "Secondary",
             fixedCloudlets: node.fixedCloudlets,
             flexibleCloudlets: node.flexibleCloudlets,
             nodeType: node.nodeType,
-            nodeGroup: node.nodeGroup
+            nodeGroup: node.nodeGroup,
+            uid: uid
         });
         log("addNode obj->" + {
             envName: envName,
             session: session,
             displayName: "Secondary",
-            cloudlets: node.cloudlets,
-            //flexibleCloudlets: node.flexibleCloudlets,
+            fixedCloudlets: node.fixedCloudlets,
+            flexibleCloudlets: node.flexibleCloudlets,
             nodeType: node.nodeType,
-            nodeGroup: node.nodeGroup
+            nodeGroup: node.nodeGroup,
+            uid: uid
         });
         log("addNode resp->" + resp);
         if (resp.result != 0) return resp;
