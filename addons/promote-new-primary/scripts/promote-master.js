@@ -5,7 +5,7 @@ function promoteNewPrimary() {
     let PROXY = "proxy";
     let SQLDB = "sqldb";
     let PRIMARY = "Primary";
-    let SECONDARY = "Secondary";
+    let SECONDARY = "secondary";
     let Response = com.hivext.api.Response;
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
 
@@ -218,7 +218,7 @@ function promoteNewPrimary() {
         resp =  api.environment.control.AddNode({
             envName: envName,
             session: session,
-            displayName: SECONDARY,
+            displayName: "Secondary",
             fixedCloudlets: node.fixedCloudlets,
             flexibleCloudlets: node.flexibleCloudlets,
             nodeType: node.nodeType,
@@ -227,7 +227,7 @@ function promoteNewPrimary() {
         log("addNode obj->" + {
             envName: envName,
             session: session,
-            displayName: SECONDARY,
+            displayName: "Secondary",
             cloudlets: node.cloudlets,
             //flexibleCloudlets: node.flexibleCloudlets,
             nodeType: node.nodeType,
