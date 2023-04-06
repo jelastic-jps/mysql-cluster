@@ -10,6 +10,8 @@ WRITE_HG_ID=10
 READ_HG_ID=11
 MAX_REPL_LAG=20
 
+WGET=$(which wget);
+
 log(){
   local message=$1
   local timestamp
@@ -35,7 +37,8 @@ primaryStatus(){
   local status=$(proxyCommandExec "$cmd")
   if [[ "x$status" != "xONLINE" ]]; then
     log "Primary node status is OFFLINE"
-    echo OFFLINE
+    log "Promoting new Primary"
+    resp=$($WGET --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
   else
     log "Primary node status is ONLINE"
     echo ONLINE
