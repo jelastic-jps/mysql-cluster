@@ -5,7 +5,7 @@ function promoteNewPrimary() {
     let PROXY = "proxy";
     let SQLDB = "sqldb";
     let PRIMARY = "Primary";
-    let SECONDARY = "secondary";
+    let SECONDARY = "Secondary";
     let Response = com.hivext.api.Response;
 
     this.run = function() {
@@ -219,8 +219,8 @@ function promoteNewPrimary() {
             envName: envName,
             session: session,
             displayName: SECONDARY,
-            cloudlets: node.cloudlets,
-            //flexibleCloudlets: node.flexibleCloudlets,
+            fixedCloudlets: node.fixedCloudlets,
+            flexibleCloudlets: node.flexibleCloudlets,
             nodeType: node.nodeType,
             nodeGroup: node.nodeGroup
         });
