@@ -23,8 +23,9 @@ function promoteNewPrimary() {
 
         resp = this.restoreNodes();
         log("restoreNodes resp ->" + resp);
+        if (resp.result != 0) return resp;
 
-        return resp;
+        return this.setContainerVar();
     };
 
     this.auth = function() {
@@ -39,6 +40,17 @@ function promoteNewPrimary() {
         } else {
             session = signature;
         }
+    };
+
+    this.setContainerVar = function() {
+        return api.environment.control.AddContainerEnvVars({
+            envName: "${env.name}",
+            session: session,
+            nodeGroup: SQLDB,
+            vars: {
+                PRIMARY_IP: this.getNewPrimaryNode().address
+            }
+        });
     };
 
     this.diagnosticNodes = function() {
