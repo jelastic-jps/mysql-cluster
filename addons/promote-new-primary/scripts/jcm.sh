@@ -81,8 +81,8 @@ loadSchedulerToRuntime(){
 addScheduler(){
   for i in "$@"; do
     case $i in
-      --interval-ms=*)
-      INTERVAL_MS=${i#*=}
+      --interval=*)
+      INTERVAL=${i#*=}
       shift
       shift
       ;;
@@ -127,7 +127,9 @@ addScheduler(){
     esac
   done
 
-  execAction "addSchedulerToProxy $INTERVAL_MS $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5" "Adding crontask to Scheduler"
+  local interval_ms=$((${INTERVAL} * 1000))
+
+  execAction "addSchedulerToProxy $interval_ms $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5" "Adding crontask to Scheduler"
   execAction "loadSchedulerToRuntime" "Loading cronjob task to runtime"
 
 }
