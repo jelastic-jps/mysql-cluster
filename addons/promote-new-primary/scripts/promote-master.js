@@ -7,6 +7,7 @@ function promoteNewPrimary() {
     let PRIMARY = "Primary";
     let SECONDARY = "Secondary";
     let Response = com.hivext.api.Response;
+    let TMP_FILE = "/var/lib/jelastic/keys/promotePrimary";
 
     this.run = function() {
 
@@ -45,8 +46,8 @@ function promoteNewPrimary() {
         } else {
             session = signature;
         }
-
-        return { result: 0 }
+        
+        return this.cmdByGroup("touch " + TMP_FILE, PROXY);
     };
 
     this.setContainerVar = function() {
@@ -238,6 +239,9 @@ function promoteNewPrimary() {
 
         log("addNode resp.response->" + resp.response);
         log("addNode resp.response.array->" + resp.response.array);
+        resp = this.cmdByGroup("rm -rf " + TMP_FILE, PROXY);
+        if (resp.result != 0) return resp;
+        
         return api.env.control.SetNodeDisplayName(envName, session, resp.response.array[0].id, SECONDARY);
         //nodeGroupData=[string]&extIp=[boolean]&password=[string]&startService=[boolean]&engine=[string]&envName=[string]&options=[string]&fixedCloudlets=[int]&tag=[string]
     }
