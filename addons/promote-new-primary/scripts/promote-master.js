@@ -26,6 +26,7 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.setContainerVar();
+        log("setContainerVar resp ->" + resp);
         if (resp.result != 0) return resp;
 
         return this.addNode();
@@ -43,6 +44,8 @@ function promoteNewPrimary() {
         } else {
             session = signature;
         }
+
+        return { result: 0}
     };
 
     this.setContainerVar = function() {
