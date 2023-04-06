@@ -2,6 +2,8 @@
 
 USER_SCRIPT_PATH="{URL}"
 
+PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
+
 SUCCESS_CODE=0
 FAIL_CODE=99
 RUN_LOG=/var/log/jcm.log
@@ -35,13 +37,16 @@ execAction(){
 primaryStatus(){
   local cmd="select status from runtime_mysql_servers where hostgroup_id=$WRITE_HG_ID;"
   local status=$(proxyCommandExec "$cmd")
-  if [[ "x$status" != "xONLINE" ]]; then
+  if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
     log "Primary node status is OFFLINE"
     log "Promoting new Primary"
     resp=$($WGET --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
   else
-    log "Primary node status is ONLINE"
-    echo ONLINE
+    if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
+      log "Primary node status is ONLINE"
+    else
+      log "Promoting new Primary"
+    fi
   fi
 }
 
