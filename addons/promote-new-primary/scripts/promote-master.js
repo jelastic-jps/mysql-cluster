@@ -164,7 +164,7 @@ function promoteNewPrimary() {
                 }
             }
 
-            let command = "bash /usr/local/sbin/jcm newPrimary --node-id=" + this.getNewPrimaryNode().id;
+            let command = "bash /usr/local/sbin/jcm.sh newPrimary --node-id=" + this.getNewPrimaryNode().id;
             log("newPrimaryOnProxy command ->" + command);
             return this.cmdByGroup(command, PROXY);
         }
