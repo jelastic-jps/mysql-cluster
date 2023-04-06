@@ -164,8 +164,7 @@ function promoteNewPrimary() {
                 }
             }
 
-            let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/promote-new-primary/scripts/jcm.sh' -o /usr/local/bin/jcm\n" +
-                "bash /usr/local/bin/jcm newPrimary --node-id=" + this.getNewPrimaryNode().id;
+            let command = "bash /usr/local/bin/jcm newPrimary --node-id=" + this.getNewPrimaryNode().id;
             log("newPrimaryOnProxy command ->" + command);
             return this.cmdByGroup(command, PROXY);
         }
