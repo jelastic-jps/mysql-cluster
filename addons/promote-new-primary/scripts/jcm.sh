@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USER_SCRIPT_PATH="https://app.demo.jelastic.com/env-6245726-promote-master?appid=496ed82ef1472ae752954cb1f0ae9c2a&token=Q4khotly89xeLno1NqxXK1klPHy1PLlgNYs23svZ5ImGMW1qbnGH0YGqpH67d4KO"
+USER_SCRIPT_PATH="{URL}"
 
 SUCCESS_CODE=0
 FAIL_CODE=99
