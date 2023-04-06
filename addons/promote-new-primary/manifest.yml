@@ -8,7 +8,7 @@ description:
 
 logo: /images/database-corruption-check.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-66025/addons
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66025/addons/promote-new-primary
 
 globals:
   scriptName: ${env.name}-promote-master
@@ -30,25 +30,42 @@ settings:
         max: 3600
 
 buttons:
-  - name: configure
+  - name: Primary Idle Time
     caption: Primary Idle Time
     confirmText: Change primary idle time?.
     settings: main
     loadingText: Applaying configuration...
     action: idleTimeConfigure
 
-onInstall: createScript
+onInstall:
+  - downloadScripts
+  - createScript
+  - addSchedulerToProxySQL
 
 actions:
+
+  addSchedulerToProxySQL:
+    - cmd[proxy]: |-
+        bash /usr/local/sbin/jcm.sh addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus;
+
+  downloadScripts:
+    - cmd[proxy]: |-
+        curl --silent ${baseUrl}/scripts/jcm.sh > /usr/local/sbin/jcm.sh;
+        chmod +x /usr/local/sbin/jcm.sh;
+        echo "Start JCM logs" > /var/log/jcm.log;
+        chown jelastic /var/log/jcm.log;
+      user: root
+
   idleTimeConfigure:
     cmd[proxy]: |-
+      echo "----------------1111111111"
       
   createScript:
     script: |
       let Response = com.hivext.api.Response;
       let Transport = com.hivext.api.core.utils.Transport;
       let StrSubstitutor = org.apache.commons.lang3.text.StrSubstitutor;
-      let scriptBody = new Transport().get("${baseUrl}/promote-new-primary/scripts/promote-master.js");
+      let scriptBody = new Transport().get("${baseUrl}/scripts/promote-master.js");
       let random = com.hivext.api.utils.Random.getPswd(64);
       
       scriptBody = new StrSubstitutor({token: random}, "${", "}").replace(scriptBody);
