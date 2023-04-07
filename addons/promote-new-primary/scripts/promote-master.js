@@ -217,19 +217,20 @@ function promoteNewPrimary() {
 
     this.addNode = function() {
         let envInfo = this.getEnvInfo();
-        log("envInfo ->" + envInfo);
+        this.log("envInfo ->" + envInfo);
         if (envInfo.result != 0) return envInfo;
 
         let resp = this.getNodesByGroup(SQLDB);
-        log("envInfo getNodesByGroup SQLDB resp ->" + resp);
+        this.log("envInfo getNodesByGroup SQLDB resp ->" + resp);
         if (resp.result != 0) return resp;
         let sqlNodes = resp.nodes;
 
         resp = this.getNodesByGroup(PROXY);
-        log("envInfo getNodesByGroup PROXY resp ->" + resp);
+        this.log("envInfo getNodesByGroup PROXY resp ->" + resp);
         if (resp.result != 0) return resp;
+        
         let proxyNodes = resp.nodes;
-        log("nodes->" + [{
+        this.log("nodes->" + [{
             nodeType: sqlNodes[0].nodeType,
             nodeGroup: sqlNodes[0].nodeGroup,
             count: sqlNodes.length + 1,
@@ -243,7 +244,7 @@ function promoteNewPrimary() {
             flexibleCloudlets: proxyNodes[0].flexibleCloudlets
         }]);
 
-        return api.env.control.ChangeTopology({
+        resp = api.env.control.ChangeTopology({
             envName: envName,
             session: session,
             env: {
@@ -263,32 +264,10 @@ function promoteNewPrimary() {
                 fixedCloudlets: proxyNodes[0].fixedCloudlets,
                 flexibleCloudlets: proxyNodes[0].flexibleCloudlets
             }]
-        })
-
-        resp = api.environment.control.AddNode({
-            envName: envName,
-            session: session,
-            displayName: "Secondary",
-            fixedCloudlets: node.fixedCloudlets,
-            flexibleCloudlets: node.flexibleCloudlets,
-            nodeType: node.nodeType,
-            nodeGroup: node.nodeGroup
         });
-        this.log("addNode obj->" + {
-            envName: envName,
-            session: session,
-            displayName: "Secondary",
-            fixedCloudlets: node.fixedCloudlets,
-            flexibleCloudlets: node.flexibleCloudlets,
-            nodeType: node.nodeType,
-            nodeGroup: node.nodeGroup
-        });
-        this.log("addNode resp->" + resp);
         if (resp.result != 0) return resp;
 
         return this.cmdByGroup("rm -rf " + TMP_FILE, PROXY);
-        //
-        // return api.env.control.SetNodeDisplayName(envName, session, resp.response.array[0].id, SECONDARY);
     };
 
     this.getUserData = function() {
