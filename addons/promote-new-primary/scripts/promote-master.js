@@ -44,7 +44,9 @@ function promoteNewPrimary() {
                 response: { result: Response.PERMISSION_DENIED }
             };
         } else {
-            session = signature;
+            let resp = this.getUserData();
+            if (resp.result != 0) return resp;
+            session = resp.session;
         }
 
         return this.cmdByGroup("touch " + TMP_FILE, PROXY);
@@ -164,7 +166,7 @@ function promoteNewPrimary() {
                 }
             }
 
-            let command = "bash /usr/local/sbin/jcm.sh newPrimary --node-id=" + this.getNewPrimaryNode().id;
+            let command = "bash /usr/local/sbin/jcm.sh newPrimary --server=node" + this.getNewPrimaryNode().id;
             log("newPrimaryOnProxy command ->" + command);
             return this.cmdByGroup(command, PROXY);
         }
@@ -210,12 +212,9 @@ function promoteNewPrimary() {
 
         let node = resp.node;
 
-        resp = this.getUserData();
-        if (resp.result != 0) return resp;
-
         resp = api.environment.control.AddNode({
             envName: envName,
-            session: resp.session,
+            session: session,
             displayName: "Secondary",
             fixedCloudlets: node.fixedCloudlets,
             flexibleCloudlets: node.flexibleCloudlets,
@@ -224,7 +223,7 @@ function promoteNewPrimary() {
         });
         log("addNode obj->" + {
             envName: envName,
-            session: resp.session,
+            session: session,
             displayName: "Secondary",
             fixedCloudlets: node.fixedCloudlets,
             flexibleCloudlets: node.flexibleCloudlets,
