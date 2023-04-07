@@ -216,10 +216,51 @@ function promoteNewPrimary() {
     };
 
     this.addNode = function() {
-        let resp = this.getSQLNodeById(this.getNewPrimaryNode().id);
-        if (resp.result != 0) return resp;
+        let envInfo = this.getEnvInfo();
+        if (envInfo.result != 0) return envInfo;
 
-        let node = resp.node;
+        let resp = this.getNodesByGroup(SQLDB);
+        if (resp.result != 0) return resp;
+        let sqlNodes = resp.nodes;
+
+        resp = this.getNodesByGroup(PROXY);
+        if (resp.result != 0) return resp;
+        let proxyNodes = resp.nodes;
+        log("nodes->" + [{
+            nodeType: sqlNodes[0].nodeType,
+            nodeGroup: sqlNodes[0].nodeGroup,
+            count: sqlNodes.length + 1,
+            fixedCloudlets: sqlNodes[0].fixedCloudlets,
+            flexibleCloudlets: sqlNodes[0].flexibleCloudlets
+        },{
+            nodeType: proxyNodes[0].nodeType,
+            nodeGroup: proxyNodes[0].nodeGroup,
+            count: proxyNodes.length,
+            fixedCloudlets: proxyNodes[0].fixedCloudlets,
+            flexibleCloudlets: proxyNodes[0].flexibleCloudlets
+        }]);
+        
+        return api.env.control.ChangeTopology({
+            envName: envName,
+            session: session,
+            env: {
+                region: envInfo.env.hostGroup.uniqueName,
+                sslstate: envInfo.env.sslstate
+            },
+            nodes: [{
+                nodeType: sqlNodes[0].nodeType,
+                nodeGroup: sqlNodes[0].nodeGroup,
+                count: sqlNodes.length + 1,
+                fixedCloudlets: sqlNodes[0].fixedCloudlets,
+                flexibleCloudlets: sqlNodes[0].flexibleCloudlets
+            },{
+                nodeType: proxyNodes[0].nodeType,
+                nodeGroup: proxyNodes[0].nodeGroup,
+                count: proxyNodes.length,
+                fixedCloudlets: proxyNodes[0].fixedCloudlets,
+                flexibleCloudlets: proxyNodes[0].flexibleCloudlets
+            }]
+        })
 
         resp = api.environment.control.AddNode({
             envName: envName,
