@@ -4,6 +4,8 @@ USER_SCRIPT_PATH="{URL}"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
+JCM_CONFIG="/etc/proxysql/jcm.conf"
+
 SUCCESS_CODE=0
 FAIL_CODE=99
 RUN_LOG=/var/log/jcm.log
@@ -142,6 +144,17 @@ addScheduler(){
 
 }
 
+deletePrimary(){
+  local nodeId="$1"
+  local cmd="DELETE from mysql_servers WHERE hostname='$nodeId';"
+  proxyCommandExec "$cmd"
+}
+
+updatePrimaryInConfig(){
+  local nodeId="$1"
+  grep -q "PRIMARY_NODE_ID" ${JCM_CONFIG} && { sed -i "s/.*/PRIMARY_NODE_ID=$nodeId/" ${JCM_CONFIG}; } || { echo "PRIMARY_NODE_ID=$nodeId" >> ${JCM_CONFIG}; }
+}
+
 newPrimary(){
   for i in "$@"; do
     case $i in
@@ -154,11 +167,15 @@ newPrimary(){
         ;;
     esac
   done
-
+  if [[ -f $JCM_CONFIG ]]; then
+    source $JCM_CONFIG;
+    execAction "deletePrimary $PRIMARY_NODE_ID" "Deleting primary node $PRIMARY_NODE_ID from configuration"
+    execAction "loadServersToRuntime" "Loading server configuration to runtime"
+  fi
   execAction "addNodeToWriteGroup $SERVER" "Adding $SERVER to writer hostgroup"
   execAction "addNodeToReadGroup $SERVER" "Adding $SERVER to reader hostgroup"
   execAction "loadServersToRuntime" "Loading server configuration to runtime"
-
+  execAction "updatePrimaryInConfig $SERVER" "Set primary node to $SERVER in the $JCM_CONFIG"
 }
 
 case ${1} in
