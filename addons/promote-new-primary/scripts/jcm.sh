@@ -145,8 +145,8 @@ addScheduler(){
 newPrimary(){
   for i in "$@"; do
     case $i in
-      --node-id=*)
-      NODE_ID=${i#*=}
+      --server=*)
+      SERVER=${i#*=}
       shift
       shift
       ;;
@@ -155,8 +155,8 @@ newPrimary(){
     esac
   done
 
-  execAction "addNodeToWriteGroup $NODE_ID" "Adding $NODE_ID to writer hostgroup"
-  execAction "addNodeToReadGroup $NODE_ID" "Adding $NODE_ID to reader hostgroup"
+  execAction "addNodeToWriteGroup $SERVER" "Adding $SERVER to writer hostgroup"
+  execAction "addNodeToReadGroup $SERVER" "Adding $SERVER to reader hostgroup"
   execAction "loadServersToRuntime" "Loading server configuration to runtime"
 
 }
