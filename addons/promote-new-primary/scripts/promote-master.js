@@ -157,6 +157,7 @@ function promoteNewPrimary() {
     };
 
     this.newPrimaryOnProxy = function() {
+        let alreadySetNewPrimary = false;
         let resp = this.diagnosticNodes();
         if (resp.result != 0) return resp;
 
@@ -167,9 +168,10 @@ function promoteNewPrimary() {
             for (let i = 0, n = nodes.length; i < n; i++) {
                 if (nodes[i]) {
                     this.log("newPrimaryOnProxy nodes[i] ->" + nodes[i]);
-                    if (nodes[i].type == SECONDARY) {
+                    this.log("newPrimaryOnProxy alreadySetNewPrimary ->" + alreadySetNewPrimary);
+                    if (nodes[i].type == SECONDARY && !alreadySetNewPrimary) {
                         this.setNewPrimaryNode(nodes[i]);
-                        break;
+                        alreadySetNewPrimary = true;
                     } else {
                         resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
