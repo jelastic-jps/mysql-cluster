@@ -14,8 +14,6 @@ WRITE_HG_ID=10
 READ_HG_ID=11
 MAX_REPL_LAG=20
 
-WGET=$(which wget);
-
 log(){
   local message=$1
   local timestamp
@@ -42,7 +40,7 @@ primaryStatus(){
   if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
     log "Primary node status is OFFLINE"
     log "Promoting new Primary"
-    resp=$($WGET --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
+    resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
   else
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
