@@ -6,6 +6,7 @@ function promoteNewPrimary() {
     let SQLDB = "sqldb";
     let PRIMARY = "Primary";
     let SECONDARY = "secondary";
+    let FAILED = "failed";
     let Response = com.hivext.api.Response;
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
     let session = getParam("session", "");
@@ -165,11 +166,12 @@ function promoteNewPrimary() {
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
                 if (nodes[i]) {
+                    this.log("newPrimaryOnProxy nodes[i] ->" + nodes[i]);
                     if (nodes[i].type == SECONDARY) {
                         this.setNewPrimaryNode(nodes[i]);
                         break;
                     } else {
-                        resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY);
+                        resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
                     }
                 }
@@ -228,7 +230,7 @@ function promoteNewPrimary() {
         resp = this.getNodesByGroup(PROXY);
         this.log("envInfo getNodesByGroup PROXY resp ->" + resp);
         if (resp.result != 0) return resp;
-        
+
         let proxyNodes = resp.nodes;
         this.log("nodes->" + [{
             nodeType: sqlNodes[0].nodeType,
