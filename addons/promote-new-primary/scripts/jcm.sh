@@ -4,7 +4,7 @@ USER_SCRIPT_PATH="{URL}"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
-JCM_CONFIG=/etc/proxysql/jcm.conf
+JCM_CONFIG="/etc/proxysql/jcm.conf"
 
 SUCCESS_CODE=0
 FAIL_CODE=99
@@ -152,7 +152,7 @@ deletePrimary(){
 
 updatePrimaryInConfig(){
   local nodeId="$1"
-  grep -q "PRIMARY_NODE_ID" ${JCM_CONFIG} && { sed -i "s/.*/PRIMARY_NODE_ID = $nodeId/" ${JCM_CONFIG}; } || { echo "PRIMARY_NODE_ID = $nodeId" >> ${JCM_CONFIG}; }
+  grep -q "PRIMARY_NODE_ID" ${JCM_CONFIG} && { sed -i "s/.*/PRIMARY_NODE_ID=$nodeId/" ${JCM_CONFIG}; } || { echo "PRIMARY_NODE_ID=$nodeId" >> ${JCM_CONFIG}; }
 }
 
 newPrimary(){
