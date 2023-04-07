@@ -217,13 +217,16 @@ function promoteNewPrimary() {
 
     this.addNode = function() {
         let envInfo = this.getEnvInfo();
+        log("envInfo ->" + envInfo);
         if (envInfo.result != 0) return envInfo;
 
         let resp = this.getNodesByGroup(SQLDB);
+        log("envInfo getNodesByGroup SQLDB resp ->" + resp);
         if (resp.result != 0) return resp;
         let sqlNodes = resp.nodes;
 
         resp = this.getNodesByGroup(PROXY);
+        log("envInfo getNodesByGroup PROXY resp ->" + resp);
         if (resp.result != 0) return resp;
         let proxyNodes = resp.nodes;
         log("nodes->" + [{
@@ -239,7 +242,7 @@ function promoteNewPrimary() {
             fixedCloudlets: proxyNodes[0].fixedCloudlets,
             flexibleCloudlets: proxyNodes[0].flexibleCloudlets
         }]);
-        
+
         return api.env.control.ChangeTopology({
             envName: envName,
             session: session,
