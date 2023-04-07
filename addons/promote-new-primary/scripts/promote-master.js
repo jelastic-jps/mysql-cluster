@@ -182,12 +182,7 @@ function promoteNewPrimary() {
         log("promoteNewSQLPrimary cmdById ->" + resp);
         if (resp.result != 0) return resp;
 
-        // let REGEXP = new RegExp('\\b - Slave\\b', 'gi');
-
         return api.env.control.SetNodeDisplayName(envName, session, newPrimary.id, PRIMARY);
-
-        //https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh
-        //bash /tmp/db_recovery.sh --scenario promote_new_primary (setNodeDisaplay from secondary to primary)
     };
 
     this.restoreNodes = function() {
@@ -215,37 +210,44 @@ function promoteNewPrimary() {
 
         let node = resp.node;
 
+        resp = this.getUserData();
+        if (resp.result != 0) return resp;
+
         resp = api.environment.control.AddNode({
             envName: envName,
-            session: session,
+            session: resp.session,
             displayName: "Secondary",
             fixedCloudlets: node.fixedCloudlets,
             flexibleCloudlets: node.flexibleCloudlets,
             nodeType: node.nodeType,
-            nodeGroup: node.nodeGroup,
-            uid: uid
+            nodeGroup: node.nodeGroup
         });
         log("addNode obj->" + {
             envName: envName,
-            session: session,
+            session: resp.session,
             displayName: "Secondary",
             fixedCloudlets: node.fixedCloudlets,
             flexibleCloudlets: node.flexibleCloudlets,
             nodeType: node.nodeType,
-            nodeGroup: node.nodeGroup,
-            uid: uid
+            nodeGroup: node.nodeGroup
         });
         log("addNode resp->" + resp);
         if (resp.result != 0) return resp;
 
-        log("addNode resp.response->" + resp.response);
-        log("addNode resp.response.array->" + resp.response.array);
         resp = this.cmdByGroup("rm -rf " + TMP_FILE, PROXY);
         if (resp.result != 0) return resp;
 
         return api.env.control.SetNodeDisplayName(envName, session, resp.response.array[0].id, SECONDARY);
         //nodeGroupData=[string]&extIp=[boolean]&password=[string]&startService=[boolean]&engine=[string]&envName=[string]&options=[string]&fixedCloudlets=[int]&tag=[string]
-    }
+    };
+
+    this.getUserData = function(uid) {
+        return api.system.admin.SigninAsClient({
+            session: signature,
+            appid: appid,
+            login: String(uid)
+        });
+    };
 
     this.cmdByGroup = function(command, nodeGroup) {
         return api.env.control.ExecCmdByGroup(envName, session, nodeGroup, toJSON([{ command: command }]), true, false, ROOT);
