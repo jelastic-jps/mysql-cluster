@@ -11,32 +11,35 @@ function promoteNewPrimary() {
     let session = getParam("session", "");
 
     this.run = function() {
-
         let resp = this.auth();
-        log("auth resp ->" + resp);
+        this.log("auth resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.newPrimaryOnProxy();
-        log("newPrimaryOnProxy resp ->" + resp);
+        this.log("newPrimaryOnProxy resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.promoteNewSQLPrimary();
-        log("promoteNewSQLPrimary resp ->" + resp);
+        this.log("promoteNewSQLPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.restoreNodes();
-        log("restoreNodes resp ->" + resp);
+        this.log("restoreNodes resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setContainerVar();
-        log("setContainerVar resp ->" + resp);
+        this.log("setContainerVar resp ->" + resp);
         if (resp.result != 0) return resp;
 
         return this.addNode();
     };
 
+    this.log = function(message) {
+        api.marketplace.console.WriteLog(appid, session, message);
+    };
+
     this.auth = function() {
-        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "${token}") {
+        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "o5u1P1o0OL5xSD6PglhoOOf8iJg4N3i7mgq4xe3Q7MwdPv9h0scf5MG1SU3CBsST") {
             return {
                 result: Response.PERMISSION_DENIED,
                 error: "wrong token",
@@ -68,7 +71,7 @@ function promoteNewPrimary() {
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --diagnostic"
         let resp = this.cmdByGroup(command, SQLDB);
-        log("diagnosticNodes resp ->" + resp);
+        this.log("diagnosticNodes resp ->" + resp);
         if (resp.result != 0) return resp;
 
         let responses = resp.responses, out;
@@ -157,7 +160,7 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
-        log("newPrimaryOnProxy getParsedNodes nodes ->" + nodes);
+        this.log("newPrimaryOnProxy getParsedNodes nodes ->" + nodes);
 
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
@@ -173,7 +176,7 @@ function promoteNewPrimary() {
             }
 
             let command = "bash /usr/local/sbin/jcm.sh newPrimary --server=node" + this.getNewPrimaryNode().id;
-            log("newPrimaryOnProxy command ->" + command);
+            this.log("newPrimaryOnProxy command ->" + command);
             return this.cmdByGroup(command, PROXY);
         }
 
@@ -183,28 +186,28 @@ function promoteNewPrimary() {
     this.promoteNewSQLPrimary = function() {
         let newPrimary = this.getNewPrimaryNode();
 
-        log("promoteNewSQLPrimary newPrimary ->" + newPrimary);
+        this.log("promoteNewSQLPrimary newPrimary ->" + newPrimary);
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --scenario promote_new_primary";
         let resp = this.cmdById(newPrimary.id, command);
-        log("promoteNewSQLPrimary cmdById ->" + resp);
+        this.log("promoteNewSQLPrimary cmdById ->" + resp);
         if (resp.result != 0) return resp;
 
         return api.env.control.SetNodeDisplayName(envName, session, newPrimary.id, PRIMARY);
     };
 
     this.restoreNodes = function() {
-        log("restoreNodes in ->");
+        this.log("restoreNodes in ->");
         let nodes = this.getParsedNodes();
 
         let newPrimary = this.getNewPrimaryNode();
-        log("restoreNodes newPrimary ->" + newPrimary);
+        this.log("restoreNodes newPrimary ->" + newPrimary);
 
         let command = "/bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
         for (let i = 0, n = nodes.length; i < n; i++) {
             if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
                 let resp = this.cmdById(nodes[i].id, command);
-                log("restoreNodes cmdById ->" + resp);
+                this.log("restoreNodes cmdById ->" + resp);
                 if (resp.result != 0) return resp;
             }
         }
@@ -227,7 +230,7 @@ function promoteNewPrimary() {
             nodeType: node.nodeType,
             nodeGroup: node.nodeGroup
         });
-        log("addNode obj->" + {
+        this.log("addNode obj->" + {
             envName: envName,
             session: session,
             displayName: "Secondary",
@@ -236,7 +239,7 @@ function promoteNewPrimary() {
             nodeType: node.nodeType,
             nodeGroup: node.nodeGroup
         });
-        log("addNode resp->" + resp);
+        this.log("addNode resp->" + resp);
         if (resp.result != 0) return resp;
 
         return this.cmdByGroup("rm -rf " + TMP_FILE, PROXY);
@@ -260,9 +263,5 @@ function promoteNewPrimary() {
         return api.env.control.ExecCmdById(envName, session, id, toJSON([{ command: command }]), true, ROOT);
     };
 };
-
-function log(message) {
-    api.marketplace.console.WriteLog(appid, session, message);
-}
 
 return new promoteNewPrimary().run();
