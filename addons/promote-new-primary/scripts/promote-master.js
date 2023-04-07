@@ -39,7 +39,7 @@ function promoteNewPrimary() {
     };
 
     this.auth = function() {
-        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "o5u1P1o0OL5xSD6PglhoOOf8iJg4N3i7mgq4xe3Q7MwdPv9h0scf5MG1SU3CBsST") {
+        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "${token}") {
             return {
                 result: Response.PERMISSION_DENIED,
                 error: "wrong token",
