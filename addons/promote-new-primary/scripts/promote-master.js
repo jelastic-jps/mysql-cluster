@@ -161,9 +161,14 @@ function promoteNewPrimary() {
 
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
-                if (nodes[i] && nodes[i].type == SECONDARY) {
-                    this.setNewPrimaryNode(nodes[i]);
-                    break;
+                if (nodes[i]) {
+                    if (nodes[i].type == SECONDARY) {
+                        this.setNewPrimaryNode(nodes[i]);
+                        break;
+                    } else {
+                        resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY);
+                        if (resp.result != 0) return resp;
+                    }
                 }
             }
 
