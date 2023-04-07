@@ -8,6 +8,7 @@ function promoteNewPrimary() {
     let SECONDARY = "secondary";
     let Response = com.hivext.api.Response;
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
+    let session = getParam("session", "");
 
     this.run = function() {
 
@@ -233,10 +234,9 @@ function promoteNewPrimary() {
         log("addNode resp->" + resp);
         if (resp.result != 0) return resp;
 
-        resp = this.cmdByGroup("rm -rf " + TMP_FILE, PROXY);
-        if (resp.result != 0) return resp;
-
-        return api.env.control.SetNodeDisplayName(envName, session, resp.response.array[0].id, SECONDARY);
+        return this.cmdByGroup("rm -rf " + TMP_FILE, PROXY);
+        //
+        // return api.env.control.SetNodeDisplayName(envName, session, resp.response.array[0].id, SECONDARY);
     };
 
     this.getUserData = function() {
@@ -257,7 +257,7 @@ function promoteNewPrimary() {
 };
 
 function log(message) {
-    api.marketplace.console.WriteLog(message);
+    api.marketplace.console.WriteLog(appid, session, message);
 }
 
 return new promoteNewPrimary().run();
