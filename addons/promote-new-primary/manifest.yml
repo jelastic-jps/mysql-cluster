@@ -49,7 +49,7 @@ actions:
     - cmd[proxy]: |-
         [ ! -d /etc/proxysql ] && mkdir /etc/proxysql;
         [ ! -f /etc/proxysql/jcm.conf ] && echo "### ProxySQL configuration for JCM" > /etc/proxysql/jcm.conf;
-        grep -q "PRIMARY_NODE_ID" /etc/proxysql/jcm.conf || { echo "PRIMARY_NODE_ID = node${nodes.sqldb.master.id}" >> /etc/proxysql/jcm.conf; }
+        grep -q "PRIMARY_NODE_ID" /etc/proxysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/proxysql/jcm.conf; }
         echo /etc/proxysql/jcm.conf >>  /etc/jelastic/redeploy.conf;
         chown jelastic /etc/proxysql/jcm.conf;
       user: root
