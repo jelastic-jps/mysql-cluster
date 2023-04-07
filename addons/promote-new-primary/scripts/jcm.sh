@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USER_SCRIPT_PATH="https://app.demo.jelastic.com/env-5961973-promote-master?appid=496ed82ef1472ae752954cb1f0ae9c2a&token=HH5OjYVMYYLO08b3Bys7FxbD5dUD0eEoILY8zMtApS5a7j16XVTZ5IpYIOnXMHsJ&envName=env-5961973&uid=369"
+USER_SCRIPT_PATH="{URL}"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
