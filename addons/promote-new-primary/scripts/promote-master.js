@@ -237,11 +237,10 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         return api.env.control.SetNodeDisplayName(envName, session, resp.response.array[0].id, SECONDARY);
-        //nodeGroupData=[string]&extIp=[boolean]&password=[string]&startService=[boolean]&engine=[string]&envName=[string]&options=[string]&fixedCloudlets=[int]&tag=[string]
     };
 
-    this.getUserData = function(uid) {
-        return api.system.admin.SigninAsClient({
+    this.getUserData = function() {
+        return api.system.admin.SigninAsUser({
             session: signature,
             appid: appid,
             login: String(uid)
