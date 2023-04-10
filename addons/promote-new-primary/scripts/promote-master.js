@@ -32,7 +32,11 @@ function promoteNewPrimary() {
         this.log("setContainerVar resp ->" + resp);
         if (resp.result != 0) return resp;
 
-        return this.addNode();
+        resp = this.addNode();
+        this.log("addNode func resp ->" + resp);
+        if (resp.result != 0) return resp;
+
+        return this.removeFailedPrimary();
     };
 
     this.log = function(message) {
@@ -112,6 +116,14 @@ function promoteNewPrimary() {
         this.newPrimaryNode = node;
     };
 
+    this.getFailedPrimary = function() {
+        return this.failedPrimary;
+    };
+
+    this.setFailedPrimary = function(node) {
+        this.failedPrimary = node;
+    };
+
     this.getParsedNodes = function() {
         return this.parsedNodes;
     };
@@ -175,6 +187,11 @@ function promoteNewPrimary() {
                     } else {
                         resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
+
+                        resp = this.getSQLNodeById(nodes[i].id);
+                        if (resp.result != 0) return resp;
+
+                        this.setFailedPrimary(resp.node);
                     }
                 }
             }
@@ -272,6 +289,17 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         return this.cmdByGroup("rm -rf " + TMP_FILE, PROXY);
+    };
+
+    this.removeFailedPrimary = function() {
+        let failedPrimary = this.getFailedPrimary();
+        this.log("in removeFailedPrimary");
+        if (failedPrimary) {
+            this.log("removeFailedPrimary failedPrimary->" + failedPrimary);
+            return api.env.control.RemoveNode(envName, session, failedPrimary.id);
+        }
+
+        return { result: 0 }
     };
 
     this.getUserData = function() {
