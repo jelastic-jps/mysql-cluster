@@ -50,7 +50,7 @@ primaryStatus(){
   if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
     log "Primary node status is OFFLINE"
     log "Promoting new Primary"
-    resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");    
+    resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
   else
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
@@ -81,13 +81,9 @@ addSchedulerProxy(){
   local interval_ms="$1"
   local filename="$2"
   local arg1="$3"
-  local arg2="$4"
-  local arg3="$5"
-  local arg4="$6"
-  local arg5="$7"
-  local comment="$8"
-  local cmd="INSERT INTO scheduler(interval_ms,filename,arg1,arg2,arg3,arg4,arg5,active,comment) "
-  cmd+="VALUES ($interval_ms,'$filename', '$arg1', '$arg2', '$arg3', '$arg4', '$arg5',1,'$comment');"
+  local comment="$4"
+  local cmd="INSERT INTO scheduler(interval_ms,filename,arg1,active,comment) "
+  cmd+="VALUES ($interval_ms,'$filename', '$arg1',1,'$comment');"
   proxyCommandExec "$cmd"
 }
 
@@ -184,7 +180,7 @@ addScheduler(){
 
   local interval_ms=$((${INTERVAL} * 1000))
 
-  execAction "addSchedulerProxy $interval_ms $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
+  execAction "addSchedulerProxy $interval_ms $FILENAME $ARG1 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
   execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
 
 }
