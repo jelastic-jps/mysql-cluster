@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USER_SCRIPT_PATH="https://app.demo.jelastic.com/env-1658085-promote-master?appid=496ed82ef1472ae752954cb1f0ae9c2a&token=btzitPwUr57W0bAiquGaOCI7jsgZ8pGyBKHFg8AH7NaQgC0IC61ryjomBPQWqyYA&envName=env-1658085&uid=369"
+USER_SCRIPT_PATH="{URL}"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
@@ -226,6 +226,10 @@ case ${1} in
       addScheduler "$@"
       ;;
 
+    setSchedulerTimeout)
+      setSchedulerTimeout "$@"
+      ;;
+      
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
