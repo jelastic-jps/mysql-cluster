@@ -98,6 +98,11 @@ addSchedulerProxy(){
   proxyCommandExec "$cmd"
 }
 
+deleteAllSchedulers(){
+  local cmd="DELETE from scheduler;"
+  proxyCommandExec "$cmd"
+}
+
 updateSchedulerProxy(){
   local interval_ms="$1"
   local comment="$2"
@@ -193,6 +198,8 @@ addScheduler(){
   local interval_sec=5
   local online_iterations=$((${INTERVAL}/${interval_sec}))
   
+  execAction "deleteAllSchedulers" "Delete Schedulers"
+  execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
   execAction "updateParameterInConfig ONLINE_ITERATIONS $online_iterations" "Set $online_iterations iterations checks in the $JCM_CONFIG"
   execAction "addSchedulerProxy $interval_ms $FILENAME $ARG1 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
   execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
