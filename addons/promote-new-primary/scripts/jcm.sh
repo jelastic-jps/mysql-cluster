@@ -5,6 +5,7 @@ USER_SCRIPT_PATH="{URL}"
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
 JCM_CONFIG="/etc/proxysql/jcm.conf"
+ITERATION_CONFIG="/etc/proxysql/iteration.conf"
 
 SUCCESS_CODE=0
 FAIL_CODE=99
@@ -47,13 +48,21 @@ execAction(){
 primaryStatus(){
   local cmd="select status from runtime_mysql_servers where hostgroup_id=$WRITE_HG_ID;"
   local status=$(proxyCommandExec "$cmd")
+  source $JCM_CONFIG
+  source $ITERATION_CONFIG
   if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
-    log "Primary node status is OFFLINE"
-    log "Promoting new Primary"
-    resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
+    if [[ $ITERATION -eq $ONLINE_ITERATIONS ]]; then
+      log "Primary node status is OFFLINE"
+      log "Promoting new Primary"
+#    resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
+    else
+      ITERATION=$(($ITERATION+1))
+      echo "ITERATION=$ITERATION" > ${ITERATION_CONFIG};
+    fi
   else
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
+      echo "ITERATION=0" > ${ITERATION_CONFIG};
     else
       log "Promoting new Primary in progress"
     fi
@@ -177,9 +186,12 @@ addScheduler(){
         ;;
     esac
   done
-
-  local interval_ms=$((${INTERVAL} * 1000))
-
+  
+#  local interval_ms=$((${INTERVAL} * 1000))
+  local interval_ms=5
+  local online_iterations=$((${INTERVAL}/${interval_ms}))
+  
+  execAction "updateParameterInConfig ONLINE_ITERATIONS $online_iterations" "Set $online_iterations iterations checks in the $JCM_CONFIG"
   execAction "addSchedulerProxy $interval_ms $FILENAME $ARG1 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
   execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
 
@@ -191,9 +203,10 @@ deletePrimary(){
   proxyCommandExec "$cmd"
 }
 
-updatePrimaryInConfig(){
-  local nodeId="$1"
-  grep -q "PRIMARY_NODE_ID" ${JCM_CONFIG} && { sed -i "s/.*/PRIMARY_NODE_ID=$nodeId/" ${JCM_CONFIG}; } || { echo "PRIMARY_NODE_ID=$nodeId" >> ${JCM_CONFIG}; }
+updateParameterInConfig(){
+  local parameter="$2"
+  local value="$3"
+  grep -q "$parameter" ${JCM_CONFIG} && { sed -i "s/${parameter}.*/$parameter=$value/" ${JCM_CONFIG}; } || { echo "$parameter=$value" >> ${JCM_CONFIG}; }
 }
 
 newPrimary(){
@@ -216,7 +229,7 @@ newPrimary(){
   execAction "addNodeToWriteGroup $SERVER" "Adding $SERVER to writer hostgroup"
   execAction "addNodeToReadGroup $SERVER" "Adding $SERVER to reader hostgroup"
   execAction "loadServersToRuntime" "Loading server configuration to runtime"
-  execAction "updatePrimaryInConfig $SERVER" "Set primary node to $SERVER in the $JCM_CONFIG"
+  execAction "updateParameterInConfig PRIMARY_NODE_ID $SERVER" "Set primary node to $SERVER in the $JCM_CONFIG"
 }
 
 case ${1} in
@@ -236,6 +249,10 @@ case ${1} in
       setSchedulerTimeout "$@"
       ;;
 
+    updateParameterInConfig)
+      updateParameterInConfig "$@"
+      ;;
+      
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
