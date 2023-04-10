@@ -47,7 +47,7 @@ onInstall:
 
 onCustomNodeEvent [name:executeScript]:
   script: |
-    let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}";
+    let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}&session=" + session;
     let Transport = com.hivext.api.core.utils.Transport;
     api.marketplace.console.WriteLog("URL->" + URL);
     let resp = new Transport().get(URL);
