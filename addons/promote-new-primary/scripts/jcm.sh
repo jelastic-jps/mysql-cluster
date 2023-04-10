@@ -48,8 +48,8 @@ execAction(){
 primaryStatus(){
   local cmd="select status from runtime_mysql_servers where hostgroup_id=$WRITE_HG_ID;"
   local status=$(proxyCommandExec "$cmd")
-  source $JCM_CONFIG
-  source $ITERATION_CONFIG
+  source $JCM_CONFIG;
+  [[ -f $ITERATION_CONFIG ]] && source $ITERATION_CONFIG;
   if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
     if [[ $ITERATION -eq $ONLINE_ITERATIONS ]]; then
       log "Primary node status is OFFLINE"
