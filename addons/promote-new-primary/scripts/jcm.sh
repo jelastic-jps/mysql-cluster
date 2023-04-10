@@ -51,21 +51,21 @@ primaryStatus(){
   local cmd="select status from runtime_mysql_servers where hostgroup_id=$WRITE_HG_ID;"
   local status=$(proxyCommandExec "$cmd")
   source $JCM_CONFIG;
-  source $ITERATION_CONFIG;
+#  source $ITERATION_CONFIG;
   if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
-    if [[ $ITERATION -eq $ONLINE_ITERATIONS ]]; then
+#    if [[ $ITERATION -eq $ONLINE_ITERATIONS ]]; then
       log "Primary node status is OFFLINE"
       log "Promoting new Primary"
 #      resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
       curl --location --request POST "https://${PLATFORM_DOMAIN}/1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
-    else
-      ITERATION=$(($ITERATION+1))
-      echo "ITERATION=$ITERATION" > ${ITERATION_CONFIG};
-    fi
+#    else
+#      ITERATION=$(($ITERATION+1))
+#      echo "ITERATION=$ITERATION" > ${ITERATION_CONFIG};
+#    fi
   else
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
-      echo "ITERATION=0" > ${ITERATION_CONFIG};
+#     echo "ITERATION=0" > ${ITERATION_CONFIG};
     else
       log "Promoting new Primary in progress"
     fi
@@ -190,10 +190,10 @@ addScheduler(){
     esac
   done
   
-  echo "ITERATION=0" > ${ITERATION_CONFIG};
-  local interval_ms=5000
+#  echo "ITERATION=0" > ${ITERATION_CONFIG};
+  local interval_ms=60000
   local interval_sec=5
-  local online_iterations=$((${INTERVAL}/${interval_sec}))
+#  local online_iterations=$((${INTERVAL}/${interval_sec}))
   
   execAction "updateParameterInConfig ONLINE_ITERATIONS $online_iterations" "Set $online_iterations iterations checks in the $JCM_CONFIG"
   execAction "addSchedulerProxy $interval_ms $FILENAME $ARG1 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
