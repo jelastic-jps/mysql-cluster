@@ -236,7 +236,7 @@ newPrimary(){
     execAction "loadServersToRuntime" "Loading server configuration to runtime"
   fi
   execAction "addNodeToWriteGroup $SERVER" "Adding $SERVER to writer hostgroup"
-  execAction "addNodeToReadGroup $SERVER" "Adding $SERVER to reader hostgroup"
+#  execAction "addNodeToReadGroup $SERVER" "Adding $SERVER to reader hostgroup"
   execAction "loadServersToRuntime" "Loading server configuration to runtime"
   execAction "updateParameterInConfig PRIMARY_NODE_ID $SERVER" "Set primary node to $SERVER in the $JCM_CONFIG"
 }
