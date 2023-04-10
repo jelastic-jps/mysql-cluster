@@ -92,7 +92,8 @@ actions:
       scriptBody = new StrSubstitutor({token: "${globals.random}"}, "${", "}").replace(scriptBody);
 
       let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "\\&token=${globals.random}\\&envName=${env.name}\\&uid=${user.uid}";
-      command = "sed -ri 's|USER_SCRIPT_PATH=.*|USER_SCRIPT_PATH=\"" + URL + "\"|g' /usr/local/sbin/jcm.sh";
+      command = "sed -ri 's|PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/jcm.sh";
+      
       let resp = api.env.control.ExecCmdByGroup("${env.name}", session, "proxy", toJSON([{ command: command }]), true, false, ROOT);
       if (resp.result != 0) return resp;
 

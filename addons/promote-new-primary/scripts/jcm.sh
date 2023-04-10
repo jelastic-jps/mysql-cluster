@@ -57,7 +57,7 @@ primaryStatus(){
       log "Primary node status is OFFLINE"
       log "Promoting new Primary"
 #      resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
-      curl --location --request POST "https://${PLATFORM_DOMAIN}/1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
+      curl --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
 #    else
 #      ITERATION=$(($ITERATION+1))
 #      echo "ITERATION=$ITERATION" > ${ITERATION_CONFIG};

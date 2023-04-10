@@ -185,6 +185,7 @@ function promoteNewPrimary() {
                         if (resp.result != 0) return resp;
 
                         resp = this.getSQLNodeById(nodes[i].id);
+                        this.log("getSQLNodeById resp->" + resp);
                         if (resp.result != 0) return resp;
 
                         this.setFailedPrimary(resp.node);
