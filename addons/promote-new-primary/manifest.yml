@@ -37,12 +37,23 @@ buttons:
 globals:
   scriptName: ${env.name}-promote-master
   jcmPath: /usr/local/sbin/jcm.sh
+  random: ${fn.password}
 
 onInstall:
   - addConfiguration
   - downloadScripts
   - createScript
   - addSchedulerToProxySQL
+
+onCustomNodeEvent [name:executeScript]:
+  script: |
+    let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}";
+    let Transport = com.hivext.api.core.utils.Transport;
+    api.marketplace.console.WriteLog("URL->" + URL);
+    let resp = new Transport().get(URL);
+    if (resp.result != 0) return resp;
+    api.marketplace.console.WriteLog("resp->" + resp);
+    return { result: 0 }
 
 actions:
   addConfiguration:
@@ -76,12 +87,11 @@ actions:
       let Transport = com.hivext.api.core.utils.Transport;
       let StrSubstitutor = org.apache.commons.lang3.text.StrSubstitutor;
       let scriptBody = new Transport().get("${baseUrl}/scripts/promote-master.js");
-      let random = com.hivext.api.utils.Random.getPswd(64);
       let ROOT = "root";
 
-      scriptBody = new StrSubstitutor({token: random}, "${", "}").replace(scriptBody);
+      scriptBody = new StrSubstitutor({token: "${globals.random}"}, "${", "}").replace(scriptBody);
 
-      let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "\\&token=" + random + "\\&envName=${env.name}\\&uid=${user.uid}";
+      let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "\\&token=${globals.random}\\&envName=${env.name}\\&uid=${user.uid}";
       command = "sed -ri 's|USER_SCRIPT_PATH=.*|USER_SCRIPT_PATH=\"" + URL + "\"|g' /usr/local/sbin/jcm.sh";
       let resp = api.env.control.ExecCmdByGroup("${env.name}", session, "proxy", toJSON([{ command: command }]), true, false, ROOT);
       if (resp.result != 0) return resp;
