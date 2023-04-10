@@ -52,10 +52,6 @@ function promoteNewPrimary() {
                 message:"Token [" + token + "] does not match",
                 response: { result: Response.PERMISSION_DENIED }
             };
-        } else {
-            let resp = this.getUserData();
-            if (resp.result != 0) return resp;
-            session = resp.session;
         }
 
         return this.cmdByGroup("touch " + TMP_FILE, PROXY);
@@ -238,16 +234,13 @@ function promoteNewPrimary() {
 
     this.addNode = function() {
         let envInfo = this.getEnvInfo();
-        this.log("envInfo ->" + envInfo);
         if (envInfo.result != 0) return envInfo;
 
         let resp = this.getNodesByGroup(SQLDB);
-        this.log("envInfo getNodesByGroup SQLDB resp ->" + resp);
         if (resp.result != 0) return resp;
         let sqlNodes = resp.nodes;
 
         resp = this.getNodesByGroup(PROXY);
-        this.log("envInfo getNodesByGroup PROXY resp ->" + resp);
         if (resp.result != 0) return resp;
 
         let proxyNodes = resp.nodes;
@@ -300,14 +293,6 @@ function promoteNewPrimary() {
         }
 
         return { result: 0 }
-    };
-
-    this.getUserData = function() {
-        return api.system.admin.SigninAsUser({
-            session: signature,
-            appid: appid,
-            login: String(uid)
-        });
     };
 
     this.cmdByGroup = function(command, nodeGroup) {
