@@ -56,7 +56,7 @@ actions:
 
   addSchedulerToProxySQL:
     - cmd[${nodes.proxy.master.id}]: |-
-        bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus;
+        bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
 
   downloadScripts:
     - cmd[proxy]: |-
@@ -68,7 +68,7 @@ actions:
 
   idleTimeConfigure:
     cmd[proxy]: |-
-      echo "----------------1111111111"
+      bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
       
   createScript:
     script: |
