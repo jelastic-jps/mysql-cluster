@@ -67,7 +67,7 @@ actions:
       user: root
 
   addSchedulerToProxySQL:
-    - cmd[${nodes.proxy.master.id}]: |-
+    - cmd[proxy]: |-
         bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
 
   downloadScripts:
