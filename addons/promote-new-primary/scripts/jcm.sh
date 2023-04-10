@@ -184,7 +184,7 @@ addScheduler(){
 
   local interval_ms=$((${INTERVAL} * 1000))
 
-  execAction "addSchedulerToProxy $interval_ms $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
+  execAction "addSchedulerProxy $interval_ms $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
   execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
 
 }
