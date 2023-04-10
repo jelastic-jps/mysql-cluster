@@ -12,9 +12,7 @@ function promoteNewPrimary() {
     let session = getParam("session", "");
 
     this.run = function() {
-        this.log("session->" + session);
         let resp = this.auth();
-        this.log("session->" + session);
         this.log("auth resp ->" + resp);
         if (resp.result != 0) return resp;
 
