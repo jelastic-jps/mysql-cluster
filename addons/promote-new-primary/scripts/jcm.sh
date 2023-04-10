@@ -64,7 +64,7 @@ primaryStatus(){
   else
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
-     echo "ITERATION=0" > ${ITERATION_CONFIG};
+      echo "ITERATION=0" > ${ITERATION_CONFIG};
     else
       log "Promoting new Primary in progress"
     fi
