@@ -8,7 +8,7 @@ description:
 
 logo: /images/database-corruption-check.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-66025/addons/promote-new-primary
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66025/addons/promote-new-primary
 
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
@@ -56,7 +56,7 @@ actions:
 
   addSchedulerToProxySQL:
     - cmd[${nodes.proxy.master.id}]: |-
-        bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus;
+        bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
 
   downloadScripts:
     - cmd[proxy]: |-
@@ -68,7 +68,7 @@ actions:
 
   idleTimeConfigure:
     cmd[proxy]: |-
-      echo "----------------1111111111"
+      bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
       
   createScript:
     script: |

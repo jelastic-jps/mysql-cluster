@@ -21,6 +21,13 @@ log(){
   echo -e "[${timestamp}]: ${message}" >> ${RUN_LOG}
 }
 
+execResponse(){
+  local result=$1
+  local message=$2
+  local output_json="{\"result\": ${result}, \"out\": \"${message}\"}"
+  echo $output_json
+}
+
 proxyCommandExec(){
   local command="$1"
   MYSQL_PWD=admin mysql -uadmin -h127.0.0.1 -P6032 -BNe "$command"
@@ -31,6 +38,9 @@ execAction(){
   local message="$2"
   stdout=$( { ${action}; } 2>&1 ) && { log "${message}...done";  } || {
     log "${message}...failed\n${stdout}\n";
+    error="${message} failed, please check ${RUN_LOG} for details"
+    execResponse "$FAIL_CODE" "$error";
+    exit 0;
   }
 }
 
@@ -40,12 +50,12 @@ primaryStatus(){
   if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
     log "Primary node status is OFFLINE"
     log "Promoting new Primary"
-    resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
+    resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");    
   else
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
     else
-      log "Promoting new Primary"
+      log "Promoting new Primary in progress"
     fi
   fi
 }
@@ -67,7 +77,7 @@ loadServersToRuntime(){
   proxyCommandExec "$cmd"
 }
 
-addSchedulerToProxy(){
+addSchedulerProxy(){
   local interval_ms="$1"
   local filename="$2"
   local arg1="$3"
@@ -75,8 +85,16 @@ addSchedulerToProxy(){
   local arg3="$5"
   local arg4="$6"
   local arg5="$7"
+  local comment="$8"
   local cmd="INSERT INTO scheduler(interval_ms,filename,arg1,arg2,arg3,arg4,arg5,active,comment) "
-  cmd+="VALUES ($interval_ms,'$filename', '$arg1', '$arg2', '$arg3', '$arg4', '$arg5',1,'primaryStatus');"
+  cmd+="VALUES ($interval_ms,'$filename', '$arg1', '$arg2', '$arg3', '$arg4', '$arg5',1,'$comment');"
+  proxyCommandExec "$cmd"
+}
+
+updateSchedulerProxy(){
+  local interval_ms="$1"
+  local comment="$2"
+  local cmd="UPDATE scheduler SET interval_ms=$interval_ms WHERE comment='$comment';"
   proxyCommandExec "$cmd"
 }
 
@@ -85,6 +103,29 @@ loadSchedulerToRuntime(){
   proxyCommandExec "$cmd"
 }
 
+setSchedulerTimeout(){
+  for i in "$@"; do
+    case $i in
+      --interval=*)
+      INTERVAL=${i#*=}
+      shift
+      shift
+      ;;
+
+      --scheduler_name=*)
+      SCHEDULER_NAME=${i#*=}
+      shift
+      shift
+      ;;
+      *)
+        ;;
+    esac
+  done
+
+  local interval_ms=$((${INTERVAL} * 1000))
+  execAction "updateSchedulerProxy $interval_ms $SCHEDULER_NAME" "Updating scheduler timeout"
+  execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
+}
 
 addScheduler(){
   for i in "$@"; do
@@ -130,6 +171,12 @@ addScheduler(){
       shift
       shift
       ;;
+
+      --scheduler_name=*)
+      SCHEDULER_NAME=${i#*=}
+      shift
+      shift
+      ;;
       *)
         ;;
     esac
@@ -137,8 +184,8 @@ addScheduler(){
 
   local interval_ms=$((${INTERVAL} * 1000))
 
-  execAction "addSchedulerToProxy $interval_ms $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5" "Adding crontask to Scheduler"
-  execAction "loadSchedulerToRuntime" "Loading cronjob task to runtime"
+  execAction "addSchedulerToProxy $interval_ms $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
+  execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
 
 }
 
@@ -187,6 +234,10 @@ case ${1} in
 
     addScheduler)
       addScheduler "$@"
+      ;;
+
+    setSchedulerTimeout)
+      setSchedulerTimeout "$@"
       ;;
 
     *)
