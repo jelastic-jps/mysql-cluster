@@ -12,7 +12,9 @@ function promoteNewPrimary() {
     let session = getParam("session", "");
 
     this.run = function() {
+        this.log("session->" + session);
         let resp = this.auth();
+        this.log("session->" + session);
         this.log("auth resp ->" + resp);
         if (resp.result != 0) return resp;
 
@@ -286,8 +288,8 @@ function promoteNewPrimary() {
 
     this.removeFailedPrimary = function() {
         let failedPrimary = this.getFailedPrimary();
-        this.log("in removeFailedPrimary");
-        if (failedPrimary) {
+        this.log("in removeFailedPrimary and !failedPrimary.ismaster");
+        if (failedPrimary && !failedPrimary.ismaster) {
             this.log("removeFailedPrimary failedPrimary->" + failedPrimary);
             return api.env.control.RemoveNode(envName, session, failedPrimary.id);
         }
