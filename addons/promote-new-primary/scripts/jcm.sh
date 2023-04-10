@@ -133,9 +133,13 @@ setSchedulerTimeout(){
         ;;
     esac
   done
+  
+  
+  local interval_ms=5000
+  local interval_sec=5
+  local online_iterations=$((${INTERVAL}/${interval_sec}))
 
-  local interval_ms=$((${INTERVAL} * 1000))
-  execAction "updateSchedulerProxy $interval_ms $SCHEDULER_NAME" "Updating scheduler timeout"
+  execAction "updateParameterInConfig ONLINE_ITERATIONS $online_iterations" "Set $online_iterations iterations checks in the $JCM_CONFIG"
   execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
 }
 
@@ -193,11 +197,11 @@ addScheduler(){
         ;;
     esac
   done
-  
+
   local interval_ms=5000
   local interval_sec=5
   local online_iterations=$((${INTERVAL}/${interval_sec}))
-  
+
   execAction "deleteAllSchedulers" "Delete Schedulers"
   execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
   execAction "updateParameterInConfig ONLINE_ITERATIONS $online_iterations" "Set $online_iterations iterations checks in the $JCM_CONFIG"
@@ -261,7 +265,7 @@ case ${1} in
     updateParameterInConfig)
       updateParameterInConfig "$@"
       ;;
-      
+
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
