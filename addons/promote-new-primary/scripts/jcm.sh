@@ -204,8 +204,8 @@ deletePrimary(){
 }
 
 updateParameterInConfig(){
-  local parameter="$2"
-  local value="$3"
+  local parameter="$1"
+  local value="$2"
   grep -q "$parameter" ${JCM_CONFIG} && { sed -i "s/${parameter}.*/$parameter=$value/" ${JCM_CONFIG}; } || { echo "$parameter=$value" >> ${JCM_CONFIG}; }
 }
 
