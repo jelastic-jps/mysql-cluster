@@ -7,7 +7,7 @@ PLATFORM_DOMAIN="{PLATFORM_DOMAIN}"
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
 JCM_CONFIG="/etc/proxysql/jcm.conf"
-ITERATION_CONFIG="/etc/proxysql/iteration.conf"
+ITERATION_CONFIG="/tmp/iteration.conf"
 
 SUCCESS_CODE=0
 FAIL_CODE=99
