@@ -188,8 +188,9 @@ addScheduler(){
   done
   
 #  local interval_ms=$((${INTERVAL} * 1000))
-  local interval_ms=5
-  local online_iterations=$((${INTERVAL}/${interval_ms}))
+  local interval_ms=5000
+  local interval_sec=5
+  local online_iterations=$((${INTERVAL}/${interval_sec}))
   
   execAction "updateParameterInConfig ONLINE_ITERATIONS $online_iterations" "Set $online_iterations iterations checks in the $JCM_CONFIG"
   execAction "addSchedulerProxy $interval_ms $FILENAME $ARG1 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
