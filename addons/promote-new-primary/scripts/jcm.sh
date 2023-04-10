@@ -7,7 +7,7 @@ PLATFORM_DOMAIN="{PLATFORM_DOMAIN}"
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
 JCM_CONFIG="/etc/proxysql/jcm.conf"
-ITERATION_CONFIG="/etc/proxysql/iteration.conf"
+ITERATION_CONFIG="/tmp/iteration.conf"
 
 SUCCESS_CODE=0
 FAIL_CODE=99
@@ -56,7 +56,6 @@ primaryStatus(){
     if [[ $ITERATION -eq $ONLINE_ITERATIONS ]]; then
       log "Primary node status is OFFLINE"
       log "Promoting new Primary"
-#      resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
       curl --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
     else
       ITERATION=$(($ITERATION+1))
@@ -65,7 +64,7 @@ primaryStatus(){
   else
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
-      echo "ITERATION=0" > ${ITERATION_CONFIG};
+     echo "ITERATION=0" > ${ITERATION_CONFIG};
     else
       log "Promoting new Primary in progress"
     fi
@@ -190,7 +189,6 @@ addScheduler(){
     esac
   done
   
-  echo "ITERATION=0" > ${ITERATION_CONFIG};
   local interval_ms=5000
   local interval_sec=5
   local online_iterations=$((${INTERVAL}/${interval_sec}))
