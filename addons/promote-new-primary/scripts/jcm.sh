@@ -2,6 +2,8 @@
 
 USER_SCRIPT_PATH="{URL}"
 
+PLATFORM_DOMAIN="{PLATFORM_DOMAIN}"
+
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
 JCM_CONFIG="/etc/proxysql/jcm.conf"
@@ -54,7 +56,8 @@ primaryStatus(){
     if [[ $ITERATION -eq $ONLINE_ITERATIONS ]]; then
       log "Primary node status is OFFLINE"
       log "Promoting new Primary"
-#    resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
+#      resp=$(wget --no-check-certificate -qO- "${USER_SCRIPT_PATH}");
+      curl --location --request POST "https://${PLATFORM_DOMAIN}/1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
     else
       ITERATION=$(($ITERATION+1))
       echo "ITERATION=$ITERATION" > ${ITERATION_CONFIG};
