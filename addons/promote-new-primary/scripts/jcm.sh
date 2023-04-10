@@ -84,7 +84,7 @@ addSchedulerProxy(){
 updateSchedulerProxy(){
   local interval_ms="$1"
   local comment="$2"
-  local cmd="UPDATE scheduler SET interval_ms=$interval_ms WHERE comment='$comment');"
+  local cmd="UPDATE scheduler SET interval_ms=$interval_ms WHERE comment='$comment';"
   proxyCommandExec "$cmd"
 }
 
@@ -111,9 +111,9 @@ setSchedulerTimeout(){
         ;;
     esac
   done
-  
+
   local interval_ms=$((${INTERVAL} * 1000))
-  execAction "updateSchedulerProxy $INTERVAL $SCHEDULER_NAME" "Updating scheduler timeout"
+  execAction "updateSchedulerProxy $interval_ms $SCHEDULER_NAME" "Updating scheduler timeout"
   execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
 }
 
@@ -229,7 +229,7 @@ case ${1} in
     setSchedulerTimeout)
       setSchedulerTimeout "$@"
       ;;
-      
+
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
