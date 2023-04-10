@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USER_SCRIPT_PATH="{URL}"
+USER_SCRIPT_PATH="https://app.demo.jelastic.com/env-1658085-promote-master?appid=496ed82ef1472ae752954cb1f0ae9c2a&token=btzitPwUr57W0bAiquGaOCI7jsgZ8pGyBKHFg8AH7NaQgC0IC61ryjomBPQWqyYA&envName=env-1658085&uid=369"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
@@ -45,7 +45,7 @@ primaryStatus(){
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
     else
-      log "Promoting new Primary"
+      log "Promoting new Primary in progress"
     fi
   fi
 }
@@ -67,7 +67,7 @@ loadServersToRuntime(){
   proxyCommandExec "$cmd"
 }
 
-addSchedulerToProxy(){
+addSchedulerProxy(){
   local interval_ms="$1"
   local filename="$2"
   local arg1="$3"
@@ -75,8 +75,16 @@ addSchedulerToProxy(){
   local arg3="$5"
   local arg4="$6"
   local arg5="$7"
+  local comment="$8"
   local cmd="INSERT INTO scheduler(interval_ms,filename,arg1,arg2,arg3,arg4,arg5,active,comment) "
-  cmd+="VALUES ($interval_ms,'$filename', '$arg1', '$arg2', '$arg3', '$arg4', '$arg5',1,'primaryStatus');"
+  cmd+="VALUES ($interval_ms,'$filename', '$arg1', '$arg2', '$arg3', '$arg4', '$arg5',1,'$comment');"
+  proxyCommandExec "$cmd"
+}
+
+updateSchedulerProxy(){
+  local interval_ms="$1"
+  local comment="$2"
+  local cmd="UPDATE scheduler SET interval_ms=$interval_ms WHERE comment='$comment');"
   proxyCommandExec "$cmd"
 }
 
@@ -85,6 +93,29 @@ loadSchedulerToRuntime(){
   proxyCommandExec "$cmd"
 }
 
+setSchedulerTimeout(){
+  for i in "$@"; do
+    case $i in
+      --interval=*)
+      INTERVAL=${i#*=}
+      shift
+      shift
+      ;;
+
+      --scheduler_name=*)
+      SCHEDULER_NAME=${i#*=}
+      shift
+      shift
+      ;;
+      *)
+        ;;
+    esac
+  done
+  
+  local interval_ms=$((${INTERVAL} * 1000))
+  execAction "updateSchedulerProxy $INTERVAL $SCHEDULER_NAME" "Updating scheduler timeout"
+  execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
+}
 
 addScheduler(){
   for i in "$@"; do
@@ -130,6 +161,12 @@ addScheduler(){
       shift
       shift
       ;;
+
+      --scheduler_name=*)
+      SCHEDULER_NAME=${i#*=}
+      shift
+      shift
+      ;;
       *)
         ;;
     esac
@@ -137,8 +174,8 @@ addScheduler(){
 
   local interval_ms=$((${INTERVAL} * 1000))
 
-  execAction "addSchedulerToProxy $interval_ms $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5" "Adding crontask to Scheduler"
-  execAction "loadSchedulerToRuntime" "Loading cronjob task to runtime"
+  execAction "addSchedulerToProxy $interval_ms $FILENAME $ARG1 $ARG2 $ARG3 $ARG4 $ARG5 $SCHEDULER_NAME" "Adding $SCHEDULER_NAME crontask to scheduler"
+  execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
 
 }
 
