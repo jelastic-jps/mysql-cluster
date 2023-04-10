@@ -68,7 +68,13 @@ actions:
     - setNodeDisplayName[${this}]: Secondary
     
   addSlave:
+    - env.control.GetContainerEnvVarsByGroup[sqldb]
+    - setGlobals:
+        PRIMARY_IP: ${response.object.PRIMARY_IP}
+    - if (/response/.test("${globals.PRIMARY_IP}")):
+      - setGlobals:
+          PRIMARY_IP: ${nodes.sqldb.master.address}
     - cmd[${this}]: |-
         curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
-        bash /tmp/db-recovery.sh --scenario restore_secondary_from_primary --donor-ip ${nodes.sqldb.master.address};
+        bash /tmp/db-recovery.sh --scenario restore_secondary_from_primary --donor-ip ${globals.PRIMARY_IP};
       user: root
