@@ -122,8 +122,7 @@ setSchedulerTimeout(){
     esac
   done
 
-#  local interval_ms=$((${INTERVAL} * 1000))
-  local interval_ms=10
+  local interval_ms=$((${INTERVAL} * 1000))
   execAction "updateSchedulerProxy $interval_ms $SCHEDULER_NAME" "Updating scheduler timeout"
   execAction "loadSchedulerToRuntime" "Loading cronjob tasks to runtime"
 }
