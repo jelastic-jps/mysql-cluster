@@ -57,7 +57,7 @@ onCustomNodeEvent [name:executeScript]:
 
 actions:
   addConfiguration:
-    - cmd[${nodes.proxy.master.id}]: |-
+    - cmd[proxy]: |-
         [ ! -d /etc/proxysql ] && mkdir /etc/proxysql;
         [ ! -f /etc/proxysql/jcm.conf ] && echo "### ProxySQL configuration for JCM" > /etc/proxysql/jcm.conf;
         grep -q "PRIMARY_NODE_ID" /etc/proxysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/proxysql/jcm.conf; }
@@ -67,7 +67,7 @@ actions:
       user: root
 
   addSchedulerToProxySQL:
-    - cmd[proxy]: |-
+    - cmd[${nodes.proxy.master.id}]: |-
         bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
 
   downloadScripts:
