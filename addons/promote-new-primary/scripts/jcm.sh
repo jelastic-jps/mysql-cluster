@@ -2,7 +2,7 @@
 
 USER_SCRIPT_PATH="{URL}"
 
-PLATFORM_DOMAIN="{PLATFORM_DOMAIN}"
+PLATFORM_DOMAIN="https://app.demo.jelastic.com/"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
@@ -64,7 +64,7 @@ primaryStatus(){
   else
     if [ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]; then
       log "Primary node status is ONLINE"
-     echo "ITERATION=0" > ${ITERATION_CONFIG};
+      echo "ITERATION=0" > ${ITERATION_CONFIG};
     else
       log "Promoting new Primary in progress"
     fi
@@ -133,8 +133,8 @@ setSchedulerTimeout(){
         ;;
     esac
   done
-  
-  
+
+
   local interval_ms=5000
   local interval_sec=5
   local online_iterations=$((${INTERVAL}/${interval_sec}))
@@ -245,6 +245,25 @@ newPrimary(){
   execAction "updateParameterInConfig PRIMARY_NODE_ID $SERVER" "Set primary node to $SERVER in the $JCM_CONFIG"
 }
 
+getGlobalVariables(){
+
+  local cmd="SELECT variable_name from global_variables WHERE variable_name LIKE 'mysql-%' and variable_value <> '' AND variable_value IS NOT NULL;"
+  local global_variables=$(proxyCommandExec "$cmd")
+  local json_variables=$(jq -n '[]')
+  variables=($global_variables)
+  for variable in "${variables[@]}"
+  do
+    get_value_cmd="SELECT variable_value from global_variables WHERE variable_name='$variable';"
+    variable_value=$(proxyCommandExec "$get_value_cmd")
+         json_variables=$(echo $json_variables | jq \
+        --arg variable_name "$variable" \
+        --arg variable_value "$variable_value" \
+        '. += [{"variable_name": $variable_name, "variable_value": $variable_value}]')
+  done
+  echo $json_variables
+}
+
+
 case ${1} in
     primaryStatus)
       primaryStatus
@@ -266,6 +285,9 @@ case ${1} in
       updateParameterInConfig "$@"
       ;;
 
+    getGlobalVariables)
+      getGlobalVariables
+      ;;
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
