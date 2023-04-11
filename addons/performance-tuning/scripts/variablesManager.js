@@ -1,5 +1,3 @@
-import com.hivext.api.core.utils.Transport;
-
 function ApplySQLVariable() {
     let envName = "${env.envName}";
     let varName = "varName";
@@ -14,12 +12,17 @@ function ApplySQLVariable() {
 
     let ROOT = "root";
     let MY_CNF = "/etc/my.cnf";
+    let envInfo;
+    let SQLDB = "sqldb";
+    let PRIMARY = "Primary";
+    let SECONDARY = "Secondary";
 
     this.run = function() {
         let resp = this.defineMyCNF();
         if (resp.result != 0) return resp;
 
-
+        resp = this.defineWeights();
+        if (resp.result != 0) return resp;
 
         return this.getVariables();
     };
@@ -61,9 +64,92 @@ function ApplySQLVariable() {
                 field.value = this.getDbMaxConnections();
             }
 
+            if (field.caption == "Weights Ratio" && this.getWeights()) {
+                if (field.items) {
+                    let item;
+                    for (let k = 0, l = field.items.length; k < l; k++) {
+                        item = field.items[k];
+                        if (item.name == "weightMaster") {
+                            item.value = parseInt(this.getWeights().primary);
+                        } else if (item.name == "weightSlave") {
+                            item.value = parseInt(this.getWeights().secondary);
+                        }
+                    }
+                }
+            }
         }
 
         return settings;
+    };
+
+    this.defineWeights = function() {
+        let resp = this.getNodesByGroup(SQLDB);
+        if (resp.result != 0) return resp;
+
+        let primaryWeight = "";
+        let secondaryWeight = "";
+
+        let nodes = resp.nodes;
+        for (let i = 0, n = nodes.length; i < n; i++) {
+            if (nodes[i].displayName == SECONDARY) {
+                resp = this.getWeight(nodes[i].id);
+                if (resp.result != 0) return resp;
+
+                secondaryWeight = resp.weight;
+            }
+
+            if (nodes[i].displayName == PRIMARY) {
+                resp = this.getWeight(nodes[i].id);
+                if (resp.result != 0) return resp;
+
+                primaryWeight = resp.weight;
+            }
+        }
+
+        this.setWeights({
+            primary: primaryWeight,
+            secondary: secondaryWeight
+        });
+
+        return { result: 0 }
+    };
+
+    this.getWeight = function(id) {
+        let command = "mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e \"select weight from mysql_servers where hostname = 'node" + id + "';\"  | sed '2,4!d'  | tail -n 1";
+        let resp = this.cmdById("${nodes.proxy.master.id}", command);
+        if (resp.result != 0) return resp;
+        return {
+            result: 0,
+            weight: resp.responses[0].out
+        }
+    };
+
+    this.getEnvInfo = function() {
+        if (!envInfo) {
+            envInfo = api.env.control.GetEnvInfo("${env.name}", session);
+            if (envInfo.result != 0) return envInfo;
+
+        }
+
+        return envInfo;
+    };
+
+    this.getNodesByGroup = function(group) {
+        envInfo = this.getEnvInfo();
+        if (envInfo.result != 0) return envInfo;
+
+        let nodes = [];
+
+        for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
+            if (envInfo.nodes[i].nodeGroup == group) {
+                nodes.push(envInfo.nodes[i]);
+            }
+        }
+
+        return {
+            result: 0,
+            nodes: nodes
+        }
     };
 
     this.defineMyCNF = function() {
@@ -122,6 +208,14 @@ function ApplySQLVariable() {
 
     this.setDbMaxConnections = function(connections) {
         this.dbMaxConnections = connections;
+    };
+
+    this.getWeights = function() {
+        return this.weights;
+    };
+
+    this.setWeights = function(weights) {
+        this.weights = weights;
     };
 
     this.getMySQLThreads = function() {
