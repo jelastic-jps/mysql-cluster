@@ -65,7 +65,6 @@ onInstall:
   - getReplicaUser
   - resetProxyNodes
   - setupOrchestrator
-  - setupProxySQLCluster
   - setupProxySQL
 
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
