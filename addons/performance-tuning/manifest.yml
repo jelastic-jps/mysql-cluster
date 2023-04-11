@@ -13,8 +13,8 @@ onInstall:
   - confSetup
   
 settings:
-  onBeforeInit: /addons/performance-tuning/scripts/variablesManager.js
   settingsTune:
+    onBeforeInit: /addons/performance-tuning/scripts/variablesManager.js
     fields:
      - type: list
        caption: ProxySQL Variable
