@@ -2,7 +2,7 @@
 
 USER_SCRIPT_PATH="{URL}"
 
-PLATFORM_DOMAIN="{PLATFORM_DOMAIN}"
+PLATFORM_DOMAIN="https://app.demo.jelastic.com/"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
@@ -320,11 +320,11 @@ case ${1} in
     getGlobalVariables)
       getGlobalVariables
       ;;
-      
+
     setGlobalVariable)
-      getGlobalVariables "$@"
+      setGlobalVariable "$@"
       ;;
-      
+
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
