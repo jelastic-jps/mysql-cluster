@@ -2,7 +2,7 @@
 
 USER_SCRIPT_PATH="{URL}"
 
-PLATFORM_DOMAIN="https://app.demo.jelastic.com/"
+PLATFORM_DOMAIN="{PLATFORM_DOMAIN}"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
