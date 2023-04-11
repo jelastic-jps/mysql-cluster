@@ -88,6 +88,11 @@ loadServersToRuntime(){
   proxyCommandExec "$cmd"
 }
 
+loadVariablesToRuntime(){
+  local cmd="LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
+  proxyCommandExec "$cmd"
+}
+
 addSchedulerProxy(){
   local interval_ms="$1"
   local filename="$2"
@@ -263,6 +268,33 @@ getGlobalVariables(){
   echo $json_variables
 }
 
+setGlobalVariable(){
+  for i in "$@"; do
+    case $i in
+      --variable-name=*)
+      VARIABLE_NAME=${i#*=}
+      shift
+      shift
+      ;;
+      --variable-value=*)
+      VARIABLE_VALUE=${i#*=}
+      shift
+      shift
+      ;;
+      *)
+        ;;
+    esac
+  done
+
+  _set_global_variable(){
+    local variable="$1"
+    local value="$2"
+    local cmd="UPDATE global_variables SET variable_value='$value' WHERE variable_name='$variable';"
+    proxyCommandExec "$cmd"
+  }
+  execAction "_set_global_variable $VARIABLE_NAME $VARIABLE_VALUE" "Set global variable ${VARIABLE_NAME}=${VARIABLE_VALUE}"
+  execAction "loadVariablesToRuntime" "Loading global variables to runtime"
+}
 
 case ${1} in
     primaryStatus)
@@ -288,6 +320,11 @@ case ${1} in
     getGlobalVariables)
       getGlobalVariables
       ;;
+      
+    setGlobalVariable)
+      getGlobalVariables "$@"
+      ;;
+      
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
