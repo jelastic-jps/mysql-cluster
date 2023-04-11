@@ -1,9 +1,9 @@
 type: update
 name: DB Cluster Tuning
 id: proxysql-db-tune-addon
-logo: https://raw.githubusercontent.com/vlobzakov/images/main/mysql-proxysql-tuning.png
+logo: addons/performance-tuning/images/mysql-proxysql-tuning.png
 description: Change ProxySQL and Database settings according to your particular use case
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-66025
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-66025/
 targetNodes: proxysql
 
 globals:
@@ -14,7 +14,7 @@ onInstall:
   
 settings:
   settingsTune:
-    onBeforeInit: /addons/performance-tuning/scripts/variablesManager.js
+    onBeforeInit: addons/performance-tuning/scripts/variablesManager.js
     fields:
      - type: list
        caption: ProxySQL Variable
@@ -134,9 +134,3 @@ actions:
          sed -i "s|\[mysqld\]|\[mysqld\]\nmax_connections=${globals.dbMaxConnections}|g" /etc/my.cnf;
          jem service restart;
        user: root
-      
-  
-#  - cmd[sqldb]:|-
-#    sed -i s/^'\['mysqld'\]'/'\['mysqld'\]'\\nmax_connections=2048/g /etc/my.cnf
-#    user: root
-#  - cmd[proxysql]: jem service restart;
