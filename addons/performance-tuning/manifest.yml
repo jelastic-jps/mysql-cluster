@@ -131,6 +131,6 @@ actions:
   
   confSetup:
      - cmd [sqldb]: |- 
-         sed -i "s|\[mysqld\]|\[mysqld\]\nmax_connections=${globals.dbMaxConnections}|g" /etc/my.cnf;
+         grep -q "max_connections" /etc/my.cnf && { sed -i s/^max_connections.*/max_connections=${globals.dbMaxConnections}/g /etc/my.cnf; } || { sed -i "s|\[mysqld\]|\[mysqld\]\nmax_connections=${globals.dbMaxConnections}|g" /etc/my.cnf; };
          jem service restart;
        user: root
