@@ -18,7 +18,7 @@ targetNodes:
     - proxy
 
 settings:
-  autoFailover:
+  main:
     submitUnchanged: true
     fields:
       - name: primary_idle_time
@@ -31,7 +31,7 @@ buttons:
   - name: Idle Time Failover
     caption: Auto Failover
     confirmText: Enable Auto Failover?
-    settings: autoFailover
+    settings: main
     loadingText: Enabling Auto Failover...
     action: idleTimeConfigure
 
