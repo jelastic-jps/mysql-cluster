@@ -10,6 +10,8 @@ function promoteNewPrimary() {
     let Response = com.hivext.api.Response;
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
     let session = getParam("session", "");
+    let CLUSTER_FAILED = 98;
+    let WARNING = "warning";
 
     this.run = function() {
         let resp = this.auth();
@@ -69,6 +71,7 @@ function promoteNewPrimary() {
     };
 
     this.diagnosticNodes = function() {
+        let clusterUp = false;
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --diagnostic"
         let resp = this.cmdByGroup(command, SQLDB, 60);
@@ -86,10 +89,22 @@ function promoteNewPrimary() {
                     id: responses[i].nodeid,
                     type: out.node_type
                 });
+
+                if (out.service_status == "up" || out.status == "ok") {
+                    clusterUp = true;
+                }
             }
 
             if (nodes.length) {
                 this.setParsedNodes(nodes);
+            }
+        }
+
+        if (!clusterUp) {
+            return {
+                result: CLUSTER_FAILED,
+                type: WARNING,
+                message: "Cluster failed. Unable promote new primary",
             }
         }
 
@@ -167,6 +182,7 @@ function promoteNewPrimary() {
     this.newPrimaryOnProxy = function() {
         let alreadySetNewPrimary = false;
         let resp = this.diagnosticNodes();
+
         if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
@@ -310,7 +326,7 @@ function promoteNewPrimary() {
         if (timeout) {
             command = "timeout " + timeout + "s bash -c \"" + command + "\"";
         }
-        
+
         return api.env.control.ExecCmdById(envName, session, id, toJSON([{ command: command }]), true, ROOT);
     };
 };
