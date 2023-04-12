@@ -123,7 +123,9 @@ actions:
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;"
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE global_variables SET variable_value=${settings.threadsNumber} WHERE variable_name = 'mysql-threads'; SAVE MYSQL VARIABLES TO DISK;";
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightMaster} WHERE hostname='node${nodes.sqldb.master.id}' and hostgroup_id='11';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightSlave} WHERE hostname='node305';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
+    - forEach(sql:nodes.sqldb):
+        if ('${@sql.displayName}' == "Secondary"):
+          cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightSlave} WHERE hostname='node${@sql.id}';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections};LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
     - cmd[proxysql]: |-
         jem service restart
