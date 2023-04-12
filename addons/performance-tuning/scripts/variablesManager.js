@@ -52,8 +52,10 @@ function ApplySQLVariable() {
                 field.dependsOn = resp.dependsData;
             }
 
-            if (field.name == threadsNumber && this.getMySQLThreads()) {
-                field.value = this.getMySQLThreads();
+            if (field.caption == "ProxySQL Threads" && this.getMySQLThreads()) {
+                if (field.items && field.items[0]) {
+                    field.items[0].value = this.getMySQLThreads();
+                }
             }
 
             if (field.name == maxConnections && this.getMaxConnections()) {
