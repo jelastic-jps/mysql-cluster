@@ -24,7 +24,7 @@ settings:
       - name: primary_idle_time
         caption: Primary Idle Time (sec)
         type: spinner
-        min: 60
+        min: 30
         max: 3600
 
 buttons:
@@ -33,7 +33,7 @@ buttons:
     confirmText: Enable Auto Failover?
     settings: autoFailover
     loadingText: Enabling Auto Failover...
-    action: addSchedulerToProxySQL
+    action: idleTimeConfigure
 
   - name: Failover
     caption: Failover
@@ -50,6 +50,7 @@ onInstall:
   - addConfiguration
   - downloadScripts
   - createScript
+  - addSchedulerToProxySQL
 
 onCustomNodeEvent [name:executeScript]:
   script: |
@@ -90,7 +91,7 @@ actions:
       user: root
 
   idleTimeConfigure:
-    cmd[proxy]: |-
+    cmd[${nodes.proxy.master.id}]: |-
       bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
       
   createScript:
