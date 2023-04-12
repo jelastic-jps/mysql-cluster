@@ -296,7 +296,17 @@ setGlobalVariable(){
   execAction "loadVariablesToRuntime" "Loading global variables to runtime"
 }
 
+
+forceFailover(){
+  curl --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
+}
+
 case ${1} in
+
+    forceFailover)
+      forceFailover
+      ;;
+      
     primaryStatus)
       primaryStatus
       ;;
