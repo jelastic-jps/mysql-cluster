@@ -18,7 +18,8 @@ targetNodes:
     - proxy
 
 settings:
-  main:
+  autoFailover:
+    submitUnchanged: true
     fields:
       - name: primary_idle_time
         caption: Primary Idle Time (sec)
@@ -27,12 +28,18 @@ settings:
         max: 3600
 
 buttons:
-  - name: Primary Idle Time
-    caption: Primary Idle Time
-    confirmText: Change primary idle time?.
-    settings: main
-    loadingText: Applaying configuration...
-    action: idleTimeConfigure
+  - name: Idle Time Failover
+    caption: Auto Failover
+    confirmText: Enable Auto Failover?.
+    settings: autoFailover
+    loadingText: Enabling Auto Failover...
+    action: addSchedulerToProxySQL
+
+  - name: Failover
+    caption: Failover
+    confirmText: Run failover?.
+    loadingText: Applying failover...
+    action: forceFailover
 
 globals:
   scriptName: ${env.name}-promote-master
@@ -43,7 +50,6 @@ onInstall:
   - addConfiguration
   - downloadScripts
   - createScript
-  - addSchedulerToProxySQL
 
 onCustomNodeEvent [name:executeScript]:
   script: |
@@ -69,8 +75,11 @@ actions:
       user: root
 
   addSchedulerToProxySQL:
-    - cmd[proxy]: |-
+    - cmd[${nodes.proxy.master.id}]: |-
         bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
+
+  forceFailover:
+    - cmd[${nodes.proxy.master.id}]: screen -d -m bash /usr/local/sbin/jcm.sh forceFailover
 
   downloadScripts:
     - cmd[proxy]: |-
