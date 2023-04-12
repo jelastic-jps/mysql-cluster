@@ -1,10 +1,10 @@
 type: update
-name: Promote new Primary Add-on
+name: Auto Promote New Primary Add-On
 id: promote-new-primary
 
 description:
-  text:  Promote new Primary Add-on
-  short: Promote new Primary Add-on
+  text:  "Enable automatic failover for your regular MySQL/MariaDB Primary-Secondary database cluster. After installation, the add-on tracks the cluster node's status to automatically replace failed nodes. It also promotes new Primary if the current one becomes unavailable."
+  short: Auto-Failover for MySQL/MariaDB Primary-Secondary Topology
 
 logo: /images/database-corruption-check.png
 
