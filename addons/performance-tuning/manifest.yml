@@ -1,5 +1,5 @@
 type: update
-name: DB Cluster Tuning
+name: DB Cluster Tuning (Alpha)
 id: proxysql-db-tune-addon
 logo: addons/performance-tuning/images/mysql-proxysql-tuning.png
 description: Change ProxySQL and Database settings according to your particular use case
