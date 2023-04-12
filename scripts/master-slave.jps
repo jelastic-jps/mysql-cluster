@@ -21,6 +21,7 @@ globals:
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
+    - addCustomConfig: ${@i.id}
     - setupSlave: ${@i.id}
     - addSlave: ${@i.id}
 
