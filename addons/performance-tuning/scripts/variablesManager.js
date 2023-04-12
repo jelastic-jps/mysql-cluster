@@ -69,10 +69,12 @@ function ApplySQLVariable() {
                     let item;
                     for (let k = 0, l = field.items.length; k < l; k++) {
                         item = field.items[k];
-                        if (item.name == "weightMaster") {
-                            item.value = parseInt(this.getWeights().primary);
-                        } else if (item.name == "weightSlave") {
-                            item.value = parseInt(this.getWeights().secondary);
+                        if (item) {
+                            if (item.name == "weightMaster") {
+                                item.value = parseInt(this.getWeights().primary);
+                            } else if (item.name == "weightSlave") {
+                                item.value = parseInt(this.getWeights().secondary);
+                            }
                         }
                     }
                 }
@@ -90,6 +92,7 @@ function ApplySQLVariable() {
         let secondaryWeight = "";
 
         let nodes = resp.nodes;
+
         for (let i = 0, n = nodes.length; i < n; i++) {
             if (nodes[i].displayName == SECONDARY) {
                 resp = this.getWeight(nodes[i].id);
@@ -178,9 +181,10 @@ function ApplySQLVariable() {
                 value: variable.variable_name
             });
 
-            dependsData[variable.variable_name] = {
+            dependsData[variable.variable_name] = [{
+                caption: variable.variable_value,
                 value: variable.variable_value
-            };
+            }];
 
             if (variable.variable_name == MYSQL_THREADS) {
                 this.setMySQLThreads(variable.variable_value);

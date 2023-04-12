@@ -49,10 +49,12 @@ onCustomNodeEvent [name:executeScript]:
   script: |
     let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}&session=" + session;
     let Transport = com.hivext.api.core.utils.Transport;
-    api.marketplace.console.WriteLog("URL->" + URL);
     let resp = new Transport().get(URL);
-    if (resp.result != 0) return resp;
-    api.marketplace.console.WriteLog("resp->" + resp);
+    resp = JSON.parse(resp);
+    if (resp.response && resp.response != 0) {
+      return new Transport().get("${platformUrl}/1.0/environment/jerror/rest/jerror?appid=" + appid + "&actionname=promoteprimary&callparameters=" + URL + "&email=${user.email}&errorcode=4121&errormessage=" + encodeURIComponent(resp.response.message) + "&priority=high");
+      return resp.response;
+    }
     return { result: 0 }
 
 actions:
