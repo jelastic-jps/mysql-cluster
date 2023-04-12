@@ -30,7 +30,7 @@ settings:
 buttons:
   - name: Idle Time Failover
     caption: Auto Failover
-    confirmText: Enable Auto Failover?.
+    confirmText: Enable Auto Failover?
     settings: autoFailover
     loadingText: Enabling Auto Failover...
     action: addSchedulerToProxySQL
