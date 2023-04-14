@@ -30,7 +30,7 @@ function ApplySQLVariable() {
     this.getVariables = function() {
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/promote-new-primary/scripts/jcm.sh' -o jcm.sh\n" +
             "bash jcm.sh getGlobalVariables"
-        let resp = this.cmdById("${nodes.proxy.master.id}", command);
+        let resp = this.cmdById("${nodes.sqldb.master.id}", command);
         if (resp.result != 0) return resp;
 
         let variables = JSON.parse(resp.responses[0].out);
@@ -121,7 +121,7 @@ function ApplySQLVariable() {
 
     this.getWeight = function(id) {
         let command = "mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e \"select weight from mysql_servers where hostname = 'node" + id + "';\"  | sed '2,4!d'  | tail -n 1";
-        let resp = this.cmdById("${nodes.proxy.master.id}", command);
+        let resp = this.cmdById("${nodes.sqldb.master.id}", command);
         if (resp.result != 0) return resp;
         return {
             result: 0,
@@ -159,7 +159,7 @@ function ApplySQLVariable() {
 
     this.defineMyCNF = function() {
         let command = "grep -q 'max_connections' " + MY_CNF + " && { grep -r 'max_connections' " + MY_CNF + " | cut -c 17- || echo \"\"; } || { sed -i \"s|\\[mysqld\\]|\\[mysqld\\]\\nmax_connections=2048|g\" " + MY_CNF + "; echo 2048; };";
-        let resp = this.cmdById("${nodes.proxy.master.id}", command);
+        let resp = this.cmdById("${nodes.sqldb.master.id}", command);
         if (resp.result != 0) return resp;
 
         let max_connections = resp.responses[0].out;
