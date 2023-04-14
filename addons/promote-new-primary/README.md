@@ -1,3 +1,5 @@
+<p align="center"><img style="padding: 0 15px; float: left;" src="images/db-failover-red.png" width="70"></p>
+
 # MySQL/MariaDB Primary-Secondary Auto-Failover Add-On
 
 The add-on is aimed to complement the MySQL/MariaDB Primary-Secondary implementation by handling its main flaw - no automatic failover upon primary failure. As a result, you get the consistency of the Primary-Secondary scheme (i.e. exactly one node to modify data) and simultaneously get auto-failover similar to Primary-Primary.
