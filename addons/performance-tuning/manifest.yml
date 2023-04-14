@@ -14,7 +14,7 @@ onInstall:
   
 settings:
   settingsTune:
-    onBeforeInit: http://owncloud-clone.demo.jelastic.com/public.php?service=files&t=79970bba50dd05538717fb9b6c0fe365&download
+    onBeforeInit: addons/performance-tuning/scripts/variablesManager.js
     fields:
      - type: list
        caption: MySQL Variable
