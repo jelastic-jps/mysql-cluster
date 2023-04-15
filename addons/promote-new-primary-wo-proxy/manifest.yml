@@ -81,24 +81,23 @@ onCustomNodeEvent [name:executeScript]:
 
 actions:
   addConfiguration:
-    - cmd[proxy]: |-
-        [ ! -d /etc/proxysql ] && mkdir /etc/proxysql;
-        [ ! -f /etc/proxysql/jcm.conf ] && echo "### ProxySQL configuration for JCM" > /etc/proxysql/jcm.conf;
+    - cmd[sqldb]: |-
+        [ ! -f /etc/mysql/jcm.conf ] && echo "### ProxySQL configuration for JCM" > /etc/mysql/jcm.conf;
         grep -q "PRIMARY_NODE_ID" /etc/proxysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/proxysql/jcm.conf; }
         echo /etc/proxysql/jcm.conf >>  /etc/jelastic/redeploy.conf;
-        chown jelastic /etc/proxysql/jcm.conf;
-        chown jelastic -R /etc/proxysql;
+        chown jelastic /etc/mysql/jcm.conf;
+        chown jelastic -R /etc/mysql;
       user: root
 
   addSchedulerToProxySQL:
-    - cmd[${nodes.proxy.master.id}]: |-
+    - cmd[sqldb]: |-
         bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
 
   forceFailover:
     - cmd[${nodes.proxy.master.id}]: screen -d -m bash /usr/local/sbin/jcm.sh forceFailover
 
   downloadScripts:
-    - cmd[proxy]: |-
+    - cmd[sqldb]: |-
         curl --silent ${baseUrl}/scripts/jcm.sh > ${globals.jcmPath};
         chmod +x ${globals.jcmPath};
         echo "Start JCM logs" > /var/log/jcm.log;
@@ -106,7 +105,7 @@ actions:
       user: root
 
   idleTimeConfigure:
-    cmd[${nodes.proxy.master.id}]: |-
+    cmd[sqldb]: |-
       bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
       
   createScript:
