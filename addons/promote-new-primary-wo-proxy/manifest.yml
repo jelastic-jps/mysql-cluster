@@ -1,0 +1,124 @@
+type: update
+name: Auto Promote New Primary Add-On (Alpha)
+id: promote-new-primary
+
+description:
+  text:  "Enable automatic failover for your regular MySQL/MariaDB Primary-Secondary database cluster. After installation, the add-on tracks the cluster node's status to automatically replace failed nodes. It also promotes new Primary if the current one becomes unavailable."
+  short: Auto-Failover for MySQL/MariaDB Primary-Secondary Topology
+
+logo: images/db-failover-red.png
+
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-66025/addons/promote-new-primary
+
+mixins:
+  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
+
+targetNodes:
+  nodeGroup: 
+    - proxy
+
+settings:
+  main:
+    submitUnchanged: true
+    fields:
+      - name: primary_idle_time
+        caption: Primary Idle Time (sec)
+        type: spinner
+        min: 30
+        max: 3600
+
+buttons:
+  - name: Idle Time Failover
+    caption: Auto Failover
+    confirmText: Enable Auto Failover?
+    settings: main
+    loadingText: Enabling Auto Failover...
+    action: idleTimeConfigure
+
+  - name: Failover
+    caption: Failover
+    confirmText: Run failover?
+    loadingText: Applying failover...
+    action: forceFailover
+
+globals:
+  scriptName: ${env.name}-promote-master
+  jcmPath: /usr/local/sbin/jcm.sh
+  random: ${fn.password}
+
+onInstall:
+  - addConfiguration
+  - downloadScripts
+  - createScript
+  - addSchedulerToProxySQL
+
+onCustomNodeEvent [name:executeScript]:
+  script: |
+    let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}&session=" + session;
+    let Transport = com.hivext.api.core.utils.Transport;
+    let resp = new Transport().get(URL);
+    resp = JSON.parse(resp);
+    if (resp.response && resp.response != 0) {
+      return new Transport().get("${platformUrl}/1.0/environment/jerror/rest/jerror?appid=" + appid + "&actionname=promoteprimary&callparameters=" + URL + "&email=${user.email}&errorcode=4121&errormessage=" + encodeURIComponent(resp.response.message) + "&priority=high");
+      return resp.response;
+    }
+    return { result: 0 }
+
+actions:
+  addConfiguration:
+    - cmd[proxy]: |-
+        [ ! -d /etc/proxysql ] && mkdir /etc/proxysql;
+        [ ! -f /etc/proxysql/jcm.conf ] && echo "### ProxySQL configuration for JCM" > /etc/proxysql/jcm.conf;
+        grep -q "PRIMARY_NODE_ID" /etc/proxysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/proxysql/jcm.conf; }
+        echo /etc/proxysql/jcm.conf >>  /etc/jelastic/redeploy.conf;
+        chown jelastic /etc/proxysql/jcm.conf;
+        chown jelastic -R /etc/proxysql;
+      user: root
+
+  addSchedulerToProxySQL:
+    - cmd[${nodes.proxy.master.id}]: |-
+        bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
+
+  forceFailover:
+    - cmd[${nodes.proxy.master.id}]: screen -d -m bash /usr/local/sbin/jcm.sh forceFailover
+
+  downloadScripts:
+    - cmd[proxy]: |-
+        curl --silent ${baseUrl}/scripts/jcm.sh > ${globals.jcmPath};
+        chmod +x ${globals.jcmPath};
+        echo "Start JCM logs" > /var/log/jcm.log;
+        chown jelastic /var/log/jcm.log;
+      user: root
+
+  idleTimeConfigure:
+    cmd[${nodes.proxy.master.id}]: |-
+      bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
+      
+  createScript:
+    script: |
+      let Response = com.hivext.api.Response;
+      let Transport = com.hivext.api.core.utils.Transport;
+      let StrSubstitutor = org.apache.commons.lang3.text.StrSubstitutor;
+      let scriptBody = new Transport().get("${baseUrl}/scripts/promote-master.js");
+      let ROOT = "root";
+
+      scriptBody = new StrSubstitutor({token: "${globals.random}"}, "${", "}").replace(scriptBody);
+
+      let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "\\&token=${globals.random}\\&envName=${env.name}\\&uid=${user.uid}";
+      command = "sed -ri 's|PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/jcm.sh";
+      
+      let resp = api.env.control.ExecCmdByGroup("${env.name}", session, "proxy", toJSON([{ command: command }]), true, false, ROOT);
+      if (resp.result != 0) return resp;
+
+      resp = api.dev.scripting.GetScript(appid, session, "${globals.scriptName}");
+      if (resp.result == Response.OK) {
+      //delete the script if it already exists
+        api.dev.scripting.DeleteScript(appid, session, "${globals.scriptName}");
+      }
+
+      resp = api.dev.scripting.CreateScript(appid, session, "${globals.scriptName}", "js", scriptBody)
+      if (resp.result != 0) return resp;
+      java.lang.Thread.sleep(1000);
+
+      //build script to avoid caching
+      return api.dev.scripting.Build(appid, session, "${globals.scriptName}");
