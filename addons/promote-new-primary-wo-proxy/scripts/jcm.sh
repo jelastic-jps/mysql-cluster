@@ -2,20 +2,17 @@
 
 USER_SCRIPT_PATH="{URL}"
 
-PLATFORM_DOMAIN="{PLATFORM_DOMAIN}"
+PLATFORM_DOMAIN="https://app.demo.jelastic.com/"
 
 PROMOTE_NEW_PRIMARY_FLAG="/var/lib/jelastic/promotePrimary"
 
-JCM_CONFIG="/etc/proxysql/jcm.conf"
+JCM_CONFIG="/etc/mysql/jcm.conf"
 ITERATION_CONFIG="/tmp/iteration.conf"
+JELENV_CONFIG="/.jelenv"
 
 SUCCESS_CODE=0
 FAIL_CODE=99
 RUN_LOG=/var/log/jcm.log
-
-WRITE_HG_ID=10
-READ_HG_ID=11
-MAX_REPL_LAG=20
 
 log(){
   local message=$1
@@ -31,9 +28,11 @@ execResponse(){
   echo $output_json
 }
 
-proxyCommandExec(){
-  local command="$1"
-  MYSQL_PWD=admin mysql -uadmin -h127.0.0.1 -P6032 -BNe "$command"
+mysqlAliveStatus(){
+  local host="$1"
+  local user="$2"
+  local pswd="$3"
+  mysqladmin -u$user -p$pswd -h$host ping
 }
 
 execAction(){
@@ -48,8 +47,8 @@ execAction(){
 }
 
 primaryStatus(){
-  local cmd="select status from runtime_mysql_servers where hostgroup_id=$WRITE_HG_ID;"
-  local status=$(proxyCommandExec "$cmd")
+  source $JELENV_CONFIG
+  local status=$(mysqlAliveStatus)
   source $JCM_CONFIG;
   source $ITERATION_CONFIG;
   if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
@@ -71,27 +70,6 @@ primaryStatus(){
   fi
 }
 
-addNodeToWriteGroup(){
-  local nodeId="$1"
-  local cmd="INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES ($WRITE_HG_ID, '$nodeId', 3306);"
-  proxyCommandExec "$cmd"
-}
-
-addNodeToReadGroup(){
-  local nodeId="$1"
-  local cmd="INSERT INTO mysql_servers (hostgroup_id, hostname, port, max_replication_lag) VALUES ($READ_HG_ID, '$nodeId', 3306, '$MAX_REPL_LAG');"
-  proxyCommandExec "$cmd"
-}
-
-loadServersToRuntime(){
-  local cmd="LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-  proxyCommandExec "$cmd"
-}
-
-loadVariablesToRuntime(){
-  local cmd="LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
-  proxyCommandExec "$cmd"
-}
 
 addSchedulerProxy(){
   local interval_ms="$1"
@@ -306,13 +284,9 @@ case ${1} in
     forceFailover)
       forceFailover
       ;;
-      
+
     primaryStatus)
       primaryStatus
-      ;;
-
-    newPrimary)
-      newPrimary "$@"
       ;;
 
     addScheduler)
