@@ -41,7 +41,11 @@ onInstall:
   - getReplicaUser
   - forEach(i:nodes.sqldb):
     - if (${@i.ismaster}):
-        setupMaster: ${@i.id}
+      - setupMaster: ${@i.id}
+      - env.control.AddContainerEnvVars[sqldb]:
+          vars:
+            PRIMARY_IP: ${@i.address}
+
     - else:
         setupSlave: ${@i.id}
   - forEach(i:nodes.sqldb):
