@@ -38,7 +38,10 @@ function promoteNewPrimary() {
         this.log("addNode func resp ->" + resp);
         if (resp.result != 0) return resp;
 
-        return this.removeFailedPrimary();
+        resp = this.removeFailedPrimary();
+        if (resp.result != 0) return resp;
+
+        return this.setDBFlag();
     };
 
     this.log = function(message) {
@@ -56,7 +59,7 @@ function promoteNewPrimary() {
             };
         }
 
-        return this.cmdByGroup("touch " + TMP_FILE, PROXY, 3);
+        return this.cmdByGroup("touch " + TMP_FILE, SQLDB, 3);
     };
 
     this.setContainerVar = function() {
@@ -211,9 +214,9 @@ function promoteNewPrimary() {
                 }
             }
 
-            let command = "bash /usr/local/sbin/jcm.sh newPrimary --server=node" + this.getNewPrimaryNode().id;
-            this.log("newPrimaryOnProxy command ->" + command);
-            return this.cmdByGroup(command, PROXY, 20);
+            // let command = "bash /usr/local/sbin/jcm.sh newPrimary --server=node" + this.getNewPrimaryNode().id;
+            // this.log("newPrimaryOnProxy command ->" + command);
+            // return this.cmdByGroup(command, SQLDB, 20);
         }
 
         return { result: 0 }
@@ -259,8 +262,8 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
         let sqlNodes = resp.nodes;
 
-        resp = this.getNodesByGroup(PROXY);
-        if (resp.result != 0) return resp;
+        // resp = this.getNodesByGroup(PROXY);
+        // if (resp.result != 0) return resp;
 
         let proxyNodes = resp.nodes;
         this.log("nodes->" + [{
@@ -269,12 +272,6 @@ function promoteNewPrimary() {
             count: sqlNodes.length + 1,
             fixedCloudlets: sqlNodes[0].fixedCloudlets,
             flexibleCloudlets: sqlNodes[0].flexibleCloudlets
-        },{
-            nodeType: proxyNodes[0].nodeType,
-            nodeGroup: proxyNodes[0].nodeGroup,
-            count: proxyNodes.length,
-            fixedCloudlets: proxyNodes[0].fixedCloudlets,
-            flexibleCloudlets: proxyNodes[0].flexibleCloudlets
         }]);
 
         resp = api.env.control.ChangeTopology({
@@ -290,17 +287,34 @@ function promoteNewPrimary() {
                 count: sqlNodes.length + 1,
                 fixedCloudlets: sqlNodes[0].fixedCloudlets,
                 flexibleCloudlets: sqlNodes[0].flexibleCloudlets
-            },{
-                nodeType: proxyNodes[0].nodeType,
-                nodeGroup: proxyNodes[0].nodeGroup,
-                count: proxyNodes.length,
-                fixedCloudlets: proxyNodes[0].fixedCloudlets,
-                flexibleCloudlets: proxyNodes[0].flexibleCloudlets
             }]
         });
         if (resp.result != 0) return resp;
 
-        return this.cmdByGroup("rm -rf " + TMP_FILE, PROXY, 3);
+        resp = api.env.binder.addDomains({
+            envName: envName,
+            domains: 'primarydb',
+            nodeId: this.getNewPrimaryNode().id
+        });
+        if (resp.result != 0) return resp;
+
+        return this.cmdByGroup("rm -rf " + TMP_FILE, SQLDB, 3);
+    };
+
+    this.setDBFlag = function() {
+        let base = api.data.base;
+        let tableName = "promotePrimary";
+        let resp = base.GetObjectsByCriteria(tableName, { envName: envName }, 0, 1);
+        if (resp.result != 0) return resp;
+
+        if (resp.objects && resp.objects[0] && resp.objects[0].isRunning) {
+            let object = resp.objects[0];
+            resp = base.SetProperty(tableName, object.id, "isRunning", false);
+            if (resp.result != 0) return resp;
+            return base.SetProperty(tableName, object.id, "count", object.count + 1);
+        }
+
+        return { result: 0 }
     };
 
     this.removeFailedPrimary = function() {
