@@ -113,6 +113,35 @@ function promoteNewPrimary() {
     };
 
     this.setContainerVar = function() {
+    
+        resp = jelastic.env.binder.GetDomains({
+          envName: envName,
+          session: session
+          
+        });
+        this.log("resp.result  GetDomains-> " + resp.result);
+        if (resp.result != 0) return resp;
+        
+        let data = JSON.parse(resp);
+        let nodeWithDomain = data.nodes.find(node => node.domains.includes("primarydb"));
+        if (nodeWithDomain) {
+          resp = jelastic.env.binder.RemoveDomains({
+            envName: envName,
+            session: session,
+            domains: "primarydb",
+            nodeId: nodeWithDomain.nodeId
+            });
+          this.log("resp.result  RemoveDomains-> " + resp.result);
+          if (resp.result != 0) return resp;
+        }
+        resp = api.env.binder.AddDomains({
+            envName: envName,
+            domains: 'primarydb',
+            nodeId: this.getNewPrimaryNode().id
+        });
+        this.log("resp.result addDomains -> " + resp.result);
+        if (resp.result != 0) return resp;
+    
         return api.environment.control.AddContainerEnvVars({
             envName: envName,
             session: session,
@@ -363,34 +392,6 @@ function promoteNewPrimary() {
             }]
         });
         this.log("resp.result  ChangeTopology-> " + resp.result);
-        if (resp.result != 0) return resp;
-
-        resp = jelastic.env.binder.GetDomains({
-          envName: envName,
-          session: session
-          
-        });
-        this.log("resp.result  GetDomains-> " + resp.result);
-        if (resp.result != 0) return resp;
-        
-        let data = JSON.parse(resp);
-        let nodeWithDomain = data.nodes.find(node => node.domains.includes("primarydb"));
-        if (nodeWithDomain) {
-          resp = jelastic.env.binder.RemoveDomains({
-            envName: envName,
-            session: session,
-            domains: "primarydb",
-            nodeId: nodeWithDomain.nodeId
-            });
-          this.log("resp.result  RemoveDomains-> " + resp.result);
-          if (resp.result != 0) return resp;
-        }
-        resp = api.env.binder.AddDomains({
-            envName: envName,
-            domains: 'primarydb',
-            nodeId: this.getNewPrimaryNode().id
-        });
-        this.log("resp.result addDomains -> " + resp.result);
         if (resp.result != 0) return resp;
 
         return this.cmdByGroup("rm -rf " + TMP_FILE, SQLDB, 3);
