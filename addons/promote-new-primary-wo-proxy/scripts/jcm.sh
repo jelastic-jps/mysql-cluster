@@ -32,7 +32,7 @@ mysqlAliveStatus(){
   local host="$1"
   local user="$2"
   local pswd="$3"
-  mysqladmin -u$user -p$pswd -h$host ping
+  mysqladmin -u$user -p$pswd -h$host ping;
 }
 
 execAction(){
@@ -48,14 +48,15 @@ execAction(){
 
 primaryStatus(){
   source $JELENV_CONFIG
-  local status=$(mysqlAliveStatus)
+  local status=$(mysqlAliveStatus $PRIMARY_IP $REPLICA_USER $REPLICA_PSWD)
   source $JCM_CONFIG;
   source $ITERATION_CONFIG;
-  if [[ "x$status" != "xONLINE" ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
+  if [[ "$status" != *"alive"* ]] && [[ ! -f $PROMOTE_NEW_PRIMARY_FLAG  ]]; then
     if [[ $ITERATION -eq $ONLINE_ITERATIONS ]]; then
       log "Primary node status is OFFLINE"
       log "Promoting new Primary"
-      curl --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
+      echo -----------!!!!!!!!!! >> RUN_LOG
+#      curl --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
     else
       ITERATION=$(($ITERATION+1))
       echo "ITERATION=$ITERATION" > ${ITERATION_CONFIG};
