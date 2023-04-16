@@ -142,6 +142,9 @@ actions:
       }
 
       scriptBody = new StrSubstitutor({token: "${globals.random}"}, "${", "}").replace(scriptBody);
+      command = "sed -ri 's|PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/jcm.sh";
+      resp = api.env.control.ExecCmdByGroup("${env.name}", session, "sqldb", toJSON([{ command: command }]), true, false, ROOT);
+      if (resp.result != 0) return resp;
       
       resp = api.dev.scripting.GetScript(appid, session, "${globals.scriptName}");
       if (resp.result == Response.OK) {
