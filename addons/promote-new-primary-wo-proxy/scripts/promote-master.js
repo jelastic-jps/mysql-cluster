@@ -374,7 +374,7 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
         
         let data = JSON.parse(resp);
-        let nodeWithDomain = data.nodes.find(node => node.domains.includes(domain));
+        let nodeWithDomain = data.nodes.find(node => node.domains.includes("primarydb"));
         if (nodeWithDomain) {
           resp = jelastic.env.binder.RemoveDomains({
             envName: envName,
