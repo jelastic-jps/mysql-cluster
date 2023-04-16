@@ -57,25 +57,7 @@ onUninstall: removeTask
 
 onCustomNodeEvent [name:executeScript]:
   script: |
-    let base = api.data.base;
-    let tableName = "promotePrimary";
-    let resp = base.GetObjectsByCriteria("promotePrimary", { envName: "${env.name}" }, 0, 1);
-    if (resp.result != 0) return resp;
-    
-    if (resp.objects && resp.objects[0] && resp.objects[0].isRunning) return resp;
-    
-    if (resp.objects.length === 0) {
-      resp = base.CreateObject(tableName, { envName: "${env.name}", isRunning: true, count: 1 });
-    } else {
-      let object = resp.objects[0];
-      resp = base.SetProperty(tableName, object.id, "isRunning", true);
-      if (resp.result != 0) return resp;
-      let count = parseInt(object.count, 10) + 1;
-      resp = base.SetProperty(appid, session, tableName, object.id, "count", count);      
-    }
-    if (resp.result != 0) return resp;
-    
-    let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}&session=" + session;
+    let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}&force=true&primary_idle_time=${settings.primary_idle_time}&session=" + session;
     let Transport = com.hivext.api.core.utils.Transport;
     resp = new Transport().get(URL);
     resp = JSON.parse(resp);
@@ -194,7 +176,6 @@ actions:
         description: "Promote new Primary", 
         params: {
           envName: "${env.name}",
-          masterSQL: "${nodes.sqldb[0].id}",
           "primary_idle_time": "${settings.primary_idle_time}"
         }
       })
