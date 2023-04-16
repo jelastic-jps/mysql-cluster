@@ -85,8 +85,8 @@ actions:
   addConfiguration:
     - cmd[sqldb]: |-
         [ ! -f /etc/mysql/jcm.conf ] && echo "### ProxySQL configuration for JCM" > /etc/mysql/jcm.conf;
-        grep -q "PRIMARY_NODE_ID" /etc/proxysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/proxysql/jcm.conf; }
-        echo /etc/proxysql/jcm.conf >>  /etc/jelastic/redeploy.conf;
+        grep -q "PRIMARY_NODE_ID" /etc/mysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/mysql/jcm.conf; }
+        echo /etc/mysql/jcm.conf >>  /etc/jelastic/redeploy.conf;
         chown jelastic /etc/mysql/jcm.conf;
         chown jelastic -R /etc/mysql;
       user: root
@@ -96,7 +96,7 @@ actions:
         bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
 
   forceFailover:
-    - cmd[${nodes.proxy.master.id}]: screen -d -m bash /usr/local/sbin/jcm.sh forceFailover
+    - cmd[${nodes.sqldb.master.id}]: screen -d -m bash /usr/local/sbin/jcm.sh forceFailover
 
   downloadScripts:
     - cmd[sqldb]: |-
