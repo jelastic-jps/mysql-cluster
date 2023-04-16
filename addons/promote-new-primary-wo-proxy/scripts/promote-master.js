@@ -17,9 +17,12 @@ function promoteNewPrimary() {
     let base = api.data.base;
     let tableName = "promotePrimary";
     let dbPromoteData = "";
+    let force = getParam("force", false);
 
     this.run = function() {
+        this.log("force->" + force);
         let resp = this.isProcessRunning();
+        this.log("isProcessRunning resp->" + resp);
         if (resp.result != 0) return resp;
         if (resp.isRunning) return { result: 0 }
 
@@ -27,6 +30,7 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.checkAvailability();
+        this.log("checkAvailability resp->" + resp);
         if (resp.result != MySQL_FAILED) {
             return resp;
         }
@@ -44,14 +48,18 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.addNode();
+        this.log("addNode resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.removeFailedPrimary();
+        this.log("removeFailedPrimary resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.addIteration(true);
+        this.log("addIteration resp->" + resp);
         if (resp.result != 0) return resp;
 
+        this.log("setIsRunningStatus false");
         return this.setIsRunningStatus(false);
     };
 
@@ -59,11 +67,12 @@ function promoteNewPrimary() {
         let command = "mysqladmin -u" + containerEnvs["REPLICA_USER"] + " -p" + containerEnvs["REPLICA_PSWD"] +  " ping";
         let resp = this.cmdById(this.getPrimaryNode().id, command);
 
-        if ((resp.result == 4109) ||(resp.responses && resp.responses.result == 4109) || (resp.responses.out && resp.responses.out.indexOf("is alive") == -1)) {
+        if (force == "false") force = false;
+        if (force || resp.result == 4109 || (resp.responses && resp.responses[0].result == 4109) || (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
             resp = this.addIteration();
             if (resp.result != 0) return resp;
 
-            if (resp.iterator >= primary_idle_time / 10) {
+            if ((resp.iterator >= primary_idle_time / 10) || force) {
                 resp = this.setIsRunningStatus(true);
                 if (resp.result != 0) return resp;
                 return {
@@ -113,26 +122,25 @@ function promoteNewPrimary() {
     };
 
     this.setContainerVar = function() {
-    
-        resp = jelastic.env.binder.GetDomains({
-          envName: envName,
-          session: session
-          
+        let resp = jelastic.env.binder.GetDomains({
+            envName: envName,
+            session: session
+
         });
         this.log("resp.result  GetDomains-> " + resp.result);
         if (resp.result != 0) return resp;
-        
+
         let data = JSON.parse(resp);
         let nodeWithDomain = data.nodes.find(node => node.domains.includes("primarydb"));
         if (nodeWithDomain) {
-          resp = jelastic.env.binder.RemoveDomains({
-            envName: envName,
-            session: session,
-            domains: "primarydb",
-            nodeId: nodeWithDomain.nodeId
+            resp = jelastic.env.binder.RemoveDomains({
+                envName: envName,
+                session: session,
+                domains: "primarydb",
+                nodeId: nodeWithDomain.nodeId
             });
-          this.log("resp.result  RemoveDomains-> " + resp.result);
-          if (resp.result != 0) return resp;
+            this.log("resp.result  RemoveDomains-> " + resp.result);
+            if (resp.result != 0) return resp;
         }
         resp = api.env.binder.AddDomains({
             envName: envName,
@@ -141,7 +149,7 @@ function promoteNewPrimary() {
         });
         this.log("resp.result addDomains -> " + resp.result);
         if (resp.result != 0) return resp;
-    
+
         return api.environment.control.AddContainerEnvVars({
             envName: envName,
             session: session,
@@ -172,7 +180,16 @@ function promoteNewPrimary() {
     };
 
     this.getContainerEnvs = function() {
-        return api.environment.control.GetContainerEnvVars(envName, session, masterSQL);
+        let resp = this.getEnvInfo();
+        let nodeId;
+        if (resp.result != 0) return resp;
+
+        for (let i = 0, n = resp.nodes.length; i < n; i++) {
+            if (resp.nodes[i].nodeGroup == SQLDB && resp.nodes[i].ismaster) {
+                nodeId = resp.nodes[i].id;
+            }
+        }
+        return api.environment.control.GetContainerEnvVars(envName, session, nodeId);
     };
 
     this.diagnosticNodes = function() {
@@ -343,7 +360,7 @@ function promoteNewPrimary() {
 
     this.promoteNewSQLPrimary = function() {
         let newPrimary = this.getNewPrimaryNode();
-        
+
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --scenario promote_new_primary";
         let resp = this.cmdById(newPrimary.id, command, 20);
@@ -393,6 +410,8 @@ function promoteNewPrimary() {
         });
         this.log("resp.result  ChangeTopology-> " + resp.result);
         if (resp.result != 0) return resp;
+
+        this.log("removeDomains this.getFailedPrimary()-> " + this.getFailedPrimary());
 
         return this.cmdByGroup("rm -rf " + TMP_FILE, SQLDB, 3);
     };
