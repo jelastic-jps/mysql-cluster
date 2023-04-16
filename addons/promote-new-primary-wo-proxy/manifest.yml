@@ -52,6 +52,8 @@ onInstall:
       nodeId: ${nodes.sqldb.master.id}
   - downloadScripts
   - createScript
+  
+onUninstall: removeTask
 
 onCustomNodeEvent [name:executeScript]:
   script: |
@@ -108,8 +110,8 @@ actions:
   addConfiguration:
     - cmd[sqldb]: |-
         [ ! -f /etc/mysql/jcm.conf ] && echo "### ProxySQL configuration for JCM" > /etc/mysql/jcm.conf;
-        grep -q "PRIMARY_NODE_ID" /etc/proxysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/proxysql/jcm.conf; }
-        echo /etc/proxysql/jcm.conf >>  /etc/jelastic/redeploy.conf;
+        grep -q "PRIMARY_NODE_ID" /etc/mysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/mysql/jcm.conf; }
+        echo /etc/mysql/jcm.conf >>  /etc/jelastic/redeploy.conf;
         chown jelastic /etc/mysql/jcm.conf;
         chown jelastic -R /etc/mysql;
       user: root
@@ -119,7 +121,7 @@ actions:
         bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
 
   forceFailover:
-    - cmd[${nodes.proxy.master.id}]: screen -d -m bash /usr/local/sbin/jcm.sh forceFailover
+    - cmd[${nodes.sqldb.master.id}]: screen -d -m bash /usr/local/sbin/jcm.sh forceFailover
 
   downloadScripts:
     - cmd[sqldb]: |-
@@ -132,6 +134,15 @@ actions:
   idleTimeConfigure:
     cmd[sqldb]: |-
       bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
+  
+  removeTask:
+    script: |
+      let resp = api.utils.scheduler.GetTasks({appid: appid, session: session});
+      if (resp.result != 0) return resp;
+      
+      let tasks = resp.objects;
+      for (let i = 0, l = tasks.length; i < l; i++)
+        if (tasks[i].script == "${globals.scriptName}") api.utils.scheduler.RemoveTask({appid: appid, session:session, id: tasks[i].id});
       
   createScript:
     script: |
@@ -147,24 +158,15 @@ actions:
         resp = api.data.base.DefineType(appid, session, tableName, [{
           envName: "string",
           isRunning: "boolean",
-          count: "int"
+          count: "int",
+          "primary_idle_time": "int",
+          "primary_idle_iterations": "int"
         }]);
         if (resp.result != 0) return resp;
         java.lang.Thread.sleep(1000);
       }
 
       scriptBody = new StrSubstitutor({token: "${globals.random}"}, "${", "}").replace(scriptBody);
-      command = "sed -ri 's|PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/jcm.sh";
-      resp = api.env.control.ExecCmdByGroup("${env.name}", session, "sqldb", toJSON([{ command: command }]), true, false, ROOT);
-      if (resp.result != 0) return resp;
-      
-      command="echo \"#!/bin/bash\n i=0; while [ \\$i -lt 55 ];do  /usr/local/sbin/jcm.sh primaryStatus; sleep 5; i=\\$((i+5)); done\" > /root/promotePrimary.sh"
-      resp = api.env.control.ExecCmdByGroup("${env.name}", session, "sqldb", toJSON([{ command: command }]), true, false, ROOT);
-      if (resp.result != 0) return resp;
-      
-      command = "crontab -l | grep -v '/root/promotePrimary.sh' | crontab -; echo \"* * * * * su - root -c \\\"/root/promotePrimary.sh\\\"\" >> /var/spool/cron/root";
-      resp = api.env.control.ExecCmdByGroup("${env.name}", session, "sqldb", toJSON([{ command: command }]), true, false, ROOT);
-      if (resp.result != 0) return resp;
       
       resp = api.dev.scripting.GetScript(appid, session, "${globals.scriptName}");
       if (resp.result == Response.OK) {
@@ -177,4 +179,19 @@ actions:
       java.lang.Thread.sleep(1000);
 
       //build script to avoid caching
-      return api.dev.scripting.Build(appid, session, "${globals.scriptName}");
+      resp = api.dev.scripting.Build(appid, session, "${globals.scriptName}");
+      if (resp.result != 0) return resp;
+      
+      return api.utils.scheduler.CreateEnvTask({
+        appid: appid,
+        envName: "${env.name}",
+        session: session,
+        script: "${globals.scriptName}",
+        trigger: "cron:0/10 * * ? * * *",
+        description: "Promote new Primary", 
+        params: {
+          envName: "${env.name}",
+          masterSQL: "${nodes.sqldb[0].id}",
+          "primary_idle_time": "${settings.primary_idle_time}"
+        }
+      })
