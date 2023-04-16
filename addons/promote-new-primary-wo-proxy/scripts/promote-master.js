@@ -365,16 +365,26 @@ function promoteNewPrimary() {
         this.log("resp.result  ChangeTopology-> " + resp.result);
         if (resp.result != 0) return resp;
 
-        resp = api.environment.binder.RemoveDomains({
+        resp = jelastic.env.binder.GetDomains({
+          envName: envName,
+          session: session
+          
+        });
+        this.log("resp.result  GetDomains-> " + resp.result);
+        if (resp.result != 0) return resp;
+        
+        let data = JSON.parse(resp);
+        let nodeWithDomain = data.nodes.find(node => node.domains.includes(domain));
+        if (nodeWithDomain) {
+          resp = jelastic.env.binder.RemoveDomains({
             envName: envName,
             session: session,
             domains: "primarydb",
-            nodeGroup: "sqldb",
-            nodeId: this.getFailedPrimary().id
-        });
-        this.log("resp.result  RemoveDomains-> " + resp.result);
-        if (resp.result != 0) return resp;
-
+            nodeId: nodeWithDomain.nodeId
+            });
+          this.log("resp.result  RemoveDomains-> " + resp.result);
+          if (resp.result != 0) return resp;
+        }
         resp = api.env.binder.AddDomains({
             envName: envName,
             domains: 'primarydb',
