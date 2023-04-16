@@ -8,7 +8,7 @@ description:
 
 logo: images/db-failover-red.png
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66025/addons/promote-new-primary-wo-proxy
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-66025/addons/promote-new-primary-wo-proxy
 
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
