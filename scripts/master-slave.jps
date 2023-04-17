@@ -21,6 +21,7 @@ globals:
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
+    - addCustomConfig: ${@i.id}
     - setupSlave: ${@i.id}
     - addSlave: ${@i.id}
 
@@ -39,6 +40,7 @@ onAfterClone:
 
 onInstall:
   - getReplicaUser
+  - addCustomConfig: sqldb
   - forEach(i:nodes.sqldb):
     - if (${@i.ismaster}):
       - setupMaster: ${@i.id}
@@ -53,6 +55,10 @@ onInstall:
         addSlave: ${@i.id}
 
 actions:
+  addCustomConfig:
+    - cmd[${this}]: |-
+        wget ${baseUrl}/configs/custom.cnf -O /etc/mysql/conf.d/custom.cnf &>> /var/log/run.log
+
   setupMaster:
     - cmd[${this}]: |-
         wget ${baseUrl}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
@@ -70,7 +76,7 @@ actions:
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/slave.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/slave.cnf
     - setNodeDisplayName[${this}]: Secondary
-    
+
   addSlave:
     - env.control.GetContainerEnvVarsByGroup[sqldb]
     - setGlobals:
