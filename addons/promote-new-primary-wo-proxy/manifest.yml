@@ -124,7 +124,7 @@ actions:
       
       let tasks = resp.objects;
       for (let i = 0, l = tasks.length; i < l; i++)
-        if (tasks[i].script == "${globals.scriptName}") api.utils.scheduler.RemoveTask({appid: appid, session:session, id: tasks[i].id});
+        if (tasks[i].script == "${globals.scriptName}") return api.utils.scheduler.RemoveTask({appid: appid, session:session, id: tasks[i].id});
       
   createScript:
     script: |
