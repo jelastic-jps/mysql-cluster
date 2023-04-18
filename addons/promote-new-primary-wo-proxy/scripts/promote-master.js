@@ -20,9 +20,7 @@ function promoteNewPrimary() {
     let force = getParam("force", false);
 
     this.run = function() {
-        this.log("force->" + force);
         let resp = this.isProcessRunning();
-        this.log("isProcessRunning resp->" + resp);
         if (resp.result != 0) return resp;
         if (resp.isRunning) return { result: 0 }
 
@@ -30,7 +28,6 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.checkAvailability();
-        this.log("checkAvailability resp->" + resp);
         if (resp.result != MySQL_FAILED) {
             return resp;
         }
@@ -48,18 +45,14 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.addNode();
-        this.log("addNode resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.removeFailedPrimary();
-        this.log("removeFailedPrimary resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.addIteration(true);
-        this.log("addIteration resp->" + resp);
         if (resp.result != 0) return resp;
 
-        this.log("setIsRunningStatus false");
         return this.setIsRunningStatus(false);
     };
 
@@ -143,22 +136,12 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         let nodes = resp.nodes, node;
-
         for (let i = 0, n = nodes.length; i < n; i++) {
             node = nodes[i];
             if (node.endpoints) {
                 for (let k = 0, l = node.endpoints.length; k < l; k++) {
                     if (node.endpoints[k].name == "PrimaryDB") {
-                        let obj = {
-                            envName: envName,
-                            id: node.endpoints[k].id,
-                            name: node.endpoints[k].name,
-                            privatePort: node.endpoints[k].privatePort,
-                            protocol: node.endpoints[k].protocol,
-                            nodeId: this.getNewPrimaryNode().id
-                        };
-                        this.log("Eval obj->" + obj);
-                        resp = api.dev.scripting.Eval("ext", session, "EditEndpoint", {
+                        return api.dev.scripting.Eval("ext", session, "EditEndpoint", {
                             envName: envName,
                             id: node.endpoints[k].id,
                             name: node.endpoints[k].name,
@@ -166,9 +149,6 @@ function promoteNewPrimary() {
                             protocol: node.endpoints[k].protocol,
                             nodeId: this.getNewPrimaryNode().id
                         });
-
-                        this.log("Eval resp->" + resp);
-                        return resp;
                     }
                 }
             }
@@ -182,7 +162,6 @@ function promoteNewPrimary() {
             envName: envName,
             session: session
         });
-        this.log("resp.result  GetDomains-> " + resp.result);
         if (resp.result != 0) return resp;
 
         let data = JSON.parse(resp);
@@ -194,7 +173,6 @@ function promoteNewPrimary() {
                 domains: "primarydb",
                 nodeId: nodeWithDomain.nodeId
             });
-            this.log("resp.result  RemoveDomains-> " + resp.result);
             if (resp.result != 0) return resp;
         }
         return api.env.binder.AddDomains({
@@ -452,11 +430,8 @@ function promoteNewPrimary() {
                 flexibleCloudlets: sqlNodes[0].flexibleCloudlets
             }]
         });
-        this.log("resp.result  ChangeTopology-> " + resp.result);
         if (resp.result != 0) return resp;
-
-        this.log("removeDomains this.getFailedPrimary()-> " + this.getFailedPrimary());
-
+        
         return this.cmdByGroup("rm -rf " + TMP_FILE, SQLDB, 3);
     };
 
@@ -464,7 +439,6 @@ function promoteNewPrimary() {
         let resp = this.getPromoteData();
         if (resp.result != 0) return resp;
 
-        this.log("resp.data ->" + resp.data);
         let data = resp.data;
         if (data.length === 0) {
             resp = base.CreateObject(tableName, { envName: "${env.name}", isRunning: value, count: 1 });
