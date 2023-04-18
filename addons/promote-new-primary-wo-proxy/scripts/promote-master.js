@@ -149,7 +149,16 @@ function promoteNewPrimary() {
             if (node.endpoints) {
                 for (let k = 0, l = node.endpoints.length; k < l; k++) {
                     if (node.endpoints[k].name == "PrimaryDB") {
-                        return api.dev.scripting.Eval("ext", session, "EditEndpoint", {
+                        let obj = {
+                            envName: envName,
+                            id: node.endpoints[k].id,
+                            name: node.endpoints[k].name,
+                            privatePort: node.endpoints[k].privatePort,
+                            protocol: node.endpoints[k].protocol,
+                            nodeId: this.getNewPrimaryNode().id
+                        };
+                        this.log("Eval obj->" + obj);
+                        resp = api.dev.scripting.Eval("ext", session, "EditEndpoint", {
                             envName: envName,
                             id: node.endpoints[k].id,
                             name: node.endpoints[k].name,
@@ -157,6 +166,9 @@ function promoteNewPrimary() {
                             protocol: node.endpoints[k].protocol,
                             nodeId: this.getNewPrimaryNode().id
                         });
+
+                        this.log("Eval resp->" + resp);
+                        return resp;
                     }
                 }
             }
