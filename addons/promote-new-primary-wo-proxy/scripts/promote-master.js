@@ -47,9 +47,6 @@ function promoteNewPrimary() {
         resp = this.setContainerVar();
         if (resp.result != 0) return resp;
 
-        resp = this.setDomain();
-        if (resp.result != 0) return resp;
-        
         resp = this.addNode();
         this.log("addNode resp->" + resp);
         if (resp.result != 0) return resp;
@@ -125,18 +122,6 @@ function promoteNewPrimary() {
     };
 
     this.setContainerVar = function() {
-        return api.environment.control.AddContainerEnvVars({
-            envName: envName,
-            session: session,
-            nodeGroup: SQLDB,
-            vars: {
-                PRIMARY_IP: this.getNewPrimaryNode().address
-            }
-        });
-    };
-
-    
-    this.setDomain = function() {
         let resp = jelastic.env.binder.GetDomains({
             envName: envName,
             session: session
@@ -157,13 +142,24 @@ function promoteNewPrimary() {
             this.log("resp.result  RemoveDomains-> " + resp.result);
             if (resp.result != 0) return resp;
         }
-        return api.env.binder.AddDomains({
+        resp = api.env.binder.AddDomains({
             envName: envName,
             domains: 'primarydb',
             nodeId: this.getNewPrimaryNode().id
         });
-      };
-    
+        this.log("resp.result addDomains -> " + resp.result);
+        if (resp.result != 0) return resp;
+
+        return api.environment.control.AddContainerEnvVars({
+            envName: envName,
+            session: session,
+            nodeGroup: SQLDB,
+            vars: {
+                PRIMARY_IP: this.getNewPrimaryNode().address
+            }
+        });
+    };
+
     this.DefinePrimaryNode = function() {
         let resp = this.getContainerEnvs();
         if (resp.result != 0) return resp;
