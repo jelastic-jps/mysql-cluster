@@ -122,32 +122,10 @@ function promoteNewPrimary() {
     };
 
     this.setContainerVar = function() {
-        let resp = jelastic.env.binder.GetDomains({
-            envName: envName,
-            session: session
-
-        });
-        this.log("resp.result  GetDomains-> " + resp.result);
+        let resp = this.setDomains();
         if (resp.result != 0) return resp;
 
-        let data = JSON.parse(resp);
-        let nodeWithDomain = data.nodes.find(node => node.domains.includes("primarydb"));
-        if (nodeWithDomain) {
-            resp = jelastic.env.binder.RemoveDomains({
-                envName: envName,
-                session: session,
-                domains: "primarydb",
-                nodeId: nodeWithDomain.nodeId
-            });
-            this.log("resp.result  RemoveDomains-> " + resp.result);
-            if (resp.result != 0) return resp;
-        }
-        resp = api.env.binder.AddDomains({
-            envName: envName,
-            domains: 'primarydb',
-            nodeId: this.getNewPrimaryNode().id
-        });
-        this.log("resp.result addDomains -> " + resp.result);
+        resp = this.EditEndPoint();
         if (resp.result != 0) return resp;
 
         return api.environment.control.AddContainerEnvVars({
@@ -157,6 +135,60 @@ function promoteNewPrimary() {
             vars: {
                 PRIMARY_IP: this.getNewPrimaryNode().address
             }
+        });
+    };
+
+    this.EditEndPoint = function() {
+        let resp = this.getEnvInfo();
+        if (resp.result != 0) return resp;
+
+        let nodes = resp.nodes, node;
+
+        for (let i = 0, n = nodes.length; i < n; i++) {
+            node = nodes[i];
+            if (node.endpoints) {
+                for (let k = 0, l = node.endpoints.length; k < l; k++) {
+                    if (node.endpoints[k].name == "PrimaryDB") {
+                        return api.dev.scripting.Eval("ext", session, "EditEndpoint", {
+                            envName: envName,
+                            id: node.endpoints[k].id,
+                            name: node.endpoints[k].name,
+                            privatePort: node.endpoints[k].privatePort,
+                            protocol: node.endpoints[k].protocol,
+                            nodeId: this.getNewPrimaryNode().id
+                        });
+                    }
+                }
+            }
+        }
+
+        return { result: 0 }
+    };
+
+    this.setDomains = function() {
+        let resp = api.env.binder.GetDomains({
+            envName: envName,
+            session: session
+        });
+        this.log("resp.result  GetDomains-> " + resp.result);
+        if (resp.result != 0) return resp;
+
+        let data = JSON.parse(resp);
+        let nodeWithDomain = data.nodes.find(node => node.domains.includes("primarydb"));
+        if (nodeWithDomain) {
+            resp = api.env.binder.RemoveDomains({
+                envName: envName,
+                session: session,
+                domains: "primarydb",
+                nodeId: nodeWithDomain.nodeId
+            });
+            this.log("resp.result  RemoveDomains-> " + resp.result);
+            if (resp.result != 0) return resp;
+        }
+        return api.env.binder.AddDomains({
+            envName: envName,
+            domains: 'primarydb',
+            nodeId: this.getNewPrimaryNode().id
         });
     };
 
