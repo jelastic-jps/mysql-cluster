@@ -44,6 +44,9 @@ function promoteNewPrimary() {
         resp = this.setContainerVar();
         if (resp.result != 0) return resp;
 
+        resp = this.setNewMasterNode();
+        if (resp.result != 0) return resp;        
+        
         resp = this.addNode();
         if (resp.result != 0) return resp;
 
@@ -114,6 +117,13 @@ function promoteNewPrimary() {
         return this.cmdByGroup("touch " + TMP_FILE, SQLDB, 3);
     };
 
+    this.setNewMasterNode = function() {
+      return jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
+        envName: envName, 
+        nodeId: this.getNewPrimaryNode().id 
+      });
+    };
+    
     this.setContainerVar = function() {
         let resp = this.setDomains();
         if (resp.result != 0) return resp;
