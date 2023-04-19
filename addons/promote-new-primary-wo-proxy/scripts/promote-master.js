@@ -134,12 +134,19 @@ function promoteNewPrimary() {
     };
 
     this.setNewMasterNode = function() {
-      let resp = jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
-        envName: envName, 
-        nodeId: this.getNewPrimaryNode().id 
-      });
-      if (resp.result == 1702) return {result: 0};
-      if (resp.result != 0) return resp;
+      if (api.env.control.SetMasterNode) {
+        return api.env.control.SetMasterNode({
+          envName: envName,
+          nodeId: this.getNewPrimaryNode().id
+        });
+      } else {
+        let resp = jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
+          envName: envName, 
+          nodeId: this.getNewPrimaryNode().id 
+        });
+        if (resp.result == 1702) return {result: 0};
+        if (resp.result != 0) return resp;
+      }
       return { result: 0 }
     };
     
