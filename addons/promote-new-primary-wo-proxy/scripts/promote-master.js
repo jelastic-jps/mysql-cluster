@@ -175,6 +175,8 @@ function promoteNewPrimary() {
                 }
             }
         }
+        
+        return { result: 0 }
     };
 
     this.setDomains = function() {
