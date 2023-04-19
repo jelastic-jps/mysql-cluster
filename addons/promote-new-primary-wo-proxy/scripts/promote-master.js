@@ -37,15 +37,21 @@ function promoteNewPrimary() {
 
         resp = this.promoteNewSQLPrimary();
         if (resp.result != 0) return resp;
-
-        resp = this.restoreNodes();
+        
+        resp = this.setDomains();
         if (resp.result != 0) return resp;
 
+        resp = this.EditEndPoint();
+        if (resp.result != 0) return resp;
+        
         resp = this.setContainerVar();
         if (resp.result != 0) return resp;
 
         resp = this.setNewMasterNode();
         if (resp.result != 0) return resp;        
+        
+        resp = this.restoreNodes();
+        if (resp.result != 0) return resp;
         
         resp = this.addNode();
         if (resp.result != 0) return resp;
@@ -118,19 +124,14 @@ function promoteNewPrimary() {
     };
 
     this.setNewMasterNode = function() {
-      return jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
+      let resp = jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
         envName: envName, 
         nodeId: this.getNewPrimaryNode().id 
       });
+      if (resp.result == 1702) return {result: 0};
     };
     
     this.setContainerVar = function() {
-        let resp = this.setDomains();
-        if (resp.result != 0) return resp;
-
-        resp = this.EditEndPoint();
-        if (resp.result != 0) return resp;
-
         return api.environment.control.AddContainerEnvVars({
             envName: envName,
             session: session,
@@ -151,7 +152,7 @@ function promoteNewPrimary() {
             if (node.endpoints) {
                 for (let k = 0, l = node.endpoints.length; k < l; k++) {
                     if (node.endpoints[k].name == "PrimaryDB") {
-                        return api.dev.scripting.Eval("ext", session, "EditEndpoint", {
+                        resp = api.dev.scripting.Eval("ext", session, "EditEndpoint", {
                             envName: envName,
                             id: node.endpoints[k].id,
                             name: node.endpoints[k].name,
@@ -159,12 +160,11 @@ function promoteNewPrimary() {
                             protocol: node.endpoints[k].protocol,
                             nodeId: this.getNewPrimaryNode().id
                         });
+                        if (resp.result == 1702) return {result: 0};
                     }
                 }
             }
         }
-
-        return { result: 0 }
     };
 
     this.setDomains = function() {
@@ -397,23 +397,14 @@ function promoteNewPrimary() {
         let resp = this.cmdById(newPrimary.id, command, 20);
         if (resp.result != 0) return resp;
 
-        
-        
         return api.env.control.SetNodeDisplayName(envName, session, newPrimary.id, PRIMARY);
     };
 
     this.restoreNodes = function() {
         let nodes = this.getParsedNodes();
-        
-        this.log("restoreNodes:   getParsedNodes  resp->" + nodes);
-
         let newPrimary = this.getNewPrimaryNode();
-        
-        this.log("restoreNodes:   getNewPrimaryNode  resp->" + newPrimary);
 
         let command = "bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
-        
-        this.log("restoreNodes:   command  resp->" + command);
         
         for (let i = 0, n = nodes.length; i < n; i++) {
             if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
@@ -512,13 +503,9 @@ function promoteNewPrimary() {
 
     this.removeFailedPrimary = function() {
         let failedPrimary = this.getFailedPrimary();
-        this.log("diagnosticNodes Primary ->" + failedPrimary);
         
         resp = this.getSQLNodeById(failedPrimary.id);
         if (resp.result != 0) return resp;
-
-        
-        this.log("diagnosticNodes Primary Is Masteer ->" + resp.node.ismaster);
         
         if (failedPrimary && resp.node && !resp.node.ismaster) {
             return api.env.control.RemoveNode(envName, session, failedPrimary.id);
