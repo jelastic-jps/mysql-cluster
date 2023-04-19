@@ -11,92 +11,34 @@ function promoteNewPrimary() {
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
     let session = getParam("session", "");
     let CLUSTER_FAILED = 98;
-    let MySQL_FAILED = 97;
     let WARNING = "warning";
-    let containerEnvs = {};
-    let base = api.data.base;
-    let tableName = "promotePrimary";
-    let dbPromoteData = "";
-    let force = getParam("force", false);
 
     this.run = function() {
-        let resp = this.isProcessRunning();
+        let resp = this.auth();
+        this.log("auth resp ->" + resp);
         if (resp.result != 0) return resp;
-        if (resp.isRunning) return { result: 0 }
-
-        resp = this.DefinePrimaryNode();
-        if (resp.result != 0) return resp;
-
-        resp = this.checkAvailability();
-        if (resp.result != MySQL_FAILED) {
-            return resp;
-        }
 
         resp = this.newPrimaryOnProxy();
+        this.log("newPrimaryOnProxy resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.promoteNewSQLPrimary();
+        this.log("promoteNewSQLPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.restoreNodes();
+        this.log("restoreNodes resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setContainerVar();
+        this.log("setContainerVar resp ->" + resp);
         if (resp.result != 0) return resp;
 
-        resp = this.setNewMasterNode();
-        if (resp.result != 0) return resp;        
-        
         resp = this.addNode();
+        this.log("addNode func resp ->" + resp);
         if (resp.result != 0) return resp;
 
-        resp = this.removeFailedPrimary();
-        if (resp.result != 0) return resp;
-
-        resp = this.addIteration(true);
-        if (resp.result != 0) return resp;
-
-        return this.setIsRunningStatus(false);
-    };
-
-    this.checkAvailability = function() {
-        let command = "mysqladmin -u" + containerEnvs["REPLICA_USER"] + " -p" + containerEnvs["REPLICA_PSWD"] +  " ping";
-        let resp = this.cmdById(this.getPrimaryNode().id, command);
-
-        if (force == "false") force = false;
-        if (force || resp.result == 4109 || (resp.responses && resp.responses[0].result == 4109) || (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
-            resp = this.addIteration();
-            if (resp.result != 0) return resp;
-
-            if ((resp.iterator >= primary_idle_time / 10) || force) {
-                resp = this.setIsRunningStatus(true);
-                if (resp.result != 0) return resp;
-                return {
-                    result: MySQL_FAILED
-                }
-            }
-        }
-
-        return { result: 0 }
-    };
-
-    this.addIteration = function(reset) {
-        let resp = this.getPromoteData();
-        if (resp.result != 0) return resp;
-
-        let data = resp.data;
-
-        let newIterator = parseInt(data.primary_idle_iterations) + 1;
-
-        if (reset) newIterator = 0;
-
-        resp = base.SetProperty(appid, session, tableName, data.id, "primary_idle_iterations", newIterator);
-        if (resp.result != 0) return resp;
-
-        return {
-            result: 0,
-            iterator: newIterator
-        }
+        return this.removeFailedPrimary();
     };
 
     this.log = function(message) {
@@ -114,23 +56,10 @@ function promoteNewPrimary() {
             };
         }
 
-        return this.cmdByGroup("touch " + TMP_FILE, SQLDB, 3);
+        return this.cmdByGroup("touch " + TMP_FILE, PROXY, 3);
     };
 
-    this.setNewMasterNode = function() {
-      return jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
-        envName: envName, 
-        nodeId: this.getNewPrimaryNode().id 
-      });
-    };
-    
     this.setContainerVar = function() {
-        let resp = this.setDomains();
-        if (resp.result != 0) return resp;
-
-        resp = this.EditEndPoint();
-        if (resp.result != 0) return resp;
-
         return api.environment.control.AddContainerEnvVars({
             envName: envName,
             session: session,
@@ -141,94 +70,12 @@ function promoteNewPrimary() {
         });
     };
 
-    this.EditEndPoint = function() {
-        let resp = this.getEnvInfo();
-        if (resp.result != 0) return resp;
-
-        let nodes = resp.nodes, node;
-        for (let i = 0, n = nodes.length; i < n; i++) {
-            node = nodes[i];
-            if (node.endpoints) {
-                for (let k = 0, l = node.endpoints.length; k < l; k++) {
-                    if (node.endpoints[k].name == "PrimaryDB") {
-                        return api.dev.scripting.Eval("ext", session, "EditEndpoint", {
-                            envName: envName,
-                            id: node.endpoints[k].id,
-                            name: node.endpoints[k].name,
-                            privatePort: node.endpoints[k].privatePort,
-                            protocol: node.endpoints[k].protocol,
-                            nodeId: this.getNewPrimaryNode().id
-                        });
-                    }
-                }
-            }
-        }
-
-        return { result: 0 }
-    };
-
-    this.setDomains = function() {
-        let resp = api.env.binder.GetDomains({
-            envName: envName,
-            session: session
-        });
-        if (resp.result != 0) return resp;
-
-        let data = JSON.parse(resp);
-        let nodeWithDomain = data.nodes.find(node => node.domains.includes("primarydb"));
-        if (nodeWithDomain) {
-            resp = api.env.binder.RemoveDomains({
-                envName: envName,
-                session: session,
-                domains: "primarydb",
-                nodeId: nodeWithDomain.nodeId
-            });
-            if (resp.result != 0) return resp;
-        }
-        return api.env.binder.AddDomains({
-            envName: envName,
-            domains: 'primarydb',
-            nodeId: this.getNewPrimaryNode().id
-        });
-    };
-
-    this.DefinePrimaryNode = function() {
-        let resp = this.getContainerEnvs();
-        if (resp.result != 0) return resp;
-
-        containerEnvs = resp.object;
-
-        if (containerEnvs["PRIMARY_IP"]) {
-            resp = this.getNodeByAddress(containerEnvs["PRIMARY_IP"]);
-            if (resp.result != 0) return resp;
-            // this.oldPrimaryAddress = resp.object["PRIMARY_IP"];
-            this.setPrimaryNode(resp.node);
-        }
-
-        return {
-            result : 0,
-            node: this.getPrimaryNode()
-        }
-    };
-
-    this.getContainerEnvs = function() {
-        let resp = this.getEnvInfo();
-        let nodeId;
-        if (resp.result != 0) return resp;
-
-        for (let i = 0, n = resp.nodes.length; i < n; i++) {
-            if (resp.nodes[i].nodeGroup == SQLDB && resp.nodes[i].ismaster) {
-                nodeId = resp.nodes[i].id;
-            }
-        }
-        return api.environment.control.GetContainerEnvVars(envName, session, nodeId);
-    };
-
     this.diagnosticNodes = function() {
         let clusterUp = false;
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --diagnostic"
         let resp = this.cmdByGroup(command, SQLDB, 60);
+        this.log("diagnosticNodes resp ->" + resp);
         if (resp.result != 0) return resp;
 
         let responses = resp.responses, out;
@@ -278,14 +125,6 @@ function promoteNewPrimary() {
 
     this.setNewPrimaryNode = function(node) {
         this.newPrimaryNode = node;
-    };
-
-    this.getPrimaryNode = function() {
-        return this.primaryNode;
-    };
-
-    this.setPrimaryNode = function(node) {
-        this.primaryNode = node;
     };
 
     this.getFailedPrimary = function() {
@@ -340,24 +179,6 @@ function promoteNewPrimary() {
         }
     };
 
-    this.getNodeByAddress = function(address) {
-        let node;
-        let resp = this.getEnvInfo();
-
-        if (resp.result != 0) return resp;
-
-        for (let i = 0, n = resp.nodes.length; i < n; i++) {
-            if (resp.nodes[i].address == address) {
-                node = resp.nodes[i];
-            }
-        }
-
-        return {
-            result: 0,
-            node: node
-        }
-    };
-
     this.newPrimaryOnProxy = function() {
         let alreadySetNewPrimary = false;
         let resp = this.diagnosticNodes();
@@ -365,10 +186,13 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
+        this.log("newPrimaryOnProxy getParsedNodes nodes ->" + nodes);
 
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
                 if (nodes[i]) {
+                    this.log("newPrimaryOnProxy nodes[i] ->" + nodes[i]);
+                    this.log("newPrimaryOnProxy alreadySetNewPrimary ->" + alreadySetNewPrimary);
                     if (nodes[i].type == SECONDARY && !alreadySetNewPrimary) {
                         this.setNewPrimaryNode(nodes[i]);
                         alreadySetNewPrimary = true;
@@ -379,12 +203,17 @@ function promoteNewPrimary() {
                         resp = this.getSQLNodeById(nodes[i].id);
                         if (resp.result != 0) return resp;
 
-                        if (resp.node) {
+                        if (resp.node && !resp.node.ismaster) {
+                            this.log("in setFailedPrimary resp.node->" + resp.node.id);
                             this.setFailedPrimary(resp.node);
                         }
                     }
                 }
             }
+
+            let command = "bash /usr/local/sbin/jcm.sh newPrimary --server=node" + this.getNewPrimaryNode().id;
+            this.log("newPrimaryOnProxy command ->" + command);
+            return this.cmdByGroup(command, PROXY, 20);
         }
 
         return { result: 0 }
@@ -393,23 +222,28 @@ function promoteNewPrimary() {
     this.promoteNewSQLPrimary = function() {
         let newPrimary = this.getNewPrimaryNode();
 
+        this.log("promoteNewSQLPrimary newPrimary ->" + newPrimary);
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --scenario promote_new_primary";
         let resp = this.cmdById(newPrimary.id, command, 20);
+        this.log("promoteNewSQLPrimary cmdById ->" + resp);
         if (resp.result != 0) return resp;
 
         return api.env.control.SetNodeDisplayName(envName, session, newPrimary.id, PRIMARY);
     };
 
     this.restoreNodes = function() {
+        this.log("restoreNodes in ->");
         let nodes = this.getParsedNodes();
 
         let newPrimary = this.getNewPrimaryNode();
+        this.log("restoreNodes newPrimary ->" + newPrimary);
 
         let command = "/bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
         for (let i = 0, n = nodes.length; i < n; i++) {
             if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
                 let resp = this.cmdById(nodes[i].id, command);
+                this.log("restoreNodes cmdById ->" + resp);
                 if (resp.result != 0) return resp;
             }
         }
@@ -425,6 +259,24 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
         let sqlNodes = resp.nodes;
 
+        resp = this.getNodesByGroup(PROXY);
+        if (resp.result != 0) return resp;
+
+        let proxyNodes = resp.nodes;
+        this.log("nodes->" + [{
+            nodeType: sqlNodes[0].nodeType,
+            nodeGroup: sqlNodes[0].nodeGroup,
+            count: sqlNodes.length + 1,
+            fixedCloudlets: sqlNodes[0].fixedCloudlets,
+            flexibleCloudlets: sqlNodes[0].flexibleCloudlets
+        },{
+            nodeType: proxyNodes[0].nodeType,
+            nodeGroup: proxyNodes[0].nodeGroup,
+            count: proxyNodes.length,
+            fixedCloudlets: proxyNodes[0].fixedCloudlets,
+            flexibleCloudlets: proxyNodes[0].flexibleCloudlets
+        }]);
+
         resp = api.env.control.ChangeTopology({
             envName: envName,
             session: session,
@@ -438,74 +290,24 @@ function promoteNewPrimary() {
                 count: sqlNodes.length + 1,
                 fixedCloudlets: sqlNodes[0].fixedCloudlets,
                 flexibleCloudlets: sqlNodes[0].flexibleCloudlets
+            },{
+                nodeType: proxyNodes[0].nodeType,
+                nodeGroup: proxyNodes[0].nodeGroup,
+                count: proxyNodes.length,
+                fixedCloudlets: proxyNodes[0].fixedCloudlets,
+                flexibleCloudlets: proxyNodes[0].flexibleCloudlets
             }]
         });
         if (resp.result != 0) return resp;
-        
-        return this.cmdByGroup("rm -rf " + TMP_FILE, SQLDB, 3);
-    };
 
-    this.setIsRunningStatus = function(value) {
-        let resp = this.getPromoteData();
-        if (resp.result != 0) return resp;
-
-        let data = resp.data;
-        if (data.length === 0) {
-            resp = base.CreateObject(tableName, { envName: "${env.name}", isRunning: value, count: 1 });
-        } else {
-            resp = base.SetProperty(appid, session, tableName, data.id, "isRunning", value);
-            if (resp.result != 0) return resp;
-            let count = parseInt(data.count, 10) + 1;
-            resp = base.SetProperty(appid, session, tableName, data.id, "count", count);
-        }
-        if (resp.result != 0) return resp;
-
-
-        return { result: 0 }
-    };
-
-    this.isProcessRunning = function() {
-        let resp = this.getPromoteData();
-        if (resp.result != 0) return resp;
-
-        if (resp.data && resp.data.isRunning)
-            return {
-                result: 0,
-                isRunning: true
-            };
-
-        return { result: 0, isRunning: false }
-    };
-
-    this.getPromoteData = function() {
-        let resp;
-        if (!dbPromoteData) {
-            resp = base.GetObjectsByCriteria(tableName, {envName: envName}, 0, 1);
-            if (resp.result != 0) return resp;
-            dbPromoteData = resp.objects[0];
-
-            if (!dbPromoteData) {
-                resp = base.CreateObject(tableName, {
-                    envName: envName,
-                    isRunning: false,
-                    count: 1,
-                    primary_idle_iterations: 0
-                });
-                if (resp.result != 0) return resp;
-            }
-
-            resp = base.GetObjectsByCriteria(tableName, {envName: envName}, 0, 1);
-            if (resp.result != 0) return resp;
-            dbPromoteData = resp.objects[0];
-        }
-
-        return { result: 0, data: dbPromoteData }
+        return this.cmdByGroup("rm -rf " + TMP_FILE, PROXY, 3);
     };
 
     this.removeFailedPrimary = function() {
         let failedPrimary = this.getFailedPrimary();
-        this.log("diagnosticNodes Primary ->" + failedPrimary);
-        if (failedPrimary) {
+        this.log("in removeFailedPrimary and !failedPrimary.ismaster");
+        if (failedPrimary && !failedPrimary.ismaster) {
+            this.log("removeFailedPrimary failedPrimary->" + failedPrimary);
             return api.env.control.RemoveNode(envName, session, failedPrimary.id);
         }
 
