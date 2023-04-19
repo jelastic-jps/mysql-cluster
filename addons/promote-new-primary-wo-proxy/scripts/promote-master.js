@@ -4,7 +4,7 @@ function promoteNewPrimary() {
     let ROOT = "root";
     let PROXY = "proxy";
     let SQLDB = "sqldb";
-    let PRIMARY = "Primary";
+    let PRIMARY = "rimary";
     let SECONDARY = "secondary";
     let FAILED = "failed";
     let Response = com.hivext.api.Response;
@@ -371,10 +371,11 @@ function promoteNewPrimary() {
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
                 if (nodes[i]) {
-                    if (nodes[i].type == SECONDARY && !alreadySetNewPrimary) {
+                    if (nodes[i].type == "secondary" && !alreadySetNewPrimary) {
                         this.setNewPrimaryNode(nodes[i]);
                         alreadySetNewPrimary = true;
-                    } else {
+                    } 
+                    if (nodes[i].type == "primary" ) {
                         resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
 
