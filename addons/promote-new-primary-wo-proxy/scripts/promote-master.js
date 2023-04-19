@@ -504,6 +504,7 @@ function promoteNewPrimary() {
 
     this.removeFailedPrimary = function() {
         let failedPrimary = this.getFailedPrimary();
+        this.log("diagnosticNodes Primary ->" + failedPrimary);
         if (failedPrimary && !failedPrimary.ismaster) {
             return api.env.control.RemoveNode(envName, session, failedPrimary.id);
         }
