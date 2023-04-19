@@ -365,6 +365,8 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
+      
+        this.log("getParsedNodes resp->" + nodes);
 
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
@@ -379,7 +381,7 @@ function promoteNewPrimary() {
                         resp = this.getSQLNodeById(nodes[i].id);
                         if (resp.result != 0) return resp;
 
-                        if (resp.node && !resp.node.ismaster) {
+                        if (resp.node) {
                             this.setFailedPrimary(resp.node);
                         }
                     }
@@ -398,13 +400,19 @@ function promoteNewPrimary() {
         let resp = this.cmdById(newPrimary.id, command, 20);
         if (resp.result != 0) return resp;
 
+        
+        
         return api.env.control.SetNodeDisplayName(envName, session, newPrimary.id, PRIMARY);
     };
 
     this.restoreNodes = function() {
         let nodes = this.getParsedNodes();
+        
+        this.log("restoreNodes:   getParsedNodes  resp->" + nodes);
 
         let newPrimary = this.getNewPrimaryNode();
+        
+        this.log("restoreNodes:   getNewPrimaryNode  resp->" + newPrimary);
 
         let command = "/bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
         for (let i = 0, n = nodes.length; i < n; i++) {
