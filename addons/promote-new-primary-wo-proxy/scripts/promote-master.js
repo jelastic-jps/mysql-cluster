@@ -44,9 +44,6 @@ function promoteNewPrimary() {
         resp = this.setContainerVar();
         if (resp.result != 0) return resp;
 
-        resp = this.setNewMasterNode();
-        if (resp.result != 0) return resp;        
-        
         resp = this.addNode();
         if (resp.result != 0) return resp;
 
@@ -117,13 +114,6 @@ function promoteNewPrimary() {
         return this.cmdByGroup("touch " + TMP_FILE, SQLDB, 3);
     };
 
-    this.setNewMasterNode = function() {
-      return jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
-        envName: envName, 
-        nodeId: this.getNewPrimaryNode().id 
-      });
-    };
-    
     this.setContainerVar = function() {
         let resp = this.setDomains();
         if (resp.result != 0) return resp;
@@ -365,24 +355,21 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
-      
-        this.log("getParsedNodes resp->" + nodes);
 
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
                 if (nodes[i]) {
-                    if (nodes[i].type == "secondary" && !alreadySetNewPrimary) {
+                    if (nodes[i].type == SECONDARY && !alreadySetNewPrimary) {
                         this.setNewPrimaryNode(nodes[i]);
                         alreadySetNewPrimary = true;
-                    } 
-                    if (nodes[i].type == "primary" ) {
+                    } else {
                         resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
 
                         resp = this.getSQLNodeById(nodes[i].id);
                         if (resp.result != 0) return resp;
 
-                        if (resp.node) {
+                        if (resp.node && !resp.node.ismaster) {
                             this.setFailedPrimary(resp.node);
                         }
                     }
@@ -401,24 +388,15 @@ function promoteNewPrimary() {
         let resp = this.cmdById(newPrimary.id, command, 20);
         if (resp.result != 0) return resp;
 
-        
-        
         return api.env.control.SetNodeDisplayName(envName, session, newPrimary.id, PRIMARY);
     };
 
     this.restoreNodes = function() {
         let nodes = this.getParsedNodes();
-        
-        this.log("restoreNodes:   getParsedNodes  resp->" + nodes);
 
         let newPrimary = this.getNewPrimaryNode();
-        
-        this.log("restoreNodes:   getNewPrimaryNode  resp->" + newPrimary);
 
-        let command = "bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
-        
-        this.log("restoreNodes:   command  resp->" + command);
-        
+        let command = "/bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
         for (let i = 0, n = nodes.length; i < n; i++) {
             if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
                 let resp = this.cmdById(nodes[i].id, command);
@@ -516,7 +494,6 @@ function promoteNewPrimary() {
 
     this.removeFailedPrimary = function() {
         let failedPrimary = this.getFailedPrimary();
-        this.log("diagnosticNodes Primary ->" + failedPrimary);
         if (failedPrimary && !failedPrimary.ismaster) {
             return api.env.control.RemoveNode(envName, session, failedPrimary.id);
         }
