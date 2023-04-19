@@ -22,6 +22,7 @@ function promoteNewPrimary() {
 
     this.run = function() {
         let resp = this.isProcessRunning();
+        this.log("addNode11 ->" + resp);
         if (resp.result != 0) return resp;
         if (resp.isRunning) return { result: 0 }
 
@@ -45,6 +46,7 @@ function promoteNewPrimary() {
         resp = this.setContainerVar();
         if (resp.result != 0) return resp;
 
+        this.log("addNode00 ->");
         resp = this.addNode();
         if (resp.result != 0) return resp;
 
@@ -418,15 +420,26 @@ function promoteNewPrimary() {
         let envInfo = this.getEnvInfo();
         if (envInfo.result != 0) return envInfo;
 
-        let nodes = [], node, count;
+        let nodes = [];
+        let nodeTypes = [], node, count;
         this.log("addNode before all ->");
         this.log("addNode envInfo.nodes.length ->" + envInfo.nodes.length);
         for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
             this.log("addNode in for ->");
             node = envInfo.nodes[i];
-            this.log("addNode node[i].nodeType ->" + node.nodeType);
-            this.log("addNode nodes[node[i].nodeType] ->" + nodes[node.nodeType]);
-            if (!nodes[node.nodeType]) {
+            this.log("addNode node.nodeType ->" + node.nodeType);
+            this.log("addNode nodeTypes ->" + nodeTypes);
+            for (let k = 0, l = nodeTypes.length; k < l; k++) {
+                this.log(nodeTypes[k]);
+                this.log("nodeTypes[k] == node.nodeType->" + (nodeTypes[k] == node.nodeType));
+            }
+
+
+            this.log("addNode nodeTypes.indexOf(node.nodeType) ->" + nodeTypes.indexOf(node.nodeType));
+            this.log("addNode nodeTypes.indexOf(node.nodeType) == -1 ->" + (nodeTypes.indexOf(node.nodeType) == -1));
+            this.log("addNode nodeTypes.indexOf(String(node.nodeType)) == -1 ->" + (nodeTypes.indexOf(String(node.nodeType)) == -1));
+            if (nodeTypes.indexOf(String(node.nodeType)) == -1) {
+                nodeTypes.push(node.nodeType);
                 this.log("addNode in if ->");
                 resp = this.getNodesByGroup(node.nodeGroup);
                 if (resp.result != 0) return resp;
