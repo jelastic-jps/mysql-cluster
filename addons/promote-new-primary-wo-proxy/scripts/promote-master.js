@@ -139,6 +139,8 @@ function promoteNewPrimary() {
         nodeId: this.getNewPrimaryNode().id 
       });
       if (resp.result == 1702) return {result: 0};
+      if (resp.result != 0) return resp;
+      return { result: 0 }
     };
     
     this.setContainerVar = function() {
@@ -171,6 +173,7 @@ function promoteNewPrimary() {
                             nodeId: this.getNewPrimaryNode().id
                         });
                         if (resp.result == 1702) return {result: 0};
+                        if (resp.result != 0) return resp;
                     }
                 }
             }
