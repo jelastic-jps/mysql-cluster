@@ -265,11 +265,7 @@ function promoteNewPrimary() {
     };
 
     this.getEnvInfo = function() {
-        if (!envInfo) {
-            envInfo = api.env.control.GetEnvInfo(envName, session);
-        }
-
-        return envInfo;
+        return api.env.control.GetEnvInfo(envName, session);
     };
 
     this.getNewPrimaryNode = function() {
