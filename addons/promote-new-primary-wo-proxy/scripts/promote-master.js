@@ -419,16 +419,28 @@ function promoteNewPrimary() {
         if (envInfo.result != 0) return envInfo;
 
         let nodes = [], node, count;
-        for (let i = 0, n = envInfo.nodes; i < n; i++) {
-            node = envInfo.nodes;
+        this.log("addNode before all ->");
+        for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
+            node = envInfo.nodes[i];
             this.log("addNode node[i].nodeType ->" + node[i].nodeType);
             this.log("addNode nodes[node[i].nodeType] ->" + nodes[node[i].nodeType]);
             if (!nodes[node[i].nodeType]) {
                 this.log("addNode in if ->");
-                count = this.getNodesByGroup(node[i].nodeGroup);
+                resp = this.getNodesByGroup(node[i].nodeGroup);
+                if (resp.result != 0) return resp;
+
+                count = resp.nodes.length;
                 if (node[i].nodeGroup == SQLDB) count += 1;
 
                 this.log("addNode count ->" + count);
+                let test = {
+                    flexibleCloudlets: node[i].flexibleCloudlets,
+                    fixedCloudlets: node[i].fixedCloudlets,
+                    nodeType: node[i].nodeType,
+                    nodeGroup: node[i].nodeGroup,
+                    count: count
+                };
+                this.log("addNode test ->" + test);
                 nodes.push({
                     flexibleCloudlets: node[i].flexibleCloudlets,
                     fixedCloudlets: node[i].fixedCloudlets,
