@@ -4,7 +4,7 @@ function promoteNewPrimary() {
     let ROOT = "root";
     let PROXY = "proxy";
     let SQLDB = "sqldb";
-    let PRIMARY = "rimary";
+    let PRIMARY = "Primary";
     let SECONDARY = "secondary";
     let FAILED = "failed";
     let Response = com.hivext.api.Response;
@@ -415,7 +415,10 @@ function promoteNewPrimary() {
         
         this.log("restoreNodes:   getNewPrimaryNode  resp->" + newPrimary);
 
-        let command = "/bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
+        let command = "bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
+        
+        this.log("restoreNodes:   command  resp->" + command);
+        
         for (let i = 0, n = nodes.length; i < n; i++) {
             if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
                 let resp = this.cmdById(nodes[i].id, command);
