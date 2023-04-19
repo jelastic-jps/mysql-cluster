@@ -420,32 +420,34 @@ function promoteNewPrimary() {
 
         let nodes = [], node, count;
         this.log("addNode before all ->");
+        this.log("addNode envInfo.nodes.length ->" + envInfo.nodes.length);
         for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
+            this.log("addNode in for ->");
             node = envInfo.nodes[i];
-            this.log("addNode node[i].nodeType ->" + node[i].nodeType);
-            this.log("addNode nodes[node[i].nodeType] ->" + nodes[node[i].nodeType]);
-            if (!nodes[node[i].nodeType]) {
+            this.log("addNode node[i].nodeType ->" + node.nodeType);
+            this.log("addNode nodes[node[i].nodeType] ->" + nodes[node.nodeType]);
+            if (!nodes[node.nodeType]) {
                 this.log("addNode in if ->");
-                resp = this.getNodesByGroup(node[i].nodeGroup);
+                resp = this.getNodesByGroup(node.nodeGroup);
                 if (resp.result != 0) return resp;
 
                 count = resp.nodes.length;
-                if (node[i].nodeGroup == SQLDB) count += 1;
+                if (node.nodeGroup == SQLDB) count += 1;
 
                 this.log("addNode count ->" + count);
                 let test = {
-                    flexibleCloudlets: node[i].flexibleCloudlets,
-                    fixedCloudlets: node[i].fixedCloudlets,
-                    nodeType: node[i].nodeType,
-                    nodeGroup: node[i].nodeGroup,
+                    flexibleCloudlets: node.flexibleCloudlets,
+                    fixedCloudlets: node.fixedCloudlets,
+                    nodeType: node.nodeType,
+                    nodeGroup: node.nodeGroup,
                     count: count
                 };
                 this.log("addNode test ->" + test);
                 nodes.push({
-                    flexibleCloudlets: node[i].flexibleCloudlets,
-                    fixedCloudlets: node[i].fixedCloudlets,
-                    nodeType: node[i].nodeType,
-                    nodeGroup: node[i].nodeGroup,
+                    flexibleCloudlets: node.flexibleCloudlets,
+                    fixedCloudlets: node.fixedCloudlets,
+                    nodeType: node.nodeType,
+                    nodeGroup: node.nodeGroup,
                     count: count
                 });
             }
