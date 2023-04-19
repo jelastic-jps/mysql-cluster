@@ -421,10 +421,14 @@ function promoteNewPrimary() {
         let nodes = [], node, count;
         for (let i = 0, n = envInfo.nodes; i < n; i++) {
             node = envInfo.nodes;
+            this.log("addNode node[i].nodeType ->" + node[i].nodeType);
+            this.log("addNode nodes[node[i].nodeType] ->" + nodes[node[i].nodeType]);
             if (!nodes[node[i].nodeType]) {
+                this.log("addNode in if ->");
                 count = this.getNodesByGroup(node[i].nodeGroup);
                 if (node[i].nodeGroup == SQLDB) count += 1;
 
+                this.log("addNode count ->" + count);
                 nodes.push({
                     flexibleCloudlets: node[i].flexibleCloudlets,
                     fixedCloudlets: node[i].fixedCloudlets,
@@ -434,7 +438,7 @@ function promoteNewPrimary() {
                 });
             }
         }
-        
+
         this.log("addNode nodes ->" + nodes);
 
         let resp = api.env.control.ChangeTopology({
