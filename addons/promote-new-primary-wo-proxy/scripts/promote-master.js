@@ -22,7 +22,6 @@ function promoteNewPrimary() {
 
     this.run = function() {
         let resp = this.isProcessRunning();
-        this.log("addNode11 ->" + resp);
         if (resp.result != 0) return resp;
         if (resp.isRunning) return { result: 0 }
 
@@ -45,8 +44,7 @@ function promoteNewPrimary() {
 
         resp = this.setContainerVar();
         if (resp.result != 0) return resp;
-
-        this.log("addNode00 ->");
+        
         resp = this.addNode();
         if (resp.result != 0) return resp;
 
@@ -138,8 +136,6 @@ function promoteNewPrimary() {
         //check if method is available
         let resp = api.dev.scripting.Eval("ext", session, END_POINT, {});
         if (resp.result != 3) return { result: 0 }
-
-        this.log("method is available!");
 
         resp = this.getEnvInfo();
         if (resp.result != 0) return resp;
@@ -422,40 +418,18 @@ function promoteNewPrimary() {
 
         let nodes = [];
         let nodeTypes = [], node, count;
-        this.log("addNode before all ->");
-        this.log("addNode envInfo.nodes.length ->" + envInfo.nodes.length);
+
         for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
-            this.log("addNode in for ->");
             node = envInfo.nodes[i];
-            this.log("addNode node.nodeType ->" + node.nodeType);
-            this.log("addNode nodeTypes ->" + nodeTypes);
-            for (let k = 0, l = nodeTypes.length; k < l; k++) {
-                this.log(nodeTypes[k]);
-                this.log("nodeTypes[k] == node.nodeType->" + (nodeTypes[k] == node.nodeType));
-            }
 
-
-            this.log("addNode nodeTypes.indexOf(node.nodeType) ->" + nodeTypes.indexOf(node.nodeType));
-            this.log("addNode nodeTypes.indexOf(node.nodeType) == -1 ->" + (nodeTypes.indexOf(node.nodeType) == -1));
-            this.log("addNode nodeTypes.indexOf(String(node.nodeType)) == -1 ->" + (nodeTypes.indexOf(String(node.nodeType)) == -1));
             if (nodeTypes.indexOf(String(node.nodeType)) == -1) {
-                nodeTypes.push(node.nodeType);
-                this.log("addNode in if ->");
+                nodeTypes.push(String(node.nodeType));
                 resp = this.getNodesByGroup(node.nodeGroup);
                 if (resp.result != 0) return resp;
 
                 count = resp.nodes.length;
                 if (node.nodeGroup == SQLDB) count += 1;
 
-                this.log("addNode count ->" + count);
-                let test = {
-                    flexibleCloudlets: node.flexibleCloudlets,
-                    fixedCloudlets: node.fixedCloudlets,
-                    nodeType: node.nodeType,
-                    nodeGroup: node.nodeGroup,
-                    count: count
-                };
-                this.log("addNode test ->" + test);
                 nodes.push({
                     flexibleCloudlets: node.flexibleCloudlets,
                     fixedCloudlets: node.fixedCloudlets,
