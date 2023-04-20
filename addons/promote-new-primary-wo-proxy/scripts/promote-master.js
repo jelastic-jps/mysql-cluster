@@ -44,7 +44,7 @@ function promoteNewPrimary() {
 
         resp = this.setContainerVar();
         if (resp.result != 0) return resp;
-        
+
         resp = this.addNode();
         if (resp.result != 0) return resp;
 
