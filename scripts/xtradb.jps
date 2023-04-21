@@ -3,7 +3,7 @@ id: percona-xtradb-cluster
 name: Percona XtraDB Cluster
 description: Percona XtraDB Auto Clustering
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v3.0.0
 
 success:
   text: /texts/phpmyadmin-credentials.md
@@ -22,8 +22,11 @@ globals:
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
-      initialSetup:
+    -	initialSetup:
         id: ${@i.id}
+    - syncCustomConfig:
+        nodeIdFrom: ${nodes.sqldb.master.id}
+        nodeIdTo: ${@i.id}
   - setupSeeds
   - forEach(event.response.nodes):
     - setupInstance:
@@ -70,6 +73,7 @@ onAfterSetCloudletCount[sqldb]:
 onInstall:
   - getReplicaUser
   - resetCluster
+  - addCustomConfig
   - restartNodesInOrder
   - initialSetup:
       id: sqldb
