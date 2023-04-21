@@ -59,13 +59,13 @@ function promoteNewPrimary() {
         resp = this.restoreNodes();
         this.log("restoreNodes resp ->" + resp);
         if (resp.result != 0) return resp;
+ 
+        resp = this.removeFailedPrimary();
+        this.log("removeFailedPrimary resp ->" + resp);
+        if (resp.result != 0) return resp;
         
         resp = this.addNode();
         this.log("addNode resp ->" + resp);
-        if (resp.result != 0) return resp;
-
-        resp = this.removeFailedPrimary();
-        this.log("removeFailedPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.addIteration(true);
