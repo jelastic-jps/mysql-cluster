@@ -77,7 +77,7 @@ actions:
         pswd: ${globals.REPLICA_PSWD}
 
   addCustomConfig:
-    - cmd[sqldb]: wget ${baseUrl}/../configs/custom.cnf -O ${globals.customConfigFile} &>> /var/log/run.log;
+    - cmd[sqldb]: wget ${baseUrl}/configs/custom.cnf -O ${globals.customConfigFile} &>> /var/log/run.log;
     - env.file.AddFavorite:
       nodeGroup: sqldb
       path: ${globals.customConfigFile}
