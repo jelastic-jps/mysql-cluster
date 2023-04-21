@@ -83,3 +83,23 @@ actions:
       path: ${globals.customConfigFile}
       keyword: my_custom.cnf
       isDir: false
+      
+  syncCustomConfig:
+    - nodeIdFrom: ${this.nodeIdFrom}
+      nodeIdTo: ${this.nodeIdTo}
+      script: |
+        var resp = api.env.file.Read({
+              envName: '${env.envName}',
+              path: '${globals.customConfigFile}',
+              nodeId: nodeIdFrom
+            });
+        if (resp.result == 2002) return {result: 0};
+        if (resp.result != 0) return resp
+        var resp = api.env.file.Write({
+              envName: '${env.envName}',
+              path: '${globals.customConfigFile}',
+              nodeId: nodeIdTo,
+              body: resp.body
+            });
+        if (resp.result != 0) return resp;
+        return {result: 0};
