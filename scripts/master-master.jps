@@ -3,7 +3,7 @@ id: mysql-master-master-replication-cluster
 name: MySQL/MariaDB/Percona Primary-Primary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v3.0.0
 
 success:
    text: /texts/phpmyadmin-credentials.md
@@ -21,6 +21,9 @@ globals:
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
+    - syncCustomConfig:
+        nodeIdFrom: ${nodes.sqldb.master.id}
+        nodeIdTo: ${@i.id}
     - setupSlave: ${@i.id}
     - addSlave: ${@i.id}
 
@@ -39,6 +42,7 @@ onAfterClone:
 
 onInstall:
   - getReplicaUser
+  - addCustomConfig
   - getMasterNodes
   - setupMasters
   - addAllSlaves
