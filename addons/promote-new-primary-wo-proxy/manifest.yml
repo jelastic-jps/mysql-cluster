@@ -29,16 +29,51 @@ settings:
 
       - type: checkbox
         name: is_endpoint
-        caption: Add endpoint to Primary node
+        caption: Endpoint to Primary DB
         value: true
+
+  configure:
+    submitUnchanged: true
+    fields:
+      - name: primary_idle_time
+        caption: Primary Idle Time (sec)
+        type: spinner
+        min: 30
+        max: 3600
+
+      - type: checkbox
+        name: is_endpoint
+        caption: Endpoint to Primary DB
+        value: true
+
+    onBeforeInit: |
+      var envName = '${env.envName}';
+      var settings = jps.settings.configure;
+      var fields = {}, endpoints;
+      for (var i = 0, field; field = jps.settings.configure.fields[i]; i++)
+        fields[field.name] = field;
+      fields["is_endpoint"].value = false;
+      var envInfo = jelastic.env.control.GetEnvInfo(envName, session);
+      if (envInfo.result != 0) return envInfo;
+    
+      var nodes = envInfo.nodes, node;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") fields["is_endpoint"].value = true;
+          }
+        }
+      }
+      return settings;
 
 buttons:
   - name: Idle Time Failover
     caption: Auto Failover
     confirmText: Enable Auto Failover?
-    settings: main
+    settings: configure
     loadingText: Enabling Auto Failover...
-    action: idleTimeConfigure
+    action: configure
 
   - name: Failover
     caption: Failover
@@ -56,7 +91,10 @@ onInstall:
       domain: primarydb
       nodeId: ${nodes.sqldb.master.id}
   - createScript
-  - if (${settings.is_endpoint:true}): addEndpoint
+  - if (${settings.is_endpoint:true}):
+      addEndpoint:
+        nodeId: ${nodes.sqldb.master.id}
+  - else: removeEndpoint    
   
 onUninstall: removeTask
 
@@ -72,13 +110,60 @@ onCustomNodeEvent [name:executeScript]:
     return { result: 0 }
 
 actions:
-
+  configure:
+    - removeTask
+    - createScript
+    - if (${settings.is_endpoint:true}):
+        addEndpoint:
+          nodeId: ${nodes.sqldb.master.id}
+    - else: removeEndpoint    
+  
   addEndpoint:
-    - api: env.control.AddEndpoint
-      nodeId: ${nodes.sqldb.master.id}
-      privatePort: 3306
-      protocol: TCP
-      name: PrimaryDB
+  - nodeId: ${this.nodeId}
+    script: |
+      var envName = '${env.envName}';
+      var envInfo = jelastic.env.control.GetEnvInfo(envName, session);
+      if (envInfo.result != 0) return envInfo;
+    
+      var nodes = envInfo.nodes, node;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") return {result: 0};
+          }
+        }
+      }
+      return jelastic.env.control.AddEndpoint({
+        envName: envName,
+        privatePort: 3306,
+        protocol: 'TCP',
+        name: 'PrimaryDB',
+        nodeId: nodeId
+      });
+  
+  removeEndpoint:
+  - script: |
+      var envName = '${env.envName}';
+      var envInfo = jelastic.env.control.GetEnvInfo(envName, session);
+      if (envInfo.result != 0) return envInfo;
+    
+      var nodes = envInfo.nodes, node;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") {
+              resp = jelastic.env.control.RemoveEndpoint({
+                envName: envName,
+                id: node.endpoints[k].id
+              });
+              if (resp.result != 0) return resp;
+            }
+          }
+        }
+      }
+      return {result: 0};
 
   addDomainToPrimary:
     - domain: ${this.domain}
@@ -102,17 +187,9 @@ actions:
             nodeId: nodeId
         });
 
-  addSchedulerToProxySQL:
-    - cmd[sqldb]: |-
-        bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
-
   forceFailover:
     - cmd[${nodes.sqldb.master.id}]: |-
         screen -d -m curl --location --request POST "${platformUrl}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}";
-
-  idleTimeConfigure:
-    - removeTask
-    - createScript
 
   removeTask:
     script: |
