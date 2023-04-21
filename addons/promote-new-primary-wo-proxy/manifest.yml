@@ -111,9 +111,9 @@ actions:
         screen -d -m curl --location --request POST "${platformUrl}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}";
 
   idleTimeConfigure:
-    cmd[sqldb]: |-
-      bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
-  
+    - removeTask
+    - createScript
+
   removeTask:
     script: |
       let resp = api.utils.scheduler.GetTasks({appid: appid, session: session});
