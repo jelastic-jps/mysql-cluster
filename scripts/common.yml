@@ -1,3 +1,6 @@
+globals:
+  customConfigFile: /etc/mysql/conf.d/my_custom.cnf
+  
 actions:
   getReplicaUser:
     - env.control.GetContainerEnvVarsByGroup[sqldb]
@@ -72,3 +75,11 @@ actions:
         id: ${this.id}
         user: ${globals.REPLICA_USER}
         pswd: ${globals.REPLICA_PSWD}
+
+  addCustomConfig:
+    - cmd[sqldb]: wget ${baseUrl}/../configs/custom.cnf -O ${globals.customConfigFile} &>> /var/log/run.log;
+    - env.file.AddFavorite:
+      nodeGroup: sqldb
+      path: ${globals.customConfigFile}
+      keyword: my_custom.cnf
+      isDir: false
