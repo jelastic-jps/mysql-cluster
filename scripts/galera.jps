@@ -73,8 +73,8 @@ onAfterSetCloudletCount[sqldb]:
 
 onInstall:
   - getReplicaUser
-  - addCustomConfig
   - resetCluster
+  - addCustomConfig
   - restartNodesInOrder
   - initialSetup:
       id: sqldb
