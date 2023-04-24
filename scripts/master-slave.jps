@@ -21,7 +21,9 @@ globals:
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
-    - addCustomConfig: ${@i.id}
+    - syncCustomConfig:
+        nodeIdFrom: ${nodes.sqldb.master.id}
+        nodeIdTo: ${@i.id}
     - setupSlave: ${@i.id}
     - addSlave: ${@i.id}
 
@@ -40,14 +42,13 @@ onAfterClone:
 
 onInstall:
   - getReplicaUser
-  - addCustomConfig: sqldb
+  - addCustomConfig
   - forEach(i:nodes.sqldb):
     - if (${@i.ismaster}):
       - setupMaster: ${@i.id}
       - env.control.AddContainerEnvVars[sqldb]:
           vars:
             PRIMARY_IP: ${@i.address}
-
     - else:
         setupSlave: ${@i.id}
   - forEach(i:nodes.sqldb):
@@ -55,9 +56,6 @@ onInstall:
         addSlave: ${@i.id}
 
 actions:
-  addCustomConfig:
-    - cmd[${this}]: |-
-        wget ${baseUrl}/configs/custom.cnf -O /etc/mysql/conf.d/custom.cnf &>> /var/log/run.log
 
   setupMaster:
     - cmd[${this}]: |-

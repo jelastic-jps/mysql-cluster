@@ -21,6 +21,9 @@ globals:
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
+    - syncCustomConfig:
+        nodeIdFrom: ${nodes.sqldb.master.id}
+        nodeIdTo: ${@i.id}
     - setupSlave: ${@i.id}
     - addSlave: ${@i.id}
 
@@ -39,6 +42,7 @@ onAfterClone:
 
 onInstall:
   - getReplicaUser
+  - addCustomConfig
   - getMasterNodes
   - setupMasters
   - addAllSlaves

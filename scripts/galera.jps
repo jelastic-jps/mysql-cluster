@@ -23,8 +23,11 @@ globals:
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
-      initialSetup:
+    - initialSetup:
         id: ${@i.id}
+    - syncCustomConfig:
+        nodeIdFrom: ${nodes.sqldb.master.id}
+        nodeIdTo: ${@i.id}
   - setupSeeds
   - forEach(event.response.nodes):
     - setupInstance:
@@ -71,6 +74,7 @@ onAfterSetCloudletCount[sqldb]:
 onInstall:
   - getReplicaUser
   - resetCluster
+  - addCustomConfig
   - restartNodesInOrder
   - initialSetup:
       id: sqldb
