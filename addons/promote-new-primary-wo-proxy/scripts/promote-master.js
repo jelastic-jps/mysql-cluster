@@ -16,6 +16,7 @@ function promoteNewPrimary() {
     let containerEnvs = {};
     let base = api.data.base;
     let tableName = "promotePrimary";
+    let END_POINT = "EditEndpoint";
     let dbPromoteData = "";
     let force = getParam("force", false);
 
@@ -162,7 +163,11 @@ function promoteNewPrimary() {
     };
 
     this.EditEndPoint = function() {
-        let resp = this.getEnvInfo();
+        //check if method is available
+        let resp = api.dev.scripting.Eval("ext", session, END_POINT, {});
+        if (resp.result != 3) return { result: 0 }
+
+        resp = this.getEnvInfo();
         if (resp.result != 0) return resp;
 
         let nodes = resp.nodes, node;
@@ -171,7 +176,7 @@ function promoteNewPrimary() {
             if (node.endpoints) {
                 for (let k = 0, l = node.endpoints.length; k < l; k++) {
                     if (node.endpoints[k].name == "PrimaryDB") {
-                        resp = api.dev.scripting.Eval("ext", session, "EditEndpoint", {
+                        return api.dev.scripting.Eval("ext", session, END_POINT, {
                             envName: envName,
                             id: node.endpoints[k].id,
                             name: node.endpoints[k].name,
@@ -442,27 +447,43 @@ function promoteNewPrimary() {
         let envInfo = this.getEnvInfo();
         if (envInfo.result != 0) return envInfo;
 
-        let resp = this.getNodesByGroup(SQLDB);
-        if (resp.result != 0) return resp;
-        let sqlNodes = resp.nodes;
+        let nodes = [];
+        let nodeTypes = [], node, count;
 
-        resp = api.env.control.ChangeTopology({
+        for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
+            node = envInfo.nodes[i];
+
+            if (nodeTypes.indexOf(String(node.nodeType)) == -1) {
+                nodeTypes.push(String(node.nodeType));
+                resp = this.getNodesByGroup(node.nodeGroup);
+                if (resp.result != 0) return resp;
+
+                count = resp.nodes.length;
+                if (node.nodeGroup == SQLDB) count += 1;
+
+                nodes.push({
+                    flexibleCloudlets: node.flexibleCloudlets,
+                    fixedCloudlets: node.fixedCloudlets,
+                    nodeType: node.nodeType,
+                    nodeGroup: node.nodeGroup,
+                    count: count
+                });
+            }
+        }
+
+        this.log("addNode nodes ->" + nodes);
+
+        let resp = api.env.control.ChangeTopology({
             envName: envName,
             session: session,
             env: {
                 region: envInfo.env.hostGroup.uniqueName,
                 sslstate: envInfo.env.sslstate
             },
-            nodes: [{
-                nodeType: sqlNodes[0].nodeType,
-                nodeGroup: sqlNodes[0].nodeGroup,
-                count: sqlNodes.length + 1,
-                fixedCloudlets: sqlNodes[0].fixedCloudlets,
-                flexibleCloudlets: sqlNodes[0].flexibleCloudlets
-            }]
+            nodes: nodes
         });
         if (resp.result != 0) return resp;
-        
+
         return this.cmdByGroup("rm -rf " + TMP_FILE, SQLDB, 3);
     };
 
