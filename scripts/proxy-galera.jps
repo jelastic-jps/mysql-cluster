@@ -14,7 +14,6 @@ mixins:
   - /scripts/common.yml
 
 globals:
-  PATH: "${settings.path}"
   DB_USER: "${settings.db_user}"
   DB_PASS: "${settings.db_pass}"
   ORCH_PASS: "${fn.password(10)}"
@@ -29,23 +28,24 @@ onBeforeScaleIn[sqldb]:
       removeNode:
         id: "${@i.id}"
   - cmd[proxy]: 'MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;" '
-  
+
 onAfterMigrate:
-  install: ${globals.PATH}/scripts/proxy-galera.jps?_r=${fn.random}
-  nodeGroup: sqldb
-  settings:
-    db_user: "${globals.DB_USER}"
-    db_pass: "${globals.DB_PASS}"
-    path: "${globals.PATH}"
-    
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    settings:
+      nodeGroup: ${settings.nodeGroup}
+      db_user: ${globals.DB_USER}
+      db_pass: ${globals.DB_PASS}
+
+
 onAfterClone:
-  install: ${globals.PATH}/scripts/proxy-galera.jps?_r=${fn.random}
-  envName: ${event.response.env.envName}
-  nodeGroup: sqldb
-  settings:
-    db_user: "${globals.DB_USER}"
-    db_pass: "${globals.DB_PASS}"
-    path: "${globals.PATH}"
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    envName: ${event.response.env.envName}
+    settings:
+      nodeGroup: ${settings.nodeGroup}
+      db_user: ${globals.DB_USER}
+      db_pass: ${globals.DB_PASS}
 
 onBeforeRemoveNode[proxy]:
   stopEvent:
@@ -66,7 +66,7 @@ onInstall:
   - cmd[proxy]: |-
       mysql -h 127.0.0.1 -P3360 -uroot -e "CREATE DATABASE IF NOT EXISTS orchestrator;"
       mysql -h 127.0.0.1 -P3360 -uroot -e "GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';"
-      wget ${globals.PATH}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
+      wget ${baseUrl}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
       sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json
       sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json
       sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json
@@ -92,7 +92,7 @@ actions:
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_USER}' WHERE variable_name='mysql-monitor_username';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_PSWD}' WHERE variable_name='mysql-monitor_password';"
-        wget ${globals.PATH}/scripts/proxysql_galera_checker.sh -O /var/lib/proxysql/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
+        wget ${baseUrl}/scripts/proxysql_galera_checker.sh -O /var/lib/proxysql/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO scheduler(id,interval_ms,filename,arg1,arg2,arg3,arg4) VALUES
         (1,'2000','/var/lib/proxysql/proxysql_galera_checker.sh','127.0.0.1','6032','2', '/var/lib/proxysql/proxysql_galera_checker.log');"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD SCHEDULER TO RUNTIME; SAVE SCHEDULER TO DISK;"
