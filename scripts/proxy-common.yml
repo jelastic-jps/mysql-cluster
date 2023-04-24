@@ -1,0 +1,32 @@
+  setupOrchestrator:
+    - log: Orchestrator configuration
+    - cmd [proxy]: |-
+        mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
+        mysql -h 127.0.0.1 -P3360 -uroot -e "CREATE DATABASE IF NOT EXISTS orchestrator;"
+        mysql -h 127.0.0.1 -P3360 -uroot -e "GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';"
+        wget ${baseUrl}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
+        sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json
+        sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json
+        sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json
+        sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
+        sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json
+        sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
+        systemctl restart orchestrator
+      user: root
+
+  setupProxySQLCluster:
+    - log: ProxySQL clusterization
+    - cmd [proxy]: |-
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='admin:admin;${globals.ADMIN_USER}:${globals.ADMIN_PASS}' WHERE variable_name='admin-admin_credentials';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='0.0.0.0:6032' WHERE variable_name='admin-mysql_ifaces';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.ADMIN_USER}' WHERE variable_name='admin-cluster_username';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.ADMIN_PASS}' WHERE variable_name='admin-cluster_password';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value=200 WHERE variable_name='admin-cluster_check_interval_ms';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value=100 WHERE variable_name='admin-cluster_check_status_frequency';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='true' WHERE variable_name='admin-cluster_mysql_servers_save_to_disk';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value=3 WHERE variable_name='admin-cluster_mysql_servers_diffs_before_sync';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "load admin variables to RUNTIME; save admin variables to disk;"
+    - forEach(n:nodes.proxy):
+      - cmd [proxy]: |-
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO proxysql_servers (hostname,port,weight,comment) VALUES ('${@n.address}',6032,100,'CLUSTER');"
+          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD PROXYSQL SERVERS TO RUNTIME; SAVE PROXYSQL SERVERS TO DISK;"
