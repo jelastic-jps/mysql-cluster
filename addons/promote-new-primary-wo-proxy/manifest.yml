@@ -8,7 +8,7 @@ description:
 
 logo: images/db-failover-red.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-66025/addons/promote-new-primary-wo-proxy
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66025/addons/promote-new-primary-wo-proxy
 
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
@@ -29,16 +29,51 @@ settings:
 
       - type: checkbox
         name: is_endpoint
-        caption: Add endpoint to Primary node
+        caption: Endpoint to Primary DB
         value: true
+
+  configure:
+    submitUnchanged: true
+    fields:
+      - name: primary_idle_time
+        caption: Primary Idle Time (sec)
+        type: spinner
+        min: 30
+        max: 3600
+
+      - type: checkbox
+        name: is_endpoint
+        caption: Endpoint to Primary DB
+        value: true
+
+    onBeforeInit: |
+      var envName = '${env.envName}';
+      var settings = jps.settings.configure;
+      var fields = {}, endpoints;
+      for (var i = 0, field; field = jps.settings.configure.fields[i]; i++)
+        fields[field.name] = field;
+      fields["is_endpoint"].value = false;
+      var envInfo = jelastic.env.control.GetEnvInfo(envName, session);
+      if (envInfo.result != 0) return envInfo;
+    
+      var nodes = envInfo.nodes, node;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") fields["is_endpoint"].value = true;
+          }
+        }
+      }
+      return settings;
 
 buttons:
   - name: Idle Time Failover
     caption: Auto Failover
     confirmText: Enable Auto Failover?
-    settings: main
+    settings: configure
     loadingText: Enabling Auto Failover...
-    action: idleTimeConfigure
+    action: configure
 
   - name: Failover
     caption: Failover
@@ -55,9 +90,11 @@ onInstall:
   - addDomainToPrimary:
       domain: primarydb
       nodeId: ${nodes.sqldb.master.id}
-  - downloadScripts
   - createScript
-  - if (${settings.is_endpoint:true}): addEndpoint
+  - if (${settings.is_endpoint:true}):
+      addEndpoint:
+        nodeId: ${nodes.sqldb.master.id}
+  - else: removeEndpoint    
   
 onUninstall: removeTask
 
@@ -73,13 +110,60 @@ onCustomNodeEvent [name:executeScript]:
     return { result: 0 }
 
 actions:
-
+  configure:
+    - removeTask
+    - createScript
+    - if (${settings.is_endpoint:true}):
+        addEndpoint:
+          nodeId: ${nodes.sqldb.master.id}
+    - else: removeEndpoint    
+  
   addEndpoint:
-    - api: env.control.AddEndpoint
-      nodeId: ${nodes.sqldb.master.id}
-      privatePort: 3306
-      protocol: TCP
-      name: PrimaryDB
+  - nodeId: ${this.nodeId}
+    script: |
+      var envName = '${env.envName}';
+      var envInfo = jelastic.env.control.GetEnvInfo(envName, session);
+      if (envInfo.result != 0) return envInfo;
+    
+      var nodes = envInfo.nodes, node;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") return {result: 0};
+          }
+        }
+      }
+      return jelastic.env.control.AddEndpoint({
+        envName: envName,
+        privatePort: 3306,
+        protocol: 'TCP',
+        name: 'PrimaryDB',
+        nodeId: nodeId
+      });
+  
+  removeEndpoint:
+  - script: |
+      var envName = '${env.envName}';
+      var envInfo = jelastic.env.control.GetEnvInfo(envName, session);
+      if (envInfo.result != 0) return envInfo;
+    
+      var nodes = envInfo.nodes, node;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") {
+              resp = jelastic.env.control.RemoveEndpoint({
+                envName: envName,
+                id: node.endpoints[k].id
+              });
+              if (resp.result != 0) return resp;
+            }
+          }
+        }
+      }
+      return {result: 0};
 
   addDomainToPrimary:
     - domain: ${this.domain}
@@ -103,34 +187,10 @@ actions:
             nodeId: nodeId
         });
 
-  addConfiguration:
-    - cmd[sqldb]: |-
-        [ ! -f /etc/mysql/jcm.conf ] && echo "### ProxySQL configuration for JCM" > /etc/mysql/jcm.conf;
-        grep -q "PRIMARY_NODE_ID" /etc/mysql/jcm.conf || { echo "PRIMARY_NODE_ID=node${nodes.sqldb.master.id}" >> /etc/mysql/jcm.conf; }
-        echo /etc/mysql/jcm.conf >>  /etc/jelastic/redeploy.conf;
-        chown jelastic /etc/mysql/jcm.conf;
-        chown jelastic -R /etc/mysql;
-      user: root
-
-  addSchedulerToProxySQL:
-    - cmd[sqldb]: |-
-        bash ${globals.jcmPath} addScheduler --interval=${settings.primary_idle_time} --filename=/usr/local/sbin/jcm.sh --arg1=primaryStatus --scheduler_name=primaryStatus;
-
   forceFailover:
-    - cmd[${nodes.sqldb.master.id}]: screen -d -m bash /usr/local/sbin/jcm.sh forceFailover
+    - cmd[${nodes.sqldb.master.id}]: |-
+        screen -d -m curl --location --request POST "${platformUrl}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}";
 
-  downloadScripts:
-    - cmd[sqldb]: |-
-        curl --silent ${baseUrl}/scripts/jcm.sh > ${globals.jcmPath};
-        chmod +x ${globals.jcmPath};
-        echo "Start JCM logs" > /var/log/jcm.log;
-        chown jelastic /var/log/jcm.log;
-      user: root
-
-  idleTimeConfigure:
-    cmd[sqldb]: |-
-      bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
-  
   removeTask:
     script: |
       let resp = api.utils.scheduler.GetTasks({appid: appid, session: session});
@@ -163,9 +223,6 @@ actions:
       }
 
       scriptBody = new StrSubstitutor({token: "${globals.random}"}, "${", "}").replace(scriptBody);
-      command = "sed -ri 's|PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/jcm.sh";
-      resp = api.env.control.ExecCmdByGroup("${env.name}", session, "sqldb", toJSON([{ command: command }]), true, false, ROOT);
-      if (resp.result != 0) return resp;
       
       resp = api.dev.scripting.GetScript(appid, session, "${globals.scriptName}");
       if (resp.result == Response.OK) {
