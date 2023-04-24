@@ -3,7 +3,7 @@ id: mysql-proxy-galera-cluster
 name: Galera/XtraDB Cluster with ProxySQL
 description: Galera/XtraDB Cluster
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66097
 
 success: /texts/proxy-entrypoint.md
 
