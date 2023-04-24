@@ -686,10 +686,10 @@ configure_node_as_primary(){
   if [[ "x${nodeType}" == "xsecondary" ]]; then
     cp ${SECONDARY_CONF} ${SECONDARY_CONF}.backup
     mv ${SECONDARY_CONF} ${PRIMARY_CONF}
-    grep -q "binlog_format" ${PRIMARY_CONF} && { sed -i "s/.*/binlog_format = mixed/" ${PRIMARY_CONF}; } || { echo "binlog_format = mixed" >> ${PRIMARY_CONF}; }
-    grep -q "log-bin" ${PRIMARY_CONF} && { sed -i "s/.*/log-bin = mysql-bin/" ${PRIMARY_CONF}; } || { echo "log-bin = mysql-bin" >> ${PRIMARY_CONF}; }
-    grep -q "log-slave-updates" ${PRIMARY_CONF} && { sed -i "s/.*log-slave-updates = OFF/" ${PRIMARY_CONF}; } || { echo "log-slave-updates = OFF" >> ${PRIMARY_CONF}; }
-    grep -q "read_only" ${PRIMARY_CONF} && { sed -i "s/.*read_only = 0/" ${PRIMARY_CONF}; } || { echo "read_only = 0" >> ${PRIMARY_CONF}; }
+    grep -q "binlog_format" ${PRIMARY_CONF} && { sed -i "s/binlog_format.*/binlog_format = mixed/" ${PRIMARY_CONF}; } || { echo "binlog_format = mixed" >> ${PRIMARY_CONF}; }
+    grep -q "log-bin" ${PRIMARY_CONF} && { sed -i "s/log-bin.*/log-bin = mysql-bin/" ${PRIMARY_CONF}; } || { echo "log-bin = mysql-bin" >> ${PRIMARY_CONF}; }
+    grep -q "log-slave-updates" ${PRIMARY_CONF} && { sed -i "s/log-slave-updates.*/log-slave-updates = OFF/" ${PRIMARY_CONF}; } || { echo "log-slave-updates = OFF" >> ${PRIMARY_CONF}; }
+    grep -q "read_only" ${PRIMARY_CONF} && { sed -i "s/read_only.*/read_only = 0/" ${PRIMARY_CONF}; } || { echo "read_only = 0" >> ${PRIMARY_CONF}; }
     execAction "removeSecondaryFromPrimary localhost" '[Node: localhost]: Disable secondary'
     stopMysqlService "localhost"
     startMysqlService "localhost"
