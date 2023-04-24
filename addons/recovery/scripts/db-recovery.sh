@@ -65,6 +65,7 @@ echo "                           restore_primary_from_primary - restore failed p
 echo "                           restore_secondary_from_primary - restore secondary node from primary"
 echo "                           restore_primary_from_secondary - restore primary node from secondary"
 echo "                           restore_galera - restore Galera cluster"
+echo "                           promote_new_primary - promote new primary form secondary node"
 echo "              --diagnostic - Run node diagnostic only (without recovery)"
 echo "              --check-corrupts - Run database corruption check"
 echo "        NOTICE:"
@@ -86,6 +87,7 @@ fi
 if [[ "${diagnostic}" != "YES" ]] && [[ "${check_corrupts}" != "YES" ]]; then
   [ "${SCENARIO}" == "init" ] && DONOR_IP='localhost'
   [ "${SCENARIO}" == "restore_galera" ] && DONOR_IP='localhost'
+  [ "${SCENARIO}" == "promote_new_primary" ] && DONOR_IP='localhost'
   if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
@@ -677,6 +679,29 @@ restore_primary_from_secondary(){
   execAction "getPrimaryPosition localhost" '[Node: localhost]: Get primary position'
   execAction "removeSecondaryFromPrimary localhost" '[Node: localhost]: Disable secondary'
   execAction "restoreSecondaryPosition ${DONOR_IP}" "[Node: ${DONOR_IP}]: Restore primary position on donor"
+}
+
+configure_node_as_primary(){
+  nodeType=$(getNodeType)
+  if [[ "x${nodeType}" == "xsecondary" ]]; then
+    cp ${SECONDARY_CONF} ${SECONDARY_CONF}.backup
+    mv ${SECONDARY_CONF} ${PRIMARY_CONF}
+    grep -q "binlog_format" ${PRIMARY_CONF} && { sed -i "s/.*/binlog_format = mixed/" ${PRIMARY_CONF}; } || { echo "binlog_format = mixed" >> ${PRIMARY_CONF}; }
+    grep -q "log-bin" ${PRIMARY_CONF} && { sed -i "s/.*/log-bin = mysql-bin/" ${PRIMARY_CONF}; } || { echo "log-bin = mysql-bin" >> ${PRIMARY_CONF}; }
+    grep -q "log-slave-updates" ${PRIMARY_CONF} && { sed -i "s/.*log-slave-updates = OFF/" ${PRIMARY_CONF}; } || { echo "log-slave-updates = OFF" >> ${PRIMARY_CONF}; }
+    grep -q "read_only" ${PRIMARY_CONF} && { sed -i "s/.*read_only = 0/" ${PRIMARY_CONF}; } || { echo "read_only = 0" >> ${PRIMARY_CONF}; }
+    execAction "removeSecondaryFromPrimary localhost" '[Node: localhost]: Disable secondary'
+    stopMysqlService "localhost"
+    startMysqlService "localhost"
+    return ${SUCCESS_CODE}
+  else
+    log "[Node: localhost]: This node cant be configured as primary"
+    return ${FAIL_CODE}
+  fi
+}
+
+promote_new_primary(){
+  execAction "configure_node_as_primary" '[Node: localhost]: Configure node as Primary'
 }
 
 restore_primary_from_primary(){
