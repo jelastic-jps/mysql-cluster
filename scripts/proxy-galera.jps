@@ -61,6 +61,7 @@ onInstall:
   - getReplicaUser
   - resetProxyNodes
   - setupOrchestrator
+  - setupProxySQLCluster
   - if(${fn.compare([nodes.proxy.master.version], 2.0)} > 0): initGaleraForProxy2
   - if(${fn.compare([nodes.proxy.master.version], 2.0)} < 0): initGaleraForProxy1
   - forEach(nodes.sqldb):
