@@ -1,3 +1,4 @@
+actions:
   setupOrchestrator:
     - log: Orchestrator configuration
     - cmd [proxy]: |-
@@ -24,7 +25,7 @@
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value=200 WHERE variable_name='admin-cluster_check_interval_ms';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value=100 WHERE variable_name='admin-cluster_check_status_frequency';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='true' WHERE variable_name='admin-cluster_mysql_servers_save_to_disk';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value=3 WHERE variable_name='admin-cluster_mysql_servers_diffs_before_sync';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value=1 WHERE variable_name='admin-cluster_mysql_servers_diffs_before_sync';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "load admin variables to RUNTIME; save admin variables to disk;"
     - forEach(n:nodes.proxy):
       - cmd [proxy]: |-
