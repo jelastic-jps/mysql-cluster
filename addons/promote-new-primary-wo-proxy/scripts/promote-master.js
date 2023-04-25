@@ -136,11 +136,13 @@ function promoteNewPrimary() {
 
     this.setNewMasterNode = function() {
       if (api.env.control.SetMasterNode) {
+        this.log("setNewMasterNode -> Using API api.env.control.SetMasterNode ");
         return api.env.control.SetMasterNode({
           envName: envName,
           nodeId: this.getNewPrimaryNode().id
         });
       } else {
+        this.log("setNewMasterNode -> Using SCRIPT api.env.control.SetMasterNode ");
         let resp = jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
           envName: envName, 
           nodeId: this.getNewPrimaryNode().id 
