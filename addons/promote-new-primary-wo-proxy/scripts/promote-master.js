@@ -34,43 +34,33 @@ function promoteNewPrimary() {
         }
 
         resp = this.newPrimaryOnProxy();
-        this.log("newPrimaryOnProxy resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.promoteNewSQLPrimary();
-        this.log("promoteNewSQLPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setDomains();
-        this.log("setDomains resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.EditEndPoint();
-        this.log("EditEndPoint resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setContainerVar();
-        this.log("setContainerVar resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setNewMasterNode();
-        this.log("setNewMasterNode resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.restoreNodes();
-        this.log("restoreNodes resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.removeFailedPrimary();
-        this.log("removeFailedPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.addNode();
-        this.log("addNode resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.addIteration(true);
-        this.log("addIteration resp ->" + resp);
         if (resp.result != 0) return resp;
 
         return this.setIsRunningStatus(false);
@@ -388,9 +378,7 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
-
-        this.log("getParsedNodes resp->" + nodes);
-
+        
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
                 if (nodes[i]) {
@@ -470,8 +458,6 @@ function promoteNewPrimary() {
                 });
             }
         }
-
-        this.log("addNode nodes ->" + nodes);
 
         let resp = api.env.control.ChangeTopology({
             envName: envName,
