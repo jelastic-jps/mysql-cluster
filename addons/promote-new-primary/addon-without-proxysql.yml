@@ -8,7 +8,7 @@ description:
 
 logo: images/db-failover-red.png
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/stage-addon/addons/promote-new-primary
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/promote-new-primary
 
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
