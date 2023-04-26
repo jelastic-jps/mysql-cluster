@@ -1,0 +1,74 @@
+globals:
+  scriptName: ${env.name}-promote-master
+  jcmPath: /usr/local/sbin/jcm.sh
+  random: ${fn.password}
+
+actions:
+  addEndpoint:
+  - nodeId: ${this.nodeId}
+    script: |
+      var envName = '${env.envName}';
+      var envInfo = jelastic.env.control.GetEnvInfo(envName, session);
+      if (envInfo.result != 0) return envInfo;
+    
+      var nodes = envInfo.nodes, node;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") return {result: 0};
+          }
+        }
+      }
+      return jelastic.env.control.AddEndpoint({
+        envName: envName,
+        privatePort: 3306,
+        protocol: 'TCP',
+        name: 'PrimaryDB',
+        nodeId: nodeId
+      });
+  
+  removeEndpoint:
+  - script: |
+      var envName = '${env.envName}';
+      var envInfo = jelastic.env.control.GetEnvInfo(envName, session);
+      if (envInfo.result != 0) return envInfo;
+    
+      var nodes = envInfo.nodes, node;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") {
+              resp = jelastic.env.control.RemoveEndpoint({
+                envName: envName,
+                id: node.endpoints[k].id
+              });
+              if (resp.result != 0) return resp;
+            }
+          }
+        }
+      }
+      return {result: 0};
+
+  addDomainToPrimary:
+    - domain: ${this.domain}
+      nodeId: ${this.nodeId}
+      script: |
+        var resp = jelastic.env.binder.GetDomains('${env.envName}', session);
+        if (resp.result != 0) return resp;
+        const data = JSON.parse(resp);
+        const nodeWithDomain = data.nodes.find(node => node.domains.includes(domain));
+        if (nodeWithDomain) {
+          resp = jelastic.env.binder.RemoveDomains({
+            envName: '${env.envName}',
+            domains: domain,
+            nodeId: nodeWithDomain.nodeId
+            });
+          if (resp.result != 0) return resp;
+        }
+        return jelastic.env.binder.AddDomains({
+            envName: '${env.envName}',
+            domains: domain,
+            nodeId: nodeId
+        });
