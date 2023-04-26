@@ -7,8 +7,9 @@ baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66097
 
 success: /texts/proxy-entrypoint.md
 
+targetNodes: none
 nodeGroupAlias:
-  "${targetNodes.nodeGroup}": sqldb
+  ${settings.nodeGroup}: sqldb
 
 mixins:
   - /scripts/common.yml
