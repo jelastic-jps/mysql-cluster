@@ -3,7 +3,7 @@ id: mysql-proxy-master-slave-cluster
 name: MySQL/MariaDB/Percona Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66097
 
 success: /texts/proxy-entrypoint.md
 
