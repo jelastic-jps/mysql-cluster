@@ -1,3 +1,5 @@
+<p align="center"><img style="padding: 0 15px; float: left;" src="images/mysql-proxysql-tuning.png" width="70"></p>
+
 # Database Cluster Tuning Add-On
 
 The default configurations of the MySQL/MariaDB database clusters are suitable for a limited number of cases only. If you want to achieve the best performance from your cluster, personalized optimizations are needed.
