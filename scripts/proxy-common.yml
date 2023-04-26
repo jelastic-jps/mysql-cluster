@@ -31,3 +31,15 @@ actions:
       - cmd [proxy]: |-
           MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO proxysql_servers (hostname,port,weight,comment) VALUES ('${@n.address}',6032,100,'CLUSTER');"
           MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD PROXYSQL SERVERS TO RUNTIME; SAVE PROXYSQL SERVERS TO DISK;"
+          
+  resetProxyNodes:
+    - log: Reset ProxySQL configuration
+    - cmd[proxy]: |-
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "DELETE FROM proxysql_servers; LOAD PROXYSQL SERVERS TO RUNTIME; SAVE PROXYSQL SERVERS TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "DELETE FROM mysql_replication_hostgroups; LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "DELETE FROM mysql_galera_hostgroups; LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "DELETE FROM mysql_users; LOAD MYSQL USERS TO RUNTIME; SAVE MYSQL USERS TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "DELETE FROM mysql_servers; LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "DELETE FROM scheduler; LOAD SCHEDULER TO RUNTIME; SAVE SCHEDULER TO DISK;"
+        mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
+        sudo service proxysql restart;
