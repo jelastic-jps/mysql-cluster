@@ -11,11 +11,11 @@ function promoteNewPrimary() {
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
     let session = getParam("session", "");
     let CLUSTER_FAILED = 98;
+    let NOT_RUNNING = 4110;
     let WARNING = "warning";
 
     this.run = function() {
         let resp = this.auth();
-        this.log("auth resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.newPrimaryOnProxy();
@@ -314,9 +314,38 @@ function promoteNewPrimary() {
         return { result: 0 }
     };
 
-    this.cmdByGroup = function(command, nodeGroup, timeout) {
+    this.checkNodesAvailability = function(nodeGroup) {
+        let nodeid;
+
+        let resp = this.cmdByGroup("echo 1", nodeGroup, null, true);
+        if (resp.result == NOT_RUNNING) {
+            let nodeResp;
+            for (let i = 0, n = resp.responses.length; i < n; i++) {
+                nodeResp = resp.responses[i];
+                if (nodeResp.result == 0) {
+                    nodeid = nodeResp.nodeid;
+                    break;
+                }
+            }
+        }
+        if (resp.result != 0 && resp.result != NOT_RUNNING) return resp;
+
+        return {
+            result: 0,
+            nodeid: nodeid
+        }
+    };
+
+    this.cmdByGroup = function(command, nodeGroup, timeout, test) {
         if (timeout) {
             command = "timeout " + timeout + "s bash -c \"" + command + "\"";
+        }
+
+        if (nodeGroup == PROXY && !test) {
+            let resp = this.checkNodesAvailability(PROXY);
+            if (resp.nodeid) {
+                return this.cmdById(resp.nodeid, command);
+            }
         }
 
         return api.env.control.ExecCmdByGroup(envName, session, nodeGroup, toJSON([{ command: command }]), true, false, ROOT);
