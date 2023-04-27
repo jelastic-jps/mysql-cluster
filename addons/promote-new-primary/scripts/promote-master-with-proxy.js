@@ -11,7 +11,6 @@ function promoteNewPrimary() {
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
     let session = getParam("session", "");
     let CLUSTER_FAILED = 98;
-    let NOT_RUNNING = 4110;
     let WARNING = "warning";
 
     this.run = function() {
@@ -314,25 +313,41 @@ function promoteNewPrimary() {
         return { result: 0 }
     };
 
+    this.getAvailableProxy = function() {
+        return this.availableProxy || "";
+    };
+
+    this.setAvailableProxy = function(nodeid) {
+        this.availableProxy = nodeid;
+    };
+
     this.checkNodesAvailability = function(nodeGroup) {
         let nodeid;
 
+        if (this.getAvailableProxy()) {
+            return {
+                result: 0,
+                nodeid: this.getAvailableProxy()
+            }
+        }
+
         let resp = this.cmdByGroup("echo 1", nodeGroup, null, true);
-        if (resp.result == NOT_RUNNING) {
+        this.log("checkNodesAvailability resp1 ->" + resp);
+        if (resp.result != 0) {
             let nodeResp;
             for (let i = 0, n = resp.responses.length; i < n; i++) {
                 nodeResp = resp.responses[i];
                 if (nodeResp.result == 0) {
                     nodeid = nodeResp.nodeid;
+                    this.setAvailableProxy(nodeResp.nodeid);
                     break;
                 }
             }
         }
-        if (resp.result != 0 && resp.result != NOT_RUNNING) return resp;
 
         return {
             result: 0,
-            nodeid: nodeid
+            nodeid: this.getAvailableProxy()
         }
     };
 
