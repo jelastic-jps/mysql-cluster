@@ -12,6 +12,7 @@ function promoteNewPrimary() {
     let session = getParam("session", "");
     let CLUSTER_FAILED = 98;
     let MySQL_FAILED = 97;
+    let GET_ENVS_FAILED = 96;
     let WARNING = "warning";
     let containerEnvs = {};
     let base = api.data.base;
@@ -67,7 +68,6 @@ function promoteNewPrimary() {
     };
 
     this.checkAvailability = function() {
-        this.log("----------------------------- Check mysql ");
         let command = "source /.jelenv && mysqladmin -u$REPLICA_USER -p$REPLICA_PSWD ping";
         let resp = this.cmdById(this.getPrimaryNode().id, command);
 
@@ -87,7 +87,6 @@ function promoteNewPrimary() {
             }
         }
         if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host")) {
-            this.log("----------------------------- No route to host ");
             return {
               result: MySQL_FAILED
             }
@@ -250,7 +249,7 @@ function promoteNewPrimary() {
                 if (envVars.result == 0) return envVars;
             }
         }
-        return {result: 9999, error: "Can not get environment variables"};
+        return {result: GET_ENVS_FAILED, error: "Can not get environment variables"};
     };
 
     this.diagnosticNodes = function() {
