@@ -67,11 +67,13 @@ function promoteNewPrimary() {
     };
 
     this.checkAvailability = function() {
-        let command = "mysqladmin -u" + containerEnvs["REPLICA_USER"] + " -p" + containerEnvs["REPLICA_PSWD"] +  " ping";
+        let command = "source /.jelenv && mysqladmin -u$REPLICA_USER -p$REPLICA_PSWD ping";
         let resp = this.cmdById(this.getPrimaryNode().id, command);
 
         if (force == "false") force = false;
-        if (force || resp.result == 4109 || (resp.responses && resp.responses[0].result == 4109) || (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
+        if (force || resp.result == 4109 || 
+        (resp.responses && resp.responses[0].result == 4109) || 
+        (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
             resp = this.addIteration();
             if (resp.result != 0) return resp;
 
@@ -81,6 +83,11 @@ function promoteNewPrimary() {
                 return {
                     result: MySQL_FAILED
                 }
+            }
+        }
+        if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host")) {
+            return {
+              result: MySQL_FAILED
             }
         }
 
