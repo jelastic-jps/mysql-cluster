@@ -245,7 +245,7 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         for (let i = 0, n = resp.nodes.length; i < n; i++) {
-            if (resp.nodes[i].nodeGroup == SQLDB && resp.nodes[i].ismaster) {
+            if (resp.nodes[i].nodeGroup == SQLDB) {
                 envVars = api.environment.control.GetContainerEnvVars(envName, session, resp.nodes[i].id);
                 if (envVars.result == 0) return envVars;
             }
