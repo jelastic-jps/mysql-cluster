@@ -86,6 +86,7 @@ function promoteNewPrimary() {
             }
         }
         if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host")) {
+            this.log("----------------------------- No route to host ");
             return {
               result: MySQL_FAILED
             }
