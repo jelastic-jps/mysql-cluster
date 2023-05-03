@@ -241,15 +241,16 @@ function promoteNewPrimary() {
 
     this.getContainerEnvs = function() {
         let resp = this.getEnvInfo();
-        let nodeId;
+        let nodeId, envVars;
         if (resp.result != 0) return resp;
 
         for (let i = 0, n = resp.nodes.length; i < n; i++) {
             if (resp.nodes[i].nodeGroup == SQLDB && resp.nodes[i].ismaster) {
-                nodeId = resp.nodes[i].id;
+                envVars = api.environment.control.GetContainerEnvVars(envName, session, resp.nodes[i].id);
+                if (envVars.result == 0) return envVars;
             }
         }
-        return api.environment.control.GetContainerEnvVars(envName, session, nodeId);
+        return {result: 9999, error: "Can not get environment variables"};
     };
 
     this.diagnosticNodes = function() {
