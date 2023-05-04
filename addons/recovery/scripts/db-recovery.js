@@ -1,5 +1,6 @@
 function DBRecovery() {
     const AUTH_ERROR_CODE = 701,
+        MYISAM_ERROR = 97,
         UNABLE_RESTORE_CODE = 98,
         FAILED_CLUSTER_CODE = 99,
         RESTORE_SUCCESS = 201,
@@ -34,7 +35,8 @@ function DBRecovery() {
         if (resp.result != 0) return resp;
 
         resp = me.parseResponse(resp.responses);
-        if (resp.result == UNABLE_RESTORE_CODE) return resp;
+        log("parseResponse resp->" + resp);
+        if (resp.result == UNABLE_RESTORE_CODE || resp.result == MYISAM_ERROR) return resp;
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
@@ -76,7 +78,7 @@ function DBRecovery() {
         if (resp.result != 0) return resp;
 
         return {
-            result: !isRestore ? 200 : 201,
+            result: !isRestore ? 200 : RESTORE_SUCCESS,
             type: SUCCESS
         };
     };
@@ -283,6 +285,7 @@ function DBRecovery() {
                     switch (String(me.getScheme())) {
                         case GALERA:
                             resp = me.checkGalera(item);
+                            log("resp -> " + resp);
                             if (resp.result != 0) return resp;
                             break;
 
@@ -316,10 +319,13 @@ function DBRecovery() {
     };
 
     me.checkGalera = function checkGalera(item) {
+        log("in checkGalera -> ");
         if ((item.service_status == UP || item.status == OK) && item.galera_myisam != OK) {
+            log("in checkGalera2 -> ");
             return {
                 type: WARNING,
-                message: MyISAM_MSG
+                message: MyISAM_MSG,
+                result: MYISAM_ERROR
             }
         }
 
