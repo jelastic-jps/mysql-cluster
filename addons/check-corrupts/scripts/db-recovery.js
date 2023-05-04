@@ -84,11 +84,8 @@ function setCorruptedDisplayNode(node, removeLabelCorrupted) {
 
     removeLabelCorrupted = !!removeLabelCorrupted;
 
-    if (removeLabelCorrupted && !REGEXP.test(node.displayName)) {
-        return {
-            result: 0
-        };
-    }
+    if (removeLabelCorrupted && !REGEXP.test(node.displayName)) return { result: 0 };    
+    if (!removeLabelCorrupted && node.displayName.indexOf(CORRUPTED_UPPER_CASE) != -1) return { result: 0 }
 
     displayName = removeLabelCorrupted ? node.displayName.replace(REGEXP, "") : (node.displayName + " - " + CORRUPTED_UPPER_CASE);
     return api.env.control.SetNodeDisplayName(envName, session, node.id, displayName);
