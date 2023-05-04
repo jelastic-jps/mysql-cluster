@@ -68,7 +68,7 @@ function promoteNewPrimary() {
     };
 
     this.checkAvailability = function() {
-        let command = "source /.jelenv && mysqladmin -u$REPLICA_USER -p$REPLICA_PSWD ping";
+        let command = "mysqladmin -u" + containerEnvs["REPLICA_USER"] + " -p" + containerEnvs["REPLICA_PSWD"] +  " ping";
         let resp = this.cmdById(this.getPrimaryNode().id, command);
 
         if (force == "false") force = false;
