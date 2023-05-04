@@ -262,6 +262,7 @@ function DBRecovery() {
             if (response[i] && response[i].out) {
                 let item = response[i].out;
                 item = JSON.parse(item);
+                log("item->" + item);
 
                 if (item.result == AUTH_ERROR_CODE) {
                     return {
