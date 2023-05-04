@@ -626,12 +626,18 @@ nodeDiagnostic(){
   }
   log "[Node: localhost]: Detected node type: ${node_type}...done"
 
+  service_status=$(checkMysqlServiceStatus 'localhost')
+
+  if [[ "${service_status}" == "down" ]]; then
+    stopMysqlService "localhost"
+    startMysqlService "localhost"
+  fi
 
   service_status=$(checkMysqlServiceStatus 'localhost') || {
       diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"
       return ${SUCCESS_CODE};
   }
-
+  
   if [[ "${node_type}" == "secondary" ]] && [[ "${service_status}" == "up" ]]; then
     status=$(getSecondaryStatus "localhost")
   elif [[ "${node_type}" == "primary" ]] && [[ "${service_status}" == "up" ]]; then
