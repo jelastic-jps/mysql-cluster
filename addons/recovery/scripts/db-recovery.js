@@ -35,7 +35,6 @@ function DBRecovery() {
         if (resp.result != 0) return resp;
 
         resp = me.parseResponse(resp.responses);
-        log("parseResponse resp->" + resp);
         if (resp.result == UNABLE_RESTORE_CODE || resp.result == MYISAM_ERROR) return resp;
 
         if (isRestore) {
@@ -263,7 +262,6 @@ function DBRecovery() {
             if (response[i] && response[i].out) {
                 let item = response[i].out;
                 item = JSON.parse(item);
-                log("item->" + item);
 
                 if (item.result == AUTH_ERROR_CODE) {
                     return {
@@ -285,7 +283,6 @@ function DBRecovery() {
                     switch (String(me.getScheme())) {
                         case GALERA:
                             resp = me.checkGalera(item);
-                            log("resp -> " + resp);
                             if (resp.result != 0) return resp;
                             break;
 
@@ -319,9 +316,7 @@ function DBRecovery() {
     };
 
     me.checkGalera = function checkGalera(item) {
-        log("in checkGalera -> ");
         if ((item.service_status == UP || item.status == OK) && item.galera_myisam != OK) {
-            log("in checkGalera2 -> ");
             return {
                 type: WARNING,
                 message: MyISAM_MSG,
