@@ -1,0 +1,135 @@
+#!/bin/bash
+
+# Copyright 2019 Jelastic, Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+# http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[ -n "${PERCONAPASSWDLIB_VERSION:-}" ] && return 0;
+PERCONAPASSWDLIB_VERSION="0.1"
+
+LOG_FILE=/var/log/msqlresetpas.log;
+EMPTY_CONFIG_FILE=/etc/mysql/conf.d/empty_config.cnf;
+DEFAULT_FILE_ARG='';
+$PROGRAM 'mysqld_safe';
+$PROGRAM 'mysql';
+$PROGRAM 'chkconfig';
+$PROGRAM 'service';
+$PROGRAM 'mysqld';
+
+function setPassword() {
+    while [ "$1" != "" ];
+    do
+        case $1 in
+            -u )       shift
+                local user=$1
+            ;;
+            -p )       shift
+                local password=$1
+            ;;
+        esac
+        shift
+    done
+
+    [ -z "$user" ] && user="root";
+    rm -f /root/.my.cnf;
+    local tries=200
+    local tries2=200
+    systemctl enable mysql.service >> $LOG_FILE  2>>$LOG_FILE
+    mkdir -p /var/run/mysqld; chmod 777 /var/run/mysqld;
+    local db='mysql'
+    echo $(date)  >> $LOG_FILE
+    echo "Using service $SERVICE"  >> $LOG_FILE
+    $SERVICE_CMD $SERVICE stop >> $LOG_FILE 2>&1
+    [ -f "/var/lib/mysql/auto.cnf" ] && rm "/var/lib/mysql/auto.cnf";
+
+    while [ "$tries" -gt 0 ]
+    do
+        if ! pgrep mysqld &>/dev/null; then break; fi
+        sleep 1
+        tries=$(($tries-1))
+        $SERVICE_CMD ${SERVICE} stop >> $LOG_FILE 2>&1
+    done
+
+    echo "Mysql stopped" >> $LOG_FILE
+
+    if ps aux | grep -v grep | grep -q  mysqld ;  then
+        /usr/bin/killall mysqld 1>>$LOG_FILE 2>&1;
+        /usr/bin/killall mysqld_safe 1>>$LOG_FILE 2>&1;
+    fi
+    
+    echo "[mysqld]" > $EMPTY_CONFIG_FILE;
+    [ -f $EMPTY_CONFIG_FILE ] && DEFAULT_FILE_ARG="--defaults-file=$EMPTY_CONFIG_FILE"
+    
+    eval $MYSQLD_SAFE $DEFAULT_FILE_ARG --skip-networking --skip-slave-start --skip-grant-tables >> $LOG_FILE 2>&1 &
+
+    tries2=200
+    while [ ! -e /var/lib/mysql/mysql.sock ]
+    do
+        sleep 0.5
+        tries2=$(($tries2-1))
+        if [ "$tries2" -lt 0  ]
+        then
+                echo "Time for wait mysqld-safe expired. result 4051" >> $LOG_FILE
+                /usr/bin/killall mysqld 1>>$LOG_FILE 2>&1;
+                /usr/bin/killall mysqld_safe 1>>$LOG_FILE 2>&1;
+                startService ${SERVICE} >>$LOG_FILE 2>&1
+                writeJSONResponseErr "result=>4051" "message=>Could not set password!";
+                die -q
+        fi
+    done
+
+    while [ $tries2 -gt 0 ]; do
+        sleep 1
+        [ -n "$(netstat -nxlpt 2>/dev/null | grep -E 'mysqld|mysql.sock')" ] && break
+        let tries2=${tries2}-1
+    done
+
+    val=$(sed 's/\.//' <<< $COMPUTE_TYPE_FULL_VERSION)
+    [ -z "$val" ] && val=0 ;
+    if [ "x$COMPUTE_TYPE" == "xpercona" -a ${val%%.*} -ge 80 ] ; then
+        $MYSQL $db -e "FLUSH PRIVILEGES;ALTER USER '${user}'@'%' IDENTIFIED BY '${password}';ALTER USER '${user}'@'localhost' IDENTIFIED BY '${password}';" >> $LOG_FILE 2>&1
+        $MYSQL $db -p${password} --execute="DELETE FROM mysql.user WHERE user = '';" >> $LOG_FILE 2>&1
+        $MYSQL $db -p${password} --execute="FLUSH PRIVILEGES;" >> $LOG_FILE 2>&1
+
+    else
+        if [ "x$COMPUTE_TYPE" == "xpercona" -a ${val%%.*} -ge 57 ] ; then
+            $MYSQL $db --execute="UPDATE mysql.user SET authentication_string=PASSWORD('${password}') WHERE user='${user}';" >> $LOG_FILE 2>&1
+            $MYSQL $db --execute="UPDATE mysql.user SET password_expired='N' WHERE user='${user}';" >> $LOG_FILE 2>&1
+        else
+            $MYSQL $db --execute="UPDATE mysql.user SET password=PASSWORD('${password}') WHERE user='${user}';" >> $LOG_FILE 2>&1
+        fi
+        $MYSQL $db --execute="DELETE FROM mysql.user WHERE user = '';" >> $LOG_FILE 2>&1
+        $MYSQL $db --execute="FLUSH PRIVILEGES;" >> $LOG_FILE 2>&1
+    fi
+    sleep 2
+    $SERVICE_CMD ${SERVICE} stop >> $LOG_FILE 2>&1
+    tries=200
+    echo "Stopping Mysql after set password " >> $LOG_FILE
+    while [ "$tries" -gt 0 ]
+    do
+        if ! pgrep mysqld &>/dev/null; then break; fi
+        sleep 1
+        tries=$(($tries-1))
+        $SERVICE_CMD ${SERVICE} stop >> $LOG_FILE 2>&1
+        [ -n "$(ps aux|grep mysqld|grep -v grep|awk '{print $2}')" ] && kill -9 $(ps aux|grep mysqld|grep -v grep|awk '{print $2}')
+    done
+    $SERVICE_CMD ${SERVICE} start  >>$LOG_FILE 2>&1
+    if ! pgrep mysqld &>/dev/null;
+    then
+        sleep 1
+        $SERVICE_CMD ${SERVICE} start >>$LOG_FILE 2>&1
+    fi
+    echo -e "[mysqladmin]\n\
+user = root\n\
+password = ${password}" > /root/.my.cnf
+}
