@@ -98,6 +98,7 @@ actions:
     - setNodeDisplayName[${this.id}]: XtraDB
     - cmd[${this.id}]: |-
         [ -e /etc/systemd/system/mysql.service.d ] && wget ${baseUrl}/scripts/percona-systemd-override.conf -O /etc/systemd/system/mysql.service.d/bootstrap.conf || wget ${baseUrl}/scripts/mysql -O /etc/init.d/mysql;
+        wget ${baseUrl}/scripts/override_passwd.lib -O /var/lib/jelastic/overrides/override_passwd.lib;
         chmod +x /usr/local/sbin/setMySQLOOMScore; echo '/etc/systemd/system/mysql.service.d/bootstrap.conf' >> /etc/jelastic/redeploy.conf; systemctl daemon-reload;
       user: root
     - cmd[${this.id}]: |-
