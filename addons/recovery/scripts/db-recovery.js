@@ -363,7 +363,7 @@ function DBRecovery() {
 
         if (item.service_status == DOWN || item.status == FAILED) {
             if (item.service_status == UP) {
-                if (!me.getDonorIp()) {
+                if (!me.getDonorIp() && item.node_type == PRIMARY) {
                     me.setDonorIp(item.address);
                 }
 
