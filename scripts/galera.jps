@@ -66,22 +66,8 @@ onBeforeRestartNode[sqldb]:
       message: Galera cluster successfully restarted
 
 onBeforeSetCloudletCount[sqldb]:
-  - getReplicaUser
   - forEach(i:nodes.sqldb):
-    - cmd[${@i.id}]: bash /usr/local/sbin/galeraHealthCheck.sh --db-user ${globals.REPLICA_USER} --db-password ${globals.REPLICA_PSWD} --cluster-size ${nodes.sqldb.length}
-    - if ("${response.out}" == "true"):
-      - api: environment.control.SetCloudletsCountById
-        nodeId: ${@i.id}
-        envName: ${env.envName}
-        flexibleCloudlets: ${event.params.flexibleCloudlets}
-        fixedCloudlets: ${event.params.fixedCloudlets}
-    - else:
-      - stopEvent:
-          type: warning
-          message: ${response.out}
-  - stopEvent:
-      type: success
-      message: Cloudlets successfully applied.
+      cmd [${@i.id}]: sudo jem service stop
 
 onAfterSetCloudletCount[sqldb]:
   - forEach(i:nodes.sqldb):
