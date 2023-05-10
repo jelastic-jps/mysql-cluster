@@ -41,7 +41,7 @@ unset mysqlCheck;
 mysqlCheck=$(mysqladmin -u${dbUser} -p${dbPassword} ping)
 if [[ "${mysqlCheck}" == "mysqld is alive" ]]
 then
-    retries=10;
+    retries=20;
     while [ $retries -gt 0 ];
         do
             currentClusterSize=$(mysql -u${dbUser} -p${dbPassword} -Nse "show global status like 'wsrep_cluster_size';" | awk '{print $NF}')
