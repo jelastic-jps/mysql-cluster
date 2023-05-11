@@ -72,3 +72,27 @@ actions:
             domains: domain,
             nodeId: nodeId
         });
+        
+  successDnsEndpoint:
+    - return:
+        result: success
+        message: |
+          For external connection from application outside the PaaS use an endpoint with custom port which was attached to the database entrypoint as: 
+          **primarydb.${env.domain}:${globals.publicPort}**
+          For internal connection from application within PaaS use database entry point as: 
+          **primarydb.${env.domain}:3306**
+        email: |
+          For external connection from application outside the PaaS use an endpoint with custom port which was attached to the database entrypoint as: 
+          **primarydb.${env.domain}:${globals.publicPort}**
+          For internal connection from application within PaaS use database entry point as: 
+          **primarydb.${env.domain}:3306**
+  
+  successDns:
+    - return:
+        result: success
+        message: |
+          For internal connection from application within PaaS use database entry point as: 
+          **primarydb.${env.domain}:3306**
+        email: |
+          For internal connection from application within PaaS use database entry point as: 
+          **primarydb.${env.domain}:3306**
