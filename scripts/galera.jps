@@ -65,11 +65,27 @@ onBeforeRestartNode[sqldb]:
       type: success
       message: Galera cluster successfully restarted
 
-onAfterSetCloudletCount[sqldb]:
-  - forEach(i:nodes.sqldb):
-    - wsrepSlaveThreads:
-        id: ${@i.id}
-    - cmd [${@i.id}]: sudo jem service restart;
+onBeforeSetCloudletCount[sqldb]:
+  - if (!${event.params.isInternal:false}):
+    - getReplicaUser
+    - forEach(i:nodes.sqldb):
+      - cmd[${@i.id}]: bash /usr/local/sbin/galeraHealthCheck.sh --db-user ${globals.REPLICA_USER} --db-password ${globals.REPLICA_PSWD} --cluster-size ${nodes.sqldb.length}
+      - if ("${response.out}" == "true"):
+        - wsrepSlaveThreads:
+            id: ${@i.id}
+        - api: environment.control.SetCloudletsCountById
+          nodeId: ${@i.id}
+          envName: ${env.envName}
+          flexibleCloudlets: ${event.params.flexibleCloudlets}
+          fixedCloudlets: ${event.params.fixedCloudlets}
+          isInternal: true
+      - else:
+        - stopEvent:
+            type: warning
+            message: ${response.out}
+    - stopEvent:
+        type: success
+        message: Cloudlets successfully applied.
 
 onInstall:
   - getReplicaUser
@@ -103,6 +119,7 @@ actions:
     - cmd[${this.id}]: |-
         [ -e /etc/systemd/system/mariadb.service.d ] && wget ${baseUrl}/scripts/mariadb-systemd-override.conf -O /etc/systemd/system/mariadb.service.d/bootstrap.conf || wget ${baseUrl}/scripts/mysql -O /etc/init.d/mysql;
         chmod +x /usr/local/sbin/setMySQLOOMScore; echo '/etc/systemd/system/mariadb.service.d/bootstrap.conf' >> /etc/jelastic/redeploy.conf; systemctl daemon-reload
+        wget ${baseUrl}/scripts/galeraHealthCheck.sh -O /usr/local/sbin/galeraHealthCheck.sh;
       user: root
     - cmd[${this.id}]: |-
         wget ${baseUrl}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
