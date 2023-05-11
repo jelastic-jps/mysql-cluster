@@ -10,6 +10,7 @@ function promoteNewPrimary() {
     let Response = com.hivext.api.Response;
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
     let session = getParam("session", "");
+    let UNKNOWN_ERROR = 99;
     let CLUSTER_FAILED = 98;
     let MySQL_FAILED = 97;
     let WARNING = "warning";
@@ -125,22 +126,22 @@ function promoteNewPrimary() {
     };
 
     this.setNewMasterNode = function() {
-      if (api.env.control.SetMasterNode) {
-        this.log("setNewMasterNode -> Using API api.env.control.SetMasterNode ");
-        return api.env.control.SetMasterNode({
-          envName: envName,
-          nodeId: this.getNewPrimaryNode().id
-        });
-      } else {
-        this.log("setNewMasterNode -> Using SCRIPT api.env.control.SetMasterNode ");
-        let resp = jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", { 
-          envName: envName, 
-          nodeId: this.getNewPrimaryNode().id 
-        });
-        if (resp.result == 1702) return {result: 0};
-        if (resp.result != 0) return resp;
-      }
-      return { result: 0 }
+        if (api.env.control.SetMasterNode) {
+            this.log("setNewMasterNode -> Using API api.env.control.SetMasterNode ");
+            return api.env.control.SetMasterNode({
+                envName: envName,
+                nodeId: this.getNewPrimaryNode().id
+            });
+        } else {
+            this.log("setNewMasterNode -> Using SCRIPT api.env.control.SetMasterNode ");
+            let resp = jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", {
+                envName: envName,
+                nodeId: this.getNewPrimaryNode().id
+            });
+            if (resp.result == 1702) return {result: 0};
+            if (resp.result != 0) return resp;
+        }
+        return { result: 0 }
     };
 
     this.setContainerVar = function() {
@@ -220,7 +221,6 @@ function promoteNewPrimary() {
         if (containerEnvs["PRIMARY_IP"]) {
             resp = this.getNodeByAddress(containerEnvs["PRIMARY_IP"]);
             if (resp.result != 0) return resp;
-            // this.oldPrimaryAddress = resp.object["PRIMARY_IP"];
             this.setPrimaryNode(resp.node);
         }
 
@@ -232,15 +232,25 @@ function promoteNewPrimary() {
 
     this.getContainerEnvs = function() {
         let resp = this.getEnvInfo();
+        let secondaryNodeId = "";
         let nodeId;
         if (resp.result != 0) return resp;
 
         for (let i = 0, n = resp.nodes.length; i < n; i++) {
-            if (resp.nodes[i].nodeGroup == SQLDB && resp.nodes[i].ismaster) {
-                nodeId = resp.nodes[i].id;
+            if (resp.nodes[i].nodeGroup == SQLDB) {
+                if (resp.nodes[i].ismaster) {
+                    nodeId = resp.nodes[i].id;
+                } else {
+                    secondaryNodeId = secondaryNodeId || resp.nodes[i].id;
+                }
             }
         }
-        return api.environment.control.GetContainerEnvVars(envName, session, nodeId);
+        resp = api.environment.control.GetContainerEnvVars(envName, session, nodeId);
+        if (resp.result == UNKNOWN_ERROR && resp.error.indexOf("No route to host") != -1) {
+            return api.environment.control.GetContainerEnvVars(envName, session, secondaryNodeId);
+        }
+
+        return resp;
     };
 
     this.diagnosticNodes = function() {
@@ -380,19 +390,24 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
-        
-        if (nodes) {
-            for (let i = 0, n = nodes.length; i < n; i++) {
-                if (nodes[i]) {
-                    if (nodes[i].type == "secondary" && !alreadySetNewPrimary) {
-                        this.setNewPrimaryNode(nodes[i]);
+        resp = this.getNodesByGroup(SQLDB);
+
+        if (resp && resp.nodes) {
+            let node;
+            for (let i = 0, n = resp.nodes.length; i < n; i++) {
+                node = resp.nodes[i];
+                if (node) {
+                    //if (nodes[i].type == "secondary" && !alreadySetNewPrimary) {
+                    if (node.address != containerEnvs["PRIMARY_IP"] && !alreadySetNewPrimary){
+                        this.setNewPrimaryNode(node);
                         alreadySetNewPrimary = true;
                     }
-                    if (nodes[i].type == "primary" ) {
-                        resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
+                    //if (nodes[i].type == "primary" ) {
+                    if (node.address == containerEnvs["PRIMARY_IP"]){
+                        resp = api.env.control.SetNodeDisplayName(envName, session, node.id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
 
-                        resp = this.getSQLNodeById(nodes[i].id);
+                        resp = this.getSQLNodeById(node.id);
                         if (resp.result != 0) return resp;
 
                         if (resp.node) {
