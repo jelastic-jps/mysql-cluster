@@ -51,6 +51,22 @@ actions:
       }
       return {result: 0};
 
+  getPublicPort:
+    script: |
+      var envInfo = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+      if (envInfo.result != 0) return envInfo;
+      var nodes = envInfo.nodes, node, publicPort;
+      for (var i = 0, n = nodes.length; i < n; i++) {
+        node = nodes[i];
+        if (node.nodeGroup == 'sqldb' && node.endpoints) {
+          for (var k = 0, l = node.endpoints.length; k < l; k++) {
+            if (node.endpoints[k].name == "PrimaryDB") publicPort = node.endpoints[k].publicPort;
+          }
+        }
+      }
+      return {result:0, onAfterReturn:{setGlobals:{publicPort: publicPort}}}
+
+
   addDomainToPrimary:
     - domain: ${this.domain}
       nodeId: ${this.nodeId}
@@ -72,3 +88,35 @@ actions:
             domains: domain,
             nodeId: nodeId
         });
+        
+  successDnsEndpoint:
+    - return:
+        result: success
+        message: |
+          For external connection from application outside the PaaS use an endpoint with custom port which was attached to the database entrypoint as: 
+          
+          **primarydb.${env.domain}:${globals.publicPort}**
+          
+          For internal connection from application within PaaS use database entry point as: 
+          
+          **primarydb.${env.domain}:3306**
+        email: |
+          For external connection from application outside the PaaS use an endpoint with custom port which was attached to the database entrypoint as: 
+          
+          **primarydb.${env.domain}:${globals.publicPort}**
+          
+          For internal connection from application within PaaS use database entry point as: 
+          
+          **primarydb.${env.domain}:3306**
+  
+  successDns:
+    - return:
+        result: success
+        message: |
+          For internal connection from application within PaaS use database entry point as:
+          
+          **primarydb.${env.domain}:3306**
+        email: |
+          For internal connection from application within PaaS use database entry point as:
+          
+          **primarydb.${env.domain}:3306**
