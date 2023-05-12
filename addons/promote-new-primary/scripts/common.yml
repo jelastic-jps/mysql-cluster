@@ -97,8 +97,10 @@ actions:
     - return:
         result: success
         message: |
-          For internal connection from application within PaaS use database entry point as: 
+          For internal connection from application within PaaS use database entry point as:
+          
           **primarydb.${env.domain}:3306**
         email: |
-          For internal connection from application within PaaS use database entry point as: 
+          For internal connection from application within PaaS use database entry point as:
+          
           **primarydb.${env.domain}:3306**
