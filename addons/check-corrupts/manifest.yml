@@ -42,7 +42,7 @@ buttons:
 responses:
   200:
     type: success
-    message: Database Cluster is OK! No databases corructions have been discovered.
+    message: Database Cluster is OK! No databases corruptions have been discovered.
 
   97:
     type: warning
