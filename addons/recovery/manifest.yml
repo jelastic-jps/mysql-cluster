@@ -14,7 +14,7 @@ targetNodes:
     - mysql
     - mariadb-dockerized
     - mariadb
-    - percona
+    - perconadb
     
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
