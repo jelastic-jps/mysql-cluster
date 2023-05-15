@@ -9,7 +9,7 @@ description:
     healthcheck and autodiscovery of newly added DB nodes
   short: Scalable MySQL cluster with ProxySQL for even load distribution
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66432
 
 logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png
 
