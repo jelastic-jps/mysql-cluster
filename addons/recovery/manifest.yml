@@ -61,6 +61,8 @@ settings:
 onAfterScaleOut[sqldb]: generate-share-keys
 
 onAfterRedeployContainer[sqldb]: generate-share-keys
+onBeforeStop:  eventDiagnostic
+onBeforeSetCloudletCount: eventDiagnostic
 
 onAfterClone:
   install: ${baseUrl}/manifest.yml?_r=${fn.random}
