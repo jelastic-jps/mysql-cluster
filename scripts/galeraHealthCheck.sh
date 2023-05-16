@@ -32,10 +32,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -f ${GALERA_CONF} ]]
+if [[ ! -f ${GALERA_CONF} ]]
 then
-  nodesCountInConf=$(grep wsrep_cluster_address ${GALERA_CONF} |awk -F '/' '{print $3}'| tr ',' ' ' | wc -w)
-else
   echo "The Galera configuration file /etc/mysql/conf.d/galera.cnf was not found.";
   exit 1;
 fi
@@ -49,6 +47,7 @@ then
     while [ $retries -gt 0 ];
         do
             currentClusterSize=$(mysql -u${dbUser} -p${dbPassword} -Nse "show global status like 'wsrep_cluster_size';" | awk '{print $NF}')
+            nodesCountInConf=$(grep wsrep_cluster_address ${GALERA_CONF} |awk -F '/' '{print $3}'| tr ',' ' ' | wc -w)
             if [[  "${currentClusterSize}" == "${nodesCountInConf}" ]]
             then
                 message="true";
