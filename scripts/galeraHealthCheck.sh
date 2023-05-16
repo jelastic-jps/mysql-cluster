@@ -1,11 +1,11 @@
 #!/bin/bash -e
 
 MYSQL=`which mysql`
+GALERA_CONF="/etc/mysql/conf.d/galera.cnf"
 
 ARGUMENT_LIST=(
     "db-user"
     "db-password"
-    "cluster-size"
 )
 
 opts=$(getopt \
@@ -26,15 +26,19 @@ while [[ $# -gt 0 ]]; do
             dbPassword=$2
             shift 2
             ;;
-        --cluster-size)
-            clusterSize=$2
-            shift 2
-            ;;
-    *)
+        *)
         break
         ;;
     esac
 done
+
+if [[ -f ${GALERA_CONF} ]]
+then
+  nodesCountInConf=$(grep wsrep_cluster_address ${GALERA_CONF} |awk -F '/' '{print $3}'| tr ',' ' ' | wc -w)
+else
+  echo "The Galera configuration file /etc/mysql/conf.d/galera.cnf was not found.";
+  exit 1;
+fi
 
 message="Galera cluster size is wrong"
 unset mysqlCheck;
@@ -45,7 +49,7 @@ then
     while [ $retries -gt 0 ];
         do
             currentClusterSize=$(mysql -u${dbUser} -p${dbPassword} -Nse "show global status like 'wsrep_cluster_size';" | awk '{print $NF}')
-            if [[  "${currentClusterSize}" == "${clusterSize}" ]]
+            if [[  "${currentClusterSize}" == "${nodesCountInConf}" ]]
             then
                 message="true";
                 break;
