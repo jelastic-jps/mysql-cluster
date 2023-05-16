@@ -1,10 +1,10 @@
 type: update
-name: Database Cluster Corruption Diagnostic
+name: Database Corruption Diagnostic
 id: db-corruption-check
 
 description:
-  text:  The Database Cluster Corruption Diagnostic add-on performs a comprehensive diagnostic of your MySQL/MariaDB Cluster (Galera, Primary-Primary, Primary-Secondary) to detect data corruption and inconsistency in the components. Add-on will **temporarily stop all database services** for the duration of the diagnostic to ensure accurate results. Detected issues will be listed in the recovery log.
-  short: The add-on checks your database cluster for corrupted or inconsistent data in the components.
+  text:  The Database Corruption Diagnostic add-on performs a comprehensive diagnostic of your MySQL/MariaDB/Percona Database to detect data corruption and inconsistency in the components. Add-on will **temporarily stop all database services** for the duration of the diagnostic to ensure accurate results. Detected issues will be listed in the recovery log.
+  short: The add-on checks your database for corrupted or inconsistent data in the components.
 
 logo: /images/database-corruption-check.png
 
@@ -14,9 +14,11 @@ mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
 
 targetNodes:
-  nodeGroup: 
-    - sqldb
-    - cp
+  nodeType:
+    - mysql
+    - mariadb-dockerized
+    - mariadb
+    - perconadb
 
 settings:
   submitUnchanged: true
@@ -34,7 +36,7 @@ settings:
 buttons:
   - name: corruption
     caption: Corruption Diagnostic
-    confirmText: Run cluster corruption diagnostic? It will temporarily stop all database services.
+    confirmText: Run corruption diagnostic? It will temporarily stop all database services.
     loadingText: Corruption diagnostic is in progress...
     logsPath: /var/log/db_recovery.log
     action: corruption
@@ -42,14 +44,13 @@ buttons:
 responses:
   200:
     type: success
-    message: Database Cluster is OK! No databases corruptions have been discovered.
+    message: Database is OK! No databases corruptions have been discovered.
 
   97:
     type: warning
     message: |
-      Corrupted data was discovered during the Database Cluster diagnostic.
-      Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on’s tab for automatic recovery.
-      Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+      Corrupted data was discovered during the database diagnostic.
+      Please check the **/var/log/db_recovery.log** log file for details.
 
 onInstall:
   - if (!${settings.install:false}): authValidate
