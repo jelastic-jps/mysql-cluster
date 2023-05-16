@@ -69,7 +69,7 @@ onBeforeSetCloudletCount[sqldb]:
   - if (!${event.params.isInternal:false}):
     - getReplicaUser
     - forEach(i:nodes.sqldb):
-      - cmd[${@i.id}]: bash /usr/local/sbin/galeraHealthCheck.sh --db-user ${globals.REPLICA_USER} --db-password ${globals.REPLICA_PSWD} --cluster-size ${nodes.sqldb.length}
+      - cmd[${@i.id}]: bash /usr/local/sbin/galeraHealthCheck.sh --db-user ${globals.REPLICA_USER} --db-password ${globals.REPLICA_PSWD};
       - if ("${response.out}" == "true"):
         - api: environment.control.SetCloudletsCountById
           nodeId: ${@i.id}
