@@ -1,0 +1,80 @@
+type: update
+name: Database Corruption Diagnostic
+id: db-corruption-check
+
+description:
+  text:  The Database Corruption Diagnostic add-on performs a comprehensive diagnostic of your MySQL/MariaDB/Percona Database to detect data corruption and inconsistency in the components. Add-on will **temporarily stop all database services** for the duration of the diagnostic to ensure accurate results. Detected issues will be listed in the recovery log.
+  short: The add-on checks your database for corrupted or inconsistent data in the components.
+
+logo: /images/database-corruption-check.png
+
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/check-corrupts
+
+mixins:
+  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
+
+targetNodes:
+  nodeType:
+    - mysql
+    - mariadb-dockerized
+    - mariadb
+    - perconadb
+
+settings:
+  submitUnchanged: true
+  fields:
+    - name: user
+      caption: User
+      type: string
+      required: true
+    - name: password
+      caption: Password
+      type: string
+      inputType: password
+      required: true
+
+buttons:
+  - name: corruption
+    caption: Corruption Diagnostic
+    confirmText: Run corruption diagnostic? It will temporarily stop all database services.
+    loadingText: Corruption diagnostic is in progress...
+    logsPath: /var/log/db_recovery.log
+    action: corruption
+
+responses:
+  200:
+    type: success
+    message: Database is OK! No databases corruptions have been discovered.
+
+  97:
+    type: warning
+    message: |
+      Corrupted data was discovered during the database diagnostic.
+      Please check the **/var/log/db_recovery.log** log file for details.
+
+onInstall:
+  - if (!${settings.install:false}): authValidate
+  - getReplicaUser
+  - if (!${settings.install:false}): init
+
+actions:
+  authValidate:
+    - forEach(i:nodes.sqldb):
+      - cmd[${@i.id}]: mysqladmin ping -u${settings.user} -p${settings.password} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
+      - if ('${response.out}' == '0'):
+        - cmd[${@i.id}]: mysql -u${settings.user} -p${settings.password} -e "EXIT" 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?}; echo ${MYSQLD_RUNNING};
+        - if ('${response.out}' != '0'):
+            return:
+              type: warning
+              message: Authentication failed, please check User/Password.
+              
+  init:
+    - cmd[sqldb]: |-
+        curl -L --silent ${baseUrl}/../recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        bash /tmp/db-recovery.sh --mysql-user ${settings.user} --mysql-password ${settings.password} --scenario init;
+      user: root
+      
+  corruption:
+    script: /scripts/db-recovery.js
+    exec: ' --check-corrupts'
+    checkCorrupt: true
