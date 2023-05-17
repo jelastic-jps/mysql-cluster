@@ -157,7 +157,7 @@ actions:
       let Response = com.hivext.api.Response;
       let Transport = com.hivext.api.core.utils.Transport;
       let StrSubstitutor = org.apache.commons.lang3.text.StrSubstitutor;
-      let scriptBody = new Transport().get("${baseUrl}/scripts/promote-master-with-proxy.js");
+      let scriptBody = new Transport().get("${baseUrl}/scripts/promote-master.js");
       let ROOT = "root";
 
       scriptBody = new StrSubstitutor({token: "${globals.random}"}, "${", "}").replace(scriptBody);
