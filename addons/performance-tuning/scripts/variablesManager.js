@@ -28,7 +28,7 @@ function ApplySQLVariable() {
     };
 
     this.getVariables = function() {
-        let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/promote-new-primary/scripts/jcm.sh' -o jcm.sh\n" +
+        let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/master/addons/promote-new-primary/scripts/jcm.sh' -o jcm.sh\n" +
             "bash jcm.sh getGlobalVariables"
         let resp = this.cmdById("${nodes.proxy.master.id}", command);
         if (resp.result != 0) return resp;

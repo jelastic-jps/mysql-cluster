@@ -254,7 +254,7 @@ function promoteNewPrimary() {
 
     this.diagnosticNodes = function() {
         let clusterUp = false;
-        let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/stage-addon/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
+        let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/master/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --diagnostic"
         let resp = this.cmdByGroup(command, SQLDB, 60);
         if (resp.result != 0) return resp;
