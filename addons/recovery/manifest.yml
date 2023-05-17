@@ -26,7 +26,7 @@ globals:
   diagnostic-failed: |-
     Errors were discovered during the Database Cluster diagnostic.
     Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
-    llow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+    Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
 buttons:
   - name: diagnostic
