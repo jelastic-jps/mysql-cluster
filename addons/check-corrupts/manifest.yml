@@ -8,7 +8,7 @@ description:
 
 logo: /images/database-corruption-check.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/check-corrupts
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/check-corrupts
 
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
