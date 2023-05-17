@@ -55,7 +55,7 @@
                         "recCloudlets": 8
                     }
                 },
-                "galera": {
+                "xtradb": {
                     "scalingMode": "STATELESS",
                     "minCount": 3,
                     "setGlobals": {
