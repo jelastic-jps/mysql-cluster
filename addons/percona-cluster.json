@@ -42,14 +42,14 @@
         "rules": {
             "scheme": {
                 "master": {
-                    "scalingMode": "STATEFUL",
+                    "scalingMode": "STATELESS",
                     "minCount": 2,
                     "setGlobals": {
                         "recCloudlets": 8
                     }
                 },
                 "slave": {
-                    "scalingMode": "STATEFUL",
+                    "scalingMode": "STATELESS",
                     "minCount": 2,
                      "setGlobals": {
                         "recCloudlets": 8
