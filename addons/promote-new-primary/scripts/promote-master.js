@@ -541,7 +541,7 @@ function promoteNewPrimary() {
     this.promoteNewSQLPrimary = function() {
         let newPrimary = this.getNewPrimaryNode();
 
-        let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
+        let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/master/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --scenario promote_new_primary";
         let resp = this.cmdById(newPrimary.id, command, 20);
         if (resp.result != 0) return resp;
