@@ -1,6 +1,6 @@
 jpsType: install
 jpsVersion: '1.5.2'
-name: MySQL / MariaDB Cluster
+name: MySQL/MariaDB/Percona Cluster
 id: mysql-cluster-main
 
 categories:
@@ -10,13 +10,13 @@ categories:
   
 description: 
   text: "/texts/description.md?_r=1"
-  short: A set of MySQL/MariaDB cluster topologies
+  short: A set of MySQL/MariaDB/Percona cluster topologies
   
-logo: /images/icon.png?_r=1
+logo: /images/mysql-mariadb-percona-logo.png?_r=1
 
 onBeforeInit: /scripts/settings.js?_r=${fn.random}
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/JE-63852
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 settings:
   fields:
@@ -30,7 +30,9 @@ settings:
           caption: MySQL CE
         - value: mariadb-dockerized
           caption: MariaDB
-      
+        - value: perconadb
+          caption: Percona 
+ 
     - caption: Topology
       type: list
       name: scheme
@@ -51,6 +53,15 @@ settings:
               - value: galera
                 caption: Galera Cluster
 
+            perconadb:
+              - value: slave
+                caption: Primary-Secondary with scalable secondaries
+              - value: master
+                caption: Primary-Primary with scalable secondaries
+              - value: xtradb
+                caption: XtraDB Cluster
+
+
     - type: checkbox
       name: is_proxysql
       caption: Add ProxySQL for SQL Load Balancing
@@ -67,6 +78,8 @@ settings:
               - value: mysql
             mariadb-dockerized:    
               - value: mariadb-dockerized
+            perconadb:
+              - value: perconadb
               
     - caption: None
       inputType: hidden
@@ -80,6 +93,8 @@ settings:
             master:    
               - value: 2
             galera:    
+              - value: 3
+            xtradb:
               - value: 3
               
     - type: displayfield
