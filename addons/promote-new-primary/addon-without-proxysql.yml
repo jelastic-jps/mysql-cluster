@@ -8,7 +8,7 @@ description:
 
 logo: images/db-failover-red.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/promote-new-primary
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/promote-new-primary
 
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
@@ -88,9 +88,13 @@ onInstall:
       nodeId: ${nodes.sqldb.master.id}
   - createScript
   - if (${settings.is_endpoint:true}):
-      addEndpoint:
+    - addEndpoint:
         nodeId: ${nodes.sqldb.master.id}
-  - else: removeEndpoint    
+    - getPublicPort
+    - successDnsEndpoint
+  - else: 
+    - removeEndpoint
+    - successDns
   
 onUninstall: removeTask
 
@@ -110,9 +114,13 @@ actions:
     - removeTask
     - createScript
     - if (${settings.is_endpoint:true}):
-        addEndpoint:
+      - addEndpoint:
           nodeId: ${nodes.sqldb.master.id}
-    - else: removeEndpoint    
+      - getPublicPort
+      - successDnsEndpoint
+    - else: 
+      - removeEndpoint
+      - successDns
   
   forceFailover:
     - cmd[${nodes.sqldb.master.id}]: |-

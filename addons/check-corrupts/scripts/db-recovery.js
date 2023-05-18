@@ -84,19 +84,16 @@ function setCorruptedDisplayNode(node, removeLabelCorrupted) {
 
     removeLabelCorrupted = !!removeLabelCorrupted;
 
-    if (removeLabelCorrupted && !REGEXP.test(node.displayName)) {
-        return {
-            result: 0
-        };
-    }
+    if (removeLabelCorrupted && !REGEXP.test(node.displayName)) return { result: 0 };    
+    if (!removeLabelCorrupted && node.displayName.indexOf(CORRUPTED_UPPER_CASE) != -1) return { result: 0 }
 
     displayName = removeLabelCorrupted ? node.displayName.replace(REGEXP, "") : (node.displayName + " - " + CORRUPTED_UPPER_CASE);
     return api.env.control.SetNodeDisplayName(envName, session, node.id, displayName);
 }
 function execRecovery(nodeid) {
-    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + exec);
+    api.marketplace.console.WriteLog("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + exec);
     return cmd({
-        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + exec,
+        command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + exec,
         nodeid: nodeid || ""
     });
 }

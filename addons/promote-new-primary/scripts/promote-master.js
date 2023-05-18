@@ -11,6 +11,11 @@ function promoteNewPrimary() {
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
     let session = getParam("session", "");
     let force = getParam("force", false);
+    let CLUSTER_FAILED = 98;
+    let MySQL_FAILED = 97;
+    let GET_ENVS_FAILED = 96;
+    let WARNING = "warning";
+    let containerEnvs = {};
     let base = api.data.base;
     let tableName = "promotePrimary";
     let END_POINT = "EditEndpoint";
@@ -76,9 +81,26 @@ function promoteNewPrimary() {
 
         if (!this.getAddOnType()) {
             resp = this.addIteration(true);
+        return this.setIsRunningStatus(false);
+    };
+
+    this.checkAvailability = function() {
+        let command = "mysqladmin -u" + containerEnvs["REPLICA_USER"] + " -p" + containerEnvs["REPLICA_PSWD"] +  " ping";
+        let resp = this.cmdById(this.getPrimaryNode().id, command);
+
+        if (force == "false") force = false;
+        if (force || resp.result == 4109 || 
+        (resp.responses && resp.responses[0].result == 4109) || 
+        (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
+            resp = this.addIteration();
             if (resp.result != 0) return resp;
 
             return this.setIsRunningStatus(false);
+        }
+        if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host")) {
+            return {
+              result: MySQL_FAILED
+            }
         }
 
         return { result: 0 }
@@ -192,15 +214,16 @@ function promoteNewPrimary() {
 
     this.getContainerEnvs = function() {
         let resp = this.getEnvInfo();
-        let nodeId;
+        let nodeId, envVars;
         if (resp.result != 0) return resp;
 
         for (let i = 0, n = resp.nodes.length; i < n; i++) {
-            if (resp.nodes[i].nodeGroup == SQLDB && resp.nodes[i].ismaster) {
-                nodeId = resp.nodes[i].id;
+            if (resp.nodes[i].nodeGroup == SQLDB) {
+                envVars = api.environment.control.GetContainerEnvVars(envName, session, resp.nodes[i].id);
+                if (envVars.result == 0) return envVars;
             }
         }
-        return api.environment.control.GetContainerEnvVars(envName, session, nodeId);
+        return {result: GET_ENVS_FAILED, error: "Can not get environment variables"};
     };
 
     this.checkAvailability = function() {
@@ -338,7 +361,7 @@ function promoteNewPrimary() {
 
     this.diagnosticNodes = function() {
         let clusterUp = false;
-        let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/JE-66025/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
+        let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/master/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --diagnostic"
         let resp = this.cmdByGroup(command, SQLDB, 60);
         if (resp.result != 0) return resp;

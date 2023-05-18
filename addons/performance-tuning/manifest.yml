@@ -3,14 +3,11 @@ name: DB Cluster Tuning (Alpha)
 id: proxysql-db-tune-addon
 logo: addons/performance-tuning/images/mysql-proxysql-tuning.png
 description: Change ProxySQL and Database settings according to your particular use case
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/
 targetNodes: proxysql
 
 globals:
   dbMaxConnections: 2048
-
-onInstall:
-  - confSetup
   
 settings:
   settingsTune:
@@ -117,7 +114,7 @@ buttons:
 actions:
   settingsUpdate: 
     - cmd[sqldb]: |-
-        sed -i s/^max_connections.*/max_connections=${settings.dbMaxConnections}/g /etc/my.cnf
+        sed -i s/^max_connections.*/max_connections=${settings.dbMaxConnections}/g /etc/mysql/conf.d/my_custom.cnf
       user: root
     - cmd[sqldb]: jem service restart
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;"
@@ -131,9 +128,3 @@ actions:
     - cmd[proxysql]: |-
         jem service restart
       user: root
-  
-  confSetup:
-     - cmd [sqldb]: |- 
-         grep -q "max_connections" /etc/my.cnf && { sed -i s/^max_connections.*/max_connections=${globals.dbMaxConnections}/g /etc/my.cnf; } || { sed -i "s|\[mysqld\]|\[mysqld\]\nmax_connections=${globals.dbMaxConnections}|g" /etc/my.cnf; };
-         jem service restart;
-       user: root

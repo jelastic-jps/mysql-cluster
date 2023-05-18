@@ -38,6 +38,10 @@ case $key in
     check_corrupts=YES
     shift
     ;;
+    --debug)
+    debug=YES
+    shift
+    ;;
     *)    # unknown option
     POSITIONAL+=("$1") # save it in an array for later
     shift # past argument
@@ -68,6 +72,7 @@ echo "                           restore_galera - restore Galera cluster"
 echo "                           promote_new_primary - promote new primary form secondary node"
 echo "              --diagnostic - Run node diagnostic only (without recovery)"
 echo "              --check-corrupts - Run database corruption check"
+echo "              --debug - Run the script in detailed output mode"
 echo "        NOTICE:"
 echo "              - The restore_primary_from_primary, restore_secondary_from_primary, and restore_primary_from_secondary scenarios should be run from a node that should be restored."
 echo "                For example, we run the script in the diagnostic mode for the primary-secondary topology, and it returns a result that secondary replication is broken."
@@ -135,6 +140,7 @@ log(){
   local timestamp
   timestamp=`date "+%Y-%m-%d %H:%M:%S"`
   echo -e "[${timestamp}]: ${message}" >> ${RUN_LOG}
+  [[ "$debug" != "YES" ]] || >&2 echo -e "[${timestamp}]: ${message}"
 }
 
 
@@ -526,7 +532,7 @@ galeraGetPrimaryNode(){
         log "[Node: ${node}]: seqno=${cur_seq_num}"
       fi
 
-      if [ "${seq_num}" -lt "${cur_seq_num}" ]; then
+      if [[ "${seq_num}" -lt "${cur_seq_num}" ]]; then
         primary_node_by_seq=${node}
         seq_num=${cur_seq_num}
       fi
@@ -626,12 +632,18 @@ nodeDiagnostic(){
   }
   log "[Node: localhost]: Detected node type: ${node_type}...done"
 
+  service_status=$(checkMysqlServiceStatus 'localhost')
+
+  if [[ "${service_status}" == "down" ]]; then
+    stopMysqlService "localhost"
+    startMysqlService "localhost"
+  fi
 
   service_status=$(checkMysqlServiceStatus 'localhost') || {
       diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"
       return ${SUCCESS_CODE};
   }
-
+  
   if [[ "${node_type}" == "secondary" ]] && [[ "${service_status}" == "up" ]]; then
     status=$(getSecondaryStatus "localhost")
   elif [[ "${node_type}" == "primary" ]] && [[ "${service_status}" == "up" ]]; then

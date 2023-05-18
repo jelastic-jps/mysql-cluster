@@ -7,14 +7,14 @@ description:
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 logo: /images/database-recovery.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery
 
 targetNodes:
   nodeType:
     - mysql
     - mariadb-dockerized
     - mariadb
-    - percona
+    - perconadb
     
 mixins:
   - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
@@ -23,10 +23,8 @@ globals:
   ssh_root: /root/.ssh/
   ssh-key: id_rsa_db_monitoring
   tmp: /tmp/
-  diagnostic-failed: |-
-    Errors were discovered during the Database Cluster diagnostic.
-    Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
-    llow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+  diagnostic-failed: |
+    Errors were discovered during the Database Cluster diagnostic. Please check the /var/log/db_recovery.log log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery. Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
 buttons:
   - name: diagnostic
@@ -70,6 +68,8 @@ onAfterClone:
   nodeGroup: ${targetNodes.nodeGroup}
   settings:
     install: true
+    user: ${settings.user}
+    password: ${settings.password}
 
 onInstall:
   - clusterValidate

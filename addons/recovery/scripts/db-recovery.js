@@ -1,5 +1,6 @@
 function DBRecovery() {
     const AUTH_ERROR_CODE = 701,
+        MYISAM_ERROR = 97,
         UNABLE_RESTORE_CODE = 98,
         FAILED_CLUSTER_CODE = 99,
         RESTORE_SUCCESS = 201,
@@ -34,7 +35,7 @@ function DBRecovery() {
         if (resp.result != 0) return resp;
 
         resp = me.parseResponse(resp.responses);
-        if (resp.result == UNABLE_RESTORE_CODE) return resp;
+        if (resp.result == UNABLE_RESTORE_CODE || resp.result == MYISAM_ERROR) return resp;
 
         if (isRestore) {
             let failedPrimaries = me.getFailedPrimaries();
@@ -76,7 +77,7 @@ function DBRecovery() {
         if (resp.result != 0) return resp;
 
         return {
-            result: !isRestore ? 200 : 201,
+            result: !isRestore ? 200 : RESTORE_SUCCESS,
             type: SUCCESS
         };
     };
@@ -319,7 +320,8 @@ function DBRecovery() {
         if ((item.service_status == UP || item.status == OK) && item.galera_myisam != OK) {
             return {
                 type: WARNING,
-                message: MyISAM_MSG
+                message: MyISAM_MSG,
+                result: MYISAM_ERROR
             }
         }
 
@@ -361,7 +363,7 @@ function DBRecovery() {
 
         if (item.service_status == DOWN || item.status == FAILED) {
             if (item.service_status == UP) {
-                if (!me.getDonorIp()) {
+                if (!me.getDonorIp() && item.node_type == PRIMARY) {
                     me.setDonorIp(item.address);
                 }
 
@@ -516,9 +518,9 @@ function DBRecovery() {
     me.execRecovery = function(values) {
         values = values || {};
         log("values->" + values);
-        log("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values));
+        log("curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values));
         return nodeManager.cmd({
-            command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values),
+            command: "curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + me.formatRecoveryAction(values),
             nodeid: values.nodeid || ""
         });
     };
