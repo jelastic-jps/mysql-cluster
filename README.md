@@ -7,7 +7,7 @@
 MySQL/MariaDB/Percona Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed dockerized stack templates.
 
 <p align="left"> 
-<img src="[images/mysql-maria-percona-scheme.svg](https://github.com/jelastic-jps/mysql-cluster/blob/v3.0.0/images/mysql-mariadb-percona-logo.svg)" width="500">
+<img src="images/mysql-maria-percona-scheme.svg" width="500">
 </p>
 
 The package includes Highly Available [*ProxySQL Load Balancer*](http://www.proxysql.com) and [*Cluster Orchestrator*](https://github.com/github/orchestrator) to manage MySQL/MariaDB/Percona replication topology. And there is a choice between different MySQL/MariaDB/Percona replication types:
