@@ -10,7 +10,7 @@ categories:
   
 description: 
   text: "/texts/description.md?_r=1"
-  short: A set of MySQL/MariaDB/Percona cluster topologies
+  short: A set of MySQL/MariaDB/Percona cluster topologies with pre-configured replication and auto-discovery of the nodes.
   
 logo: /images/mysql-mariadb-percona-logo.png?_r=1
 
