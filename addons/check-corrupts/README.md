@@ -45,7 +45,7 @@ Click **Install** and wait for the successful installation.
 
 ![confirm corruption diagnostic](images/04-confirm-corruption-diagnostic.png)
 
-3\. In a few minutes, you’ll see the diagnostic result in the pop-up notification with a link to the ***/var/log/db_recovery.log*** with more details.
+3\. In a few minutes, you’ll see the diagnostic result in the pop-up notification with a link to the ***/var/log/db_recovery.log*** file with more details.
 
 ![diagnostic results](images/05-diagnostic-result.png)
 
