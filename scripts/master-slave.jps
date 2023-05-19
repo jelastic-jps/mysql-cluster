@@ -3,7 +3,7 @@ id: mysql-master-slave-replication-cluster
 name: MySQL/MariaDB/Percona Primary-Secondary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/dimkadt/mysql-cluster/v3.0.0
 
 success:
   text: /texts/phpmyadmin-credentials.md
