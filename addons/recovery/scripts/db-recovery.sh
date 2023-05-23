@@ -485,7 +485,6 @@ galeraSetBootstrap(){
   local num=$2
   local command="${SSH} ${node} \"[[ -f /var/lib/mysql/grastate.dat ]] && { sed -i 's/safe_to_bootstrap.*/safe_to_bootstrap: ${num}/g' /var/lib/mysql/grastate.dat; } || { exit 0; }\""  
   local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
-  local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
   execSshAction "$command" "$message"
 }
 
