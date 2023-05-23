@@ -373,7 +373,15 @@ restoreSecondaryPosition(){
 
 getMysqlServerName(){
   local serverName
-  [[ x"$(mysqld --version |grep -i mariadb)" == "x" ]] && serverName=mysql || serverName=mariadb
+  local mysql_version=$(mysqld --version)
+
+  if [[ $mysql_version == *"MySQL"* ]]; then
+    serverName=mysql
+  elif [[ $mysql_version == *"Percona"* ]]; then
+    serverName=percona
+  else
+    serverName=mariadb
+  fi  
   echo $serverName
 }
 
@@ -475,7 +483,8 @@ checkMysqlOperable(){
 galeraSetBootstrap(){
   local node=$1
   local num=$2
-  local command="${SSH} ${node} \"[[ -f /var/lib/mysql/grastate.dat ]] && { sed -i 's/safe_to_bootstrap.*/safe_to_bootstrap: ${num}/g' /var/lib/mysql/grastate.dat; } || { exit 0; }\""  local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
+  local command="${SSH} ${node} \"[[ -f /var/lib/mysql/grastate.dat ]] && { sed -i 's/safe_to_bootstrap.*/safe_to_bootstrap: ${num}/g' /var/lib/mysql/grastate.dat; } || { exit 0; }\""  
+  local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
   local message="[Node: ${node}] Set safe_to_bootstrap: ${num}"
   execSshAction "$command" "$message"
 }
@@ -527,7 +536,12 @@ galeraGetPrimaryNode(){
       else
         stopMysqlService "${node}"
         [[ ${primary_node} == 'undefined' ]] || continue
-        command="${SSH} ${node} 'mysqld --wsrep-recover > /dev/null 2>&1 && tail -2 /var/log/mysql/mysqld.log |grep \"Recovered position\"'"
+        
+        if [[ "${serverName}" == "mariadb" ]]; then
+          command="${SSH} ${node} 'mysqld --wsrep-recover > /dev/null 2>&1 && tail -2 /var/log/mysql/mysqld.log |grep \"Recovered position\"'"
+        else
+          command="${SSH} ${node} 'mysqld --wsrep-recover --user=root> /dev/null 2>&1 && tail -2 /var/log/mysqld.log |grep \"Recovered position\"'"
+        fi
         cur_seq_num=$(execSshReturn "$command" "[Node: ${node}]: Get seqno"|awk -F 'Recovered position:' '{print $2}'|awk -F : '{print $2}' )
         log "[Node: ${node}]: seqno=${cur_seq_num}"
       fi
