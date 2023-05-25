@@ -35,7 +35,7 @@ function promoteNewPrimary() {
             //NO PROXY
             let resp = this.isProcessRunning();
             if (resp.result != 0) return resp;
-            if (resp.isRunning) return { result: 0 }
+            if (resp.isRunning) return {result: 0}
 
             //NO PROXY
             resp = this.DefinePrimaryNode();
@@ -77,7 +77,11 @@ function promoteNewPrimary() {
 
         if (!this.getAddOnType()) {
             resp = this.addIteration(true);
-        return this.setIsRunningStatus(false);
+            if (resp.result != 0) return resp;
+            return this.setIsRunningStatus(false);
+        }
+        
+        return { result: 0 }
     };
 
     this.checkAvailability = function() {
@@ -85,9 +89,9 @@ function promoteNewPrimary() {
         let resp = this.cmdById(this.getPrimaryNode().id, command);
 
         if (force == "false") force = false;
-        if (force || resp.result == 4109 || 
-        (resp.responses && resp.responses[0].result == 4109) || 
-        (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
+        if (force || resp.result == 4109 ||
+            (resp.responses && resp.responses[0].result == 4109) ||
+            (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
             resp = this.addIteration();
             if (resp.result != 0) return resp;
 
@@ -95,7 +99,7 @@ function promoteNewPrimary() {
         }
         if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host")) {
             return {
-              result: MySQL_FAILED
+                result: MySQL_FAILED
             }
         }
 
@@ -326,7 +330,7 @@ function promoteNewPrimary() {
                 }
             }
         }
-        
+
         return { result: 0 }
     };
 
@@ -630,6 +634,6 @@ function promoteNewPrimary() {
 
         return api.env.control.ExecCmdById(envName, session, id, toJSON([{ command: command }]), true, ROOT);
     };
-};
+}
 
 return new promoteNewPrimary().run();
