@@ -19,7 +19,6 @@ function promoteNewPrimary() {
     let base = api.data.base;
     let tableName = "promotePrimary";
     let END_POINT = "EditEndpoint";
-    let containerEnvs = {};
     let dbPromoteData = "";
     let CLUSTER_FAILED = 98;
     let MySQL_FAILED = 97;
