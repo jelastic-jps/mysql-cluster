@@ -20,9 +20,6 @@ function promoteNewPrimary() {
     let tableName = "promotePrimary";
     let END_POINT = "EditEndpoint";
     let dbPromoteData = "";
-    let CLUSTER_FAILED = 98;
-    let MySQL_FAILED = 97;
-    let WARNING = "warning";
     let APP_ID_PROXY = "promote-new-primary-with-proxysql";
     let APP_ID_WITHOUT_PROXY = "promote-new-primary-without-proxysql";
 
