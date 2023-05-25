@@ -522,7 +522,7 @@ galeraGetPrimaryNode(){
   local seq_num=0
   local primary_node='undefined'
   local primary_node_by_seq
-
+  local serverName="$(getMysqlServerName)"
   for node in "${nodes_to_fix[@]}"
   do
       [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
