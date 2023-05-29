@@ -60,9 +60,11 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.setContainerVar();
+        this.log("setContainerVar resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setNewMasterNode();
+        this.log("setNewMasterNode resp ->" + resp);
         if (resp.result != 0) return resp;
         //SAME DONE
 
@@ -70,9 +72,11 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.addNode();
+        this.log("addNode resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.removeFailedPrimary();
+        this.log("removeFailedPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
         if (!this.getAddOnType()) {
@@ -608,8 +612,10 @@ function promoteNewPrimary() {
 
     this.removeFailedPrimary = function() {
         let failedPrimary = this.getFailedPrimary();
+        this.log("removeFailedPrimary failedPrimary ->" + failedPrimary);
 
         let resp = this.getSQLNodeById(failedPrimary.id, true);
+        this.log("removeFailedPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
         if (failedPrimary && resp.node && !resp.node.ismaster) {
