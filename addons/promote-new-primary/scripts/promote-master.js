@@ -69,10 +69,10 @@ function promoteNewPrimary() {
         resp = this.restoreNodes();
         if (resp.result != 0) return resp;
 
-        resp = this.addNode();
-        if (resp.result != 0) return resp;
-
         resp = this.removeFailedPrimary();
+        if (resp.result != 0) return resp;
+        
+        resp = this.addNode();
         if (resp.result != 0) return resp;
 
         if (!this.getAddOnType()) {
