@@ -114,8 +114,7 @@ onCustomNodeEvent [name:executeScript]:
 
 actions:
   configure:
-    - removeTask
-    - createScript
+    - addSchedulerToProxySQL
     - if (${settings.is_endpoint:true}):
       - addEndpoint:
           nodeId: ${nodes.sqldb.master.id}
