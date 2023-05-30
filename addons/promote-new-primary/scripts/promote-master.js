@@ -553,7 +553,7 @@ function promoteNewPrimary() {
         let nodes = this.getParsedNodes();
         let newPrimary = this.getNewPrimaryNode();
 
-        let command = "/bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
+        let command = "bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
         for (let i = 0, n = nodes.length; i < n; i++) {
             if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
                 let resp = this.cmdById(nodes[i].id, command);
