@@ -94,6 +94,7 @@ onInstall:
   - if (${settings.is_endpoint:true}):
     - addEndpoint:
         nodeId: ${nodes.sqldb.master.id}
+    - getPublicPort
     - successDnsEndpoint
   - else: 
     - removeEndpoint
@@ -118,6 +119,7 @@ actions:
     - if (${settings.is_endpoint:true}):
       - addEndpoint:
           nodeId: ${nodes.sqldb.master.id}
+      - getPublicPort
       - successDnsEndpoint
     - else: 
       - removeEndpoint
