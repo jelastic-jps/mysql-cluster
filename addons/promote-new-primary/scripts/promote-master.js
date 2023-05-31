@@ -517,6 +517,7 @@ function promoteNewPrimary() {
     this.newPrimaryOnProxy = function() {
         let alreadySetNewPrimary = false;
         let resp = this.diagnosticNodes();
+        this.log("diagnosticNodes resp ->" + resp);
 
         if (resp.result != 0) return resp;
 
@@ -528,7 +529,9 @@ function promoteNewPrimary() {
                     if (nodes[i].type == SECONDARY && !alreadySetNewPrimary) {
                         this.setNewPrimaryNode(nodes[i]);
                         alreadySetNewPrimary = true;
-                    } else {
+                    }
+
+                    if (nodes[i].type == "primary" ) {
                         resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
 
