@@ -531,8 +531,8 @@ function promoteNewPrimary() {
                         this.setNewPrimaryNode(nodes[i]);
                         alreadySetNewPrimary = true;
                     }
-                    
-                    if (nodes[i].type == PRIMARY) {
+
+                    if (nodes[i].type == "primary") {
                         this.log("nodes[i].type == PRIMARY");
                         resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
