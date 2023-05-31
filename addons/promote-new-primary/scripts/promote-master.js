@@ -526,11 +526,12 @@ function promoteNewPrimary() {
         if (nodes) {
             for (let i = 0, n = nodes.length; i < n; i++) {
                 if (nodes[i]) {
+                    this.log("nodes[i] ->" + nodes[i]);
                     if (nodes[i].type == SECONDARY && !alreadySetNewPrimary) {
                         this.setNewPrimaryNode(nodes[i]);
                         alreadySetNewPrimary = true;
                     }
-
+                    
                     if (nodes[i].type == PRIMARY) {
                         this.log("nodes[i].type == PRIMARY");
                         resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
