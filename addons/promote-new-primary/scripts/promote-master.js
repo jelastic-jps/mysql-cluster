@@ -25,6 +25,7 @@ function promoteNewPrimary() {
 
     this.run = function() {
         let resp = this.defineAddonType();
+        this.log("defineAddonType resp ->" + resp);
         if (resp.result != 0) return resp;
 
         //PROXY
@@ -48,12 +49,15 @@ function promoteNewPrimary() {
         }
 
         resp = this.newPrimaryOnProxy();
+        this.log("newPrimaryOnProxy resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.promoteNewSQLPrimary();
+        this.log("promoteNewSQLPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setDomains();
+        this.log("setDomains resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.EditEndPoint();
@@ -63,24 +67,29 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.setNewMasterNode();
+        this.log("setNewMasterNode resp ->" + resp);
         if (resp.result != 0) return resp;
         //SAME DONE
 
         resp = this.restoreNodes();
         if (resp.result != 0) return resp;
-        
+
         resp = this.addNode();
+        this.log("addNode resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.removeFailedPrimary();
+        this.log("removeFailedPrimary resp ->" + resp);
         if (resp.result != 0) return resp;
 
+        this.log("this.getAddOnType() ->" + this.getAddOnType());
         if (!this.getAddOnType()) {
             resp = this.addIteration(true);
+            this.log("addIteration resp ->" + resp);
             if (resp.result != 0) return resp;
             return this.setIsRunningStatus(false);
         }
-        
+
         return { result: 0 }
     };
 
@@ -178,11 +187,13 @@ function promoteNewPrimary() {
 
     this.setNewMasterNode = function() {
         if (api.env.control.SetMasterNode) {
+            this.log("API api.env.control.SetMasterNode ->");
             return api.env.control.SetMasterNode({
                 envName: envName,
                 nodeId: this.getNewPrimaryNode().id
             });
         } else {
+            this.log("Eval Eval->");
             let resp = jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", {
                 envName: envName,
                 nodeId: this.getNewPrimaryNode().id
