@@ -621,11 +621,13 @@ function promoteNewPrimary() {
 
     this.removeFailedPrimary = function() {
         let failedPrimary = this.getFailedPrimary();
+        this.log("failedPrimary-> " + failedPrimary);
 
         let resp = this.getSQLNodeById(failedPrimary.id, true);
         if (resp.result != 0) return resp;
 
         if (failedPrimary && resp.node && !resp.node.ismaster) {
+            this.log("failedPrimary.id-> " + failedPrimary.id);
             return api.env.control.RemoveNode(envName, session, failedPrimary.id);
         }
 
