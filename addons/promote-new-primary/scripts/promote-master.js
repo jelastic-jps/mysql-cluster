@@ -68,7 +68,7 @@ function promoteNewPrimary() {
 
         resp = this.restoreNodes();
         if (resp.result != 0) return resp;
-        
+
         resp = this.addNode();
         if (resp.result != 0) return resp;
 
@@ -80,7 +80,7 @@ function promoteNewPrimary() {
             if (resp.result != 0) return resp;
             return this.setIsRunningStatus(false);
         }
-        
+
         return { result: 0 }
     };
 
@@ -178,11 +178,13 @@ function promoteNewPrimary() {
 
     this.setNewMasterNode = function() {
         if (api.env.control.SetMasterNode) {
+            this.log("API api.env.control.SetMasterNode");
             return api.env.control.SetMasterNode({
                 envName: envName,
                 nodeId: this.getNewPrimaryNode().id
             });
         } else {
+            this.log("Eval SetMasterNode");
             let resp = jelastic.dev.scripting.Eval("ext", session, "api.env.control.SetMasterNode", {
                 envName: envName,
                 nodeId: this.getNewPrimaryNode().id
@@ -515,7 +517,9 @@ function promoteNewPrimary() {
                     if (nodes[i].type == SECONDARY && !alreadySetNewPrimary) {
                         this.setNewPrimaryNode(nodes[i]);
                         alreadySetNewPrimary = true;
-                    } else {
+                    }
+
+                    if (nodes[i].type == "primary") {
                         resp = api.env.control.SetNodeDisplayName(envName, session, nodes[i].id, PRIMARY + " - " + FAILED);
                         if (resp.result != 0) return resp;
 
