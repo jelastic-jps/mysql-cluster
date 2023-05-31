@@ -84,6 +84,7 @@ function promoteNewPrimary() {
 
         this.log("this.getAddOnType() ->" + this.getAddOnType());
         if (!this.getAddOnType()) {
+            this.log("this.getAddOnType() in if ->");
             resp = this.addIteration(true);
             this.log("addIteration resp ->" + resp);
             if (resp.result != 0) return resp;
@@ -308,6 +309,7 @@ function promoteNewPrimary() {
 
     this.addIteration = function(reset) {
         let resp = this.getPromoteData();
+        this.log("getPromoteData ->" + resp);
         if (resp.result != 0) return resp;
 
         let data = resp.data;
