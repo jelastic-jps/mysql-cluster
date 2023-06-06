@@ -547,7 +547,7 @@ function promoteNewPrimary() {
 
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/master/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --scenario promote_new_primary";
-        let resp = this.cmdById(newPrimary.id, command, 20);
+        let resp = this.cmdById(newPrimary.id, command);
         if (resp.result != 0) return resp;
 
         return api.env.control.SetNodeDisplayName(envName, session, newPrimary.id, PRIMARY);
