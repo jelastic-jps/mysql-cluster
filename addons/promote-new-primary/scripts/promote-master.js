@@ -7,6 +7,7 @@ function promoteNewPrimary() {
     let PRIMARY = "Primary";
     let SECONDARY = "secondary";
     let FAILED = "failed";
+    let NOT_RUNNING = 4110;
     let Response = com.hivext.api.Response;
     let TMP_FILE = "/var/lib/jelastic/promotePrimary";
     let session = getParam("session", "");
@@ -347,7 +348,7 @@ function promoteNewPrimary() {
             };
         }
 
-        return this.cmdByGroup("touch " + TMP_FILE, PROXY, 3);
+        return this.cmdByGroup("touch " + TMP_FILE, PROXY, 3, true);
     };
 
     this.setContainerVar = function() {
@@ -459,6 +460,49 @@ function promoteNewPrimary() {
         this.failedPrimary = node;
     };
 
+    this.getAvailableProxy = function() {
+        return this.availableProxy || "";
+    };
+
+    this.setAvailableProxy = function(nodeid) {
+        this.availableProxy = nodeid;
+    };
+
+    this.checkNodesAvailability = function(nodeGroup) {
+        let nodeid;
+
+        if (this.getAvailableProxy()) {
+            return {
+                result: 0,
+                nodeid: this.getAvailableProxy()
+            }
+        }
+
+        let resp = this.cmdByGroup("echo 1", nodeGroup, null, true);
+        this.log("checkNodesAvailability resp ->" + resp);
+        if (resp.result == NOT_RUNNING ||
+            (resp.responses[0] && resp.responses[0].error && resp.responses[0].error.indexOf("No route to host"))) {
+            this.log("checkNodesAvailability resp1 ->" + resp);
+            let nodeResp;
+            for (let i = 0, n = resp.responses.length; i < n; i++) {
+                nodeResp = resp.responses[i];
+                this.log("nodeResp ->" + nodeResp);
+                if (nodeResp.result == 0) {
+                    nodeid = nodeResp.nodeid;
+                    this.setAvailableProxy(nodeResp.nodeid);
+                    break;
+                }
+            }
+            if (resp.result != 0 && resp.result != NOT_RUNNING) return resp;
+
+            this.log("this.getAvailableProxy() ->" + this.getAvailableProxy());
+            return {
+                result: 0,
+                nodeid: this.getAvailableProxy()
+            }
+        }
+    };
+
     this.getParsedNodes = function() {
         return this.parsedNodes;
     };
@@ -535,7 +579,7 @@ function promoteNewPrimary() {
 
             if (this.getAddOnType()) {
                 let command = "bash /usr/local/sbin/jcm.sh newPrimary --server=node" + this.getNewPrimaryNode().id;
-                return this.cmdByGroup(command, PROXY, 20);
+                return this.cmdByGroup(command, PROXY, 20, true);
             }
         }
 
@@ -623,9 +667,16 @@ function promoteNewPrimary() {
         return { result: 0 }
     };
 
-    this.cmdByGroup = function(command, nodeGroup, timeout) {
+    this.cmdByGroup = function(command, nodeGroup, timeout, test) {
         if (timeout) {
             command = "timeout " + timeout + "s bash -c \"" + command + "\"";
+        }
+
+        if (nodeGroup == PROXY && !test) {
+            let resp = this.checkNodesAvailability(PROXY);
+            if (resp.nodeid) {
+                return this.cmdById(resp.nodeid, command);
+            }
         }
 
         return api.env.control.ExecCmdByGroup(envName, session, nodeGroup, toJSON([{ command: command }]), true, false, ROOT);
