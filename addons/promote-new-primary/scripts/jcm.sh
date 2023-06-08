@@ -56,6 +56,7 @@ primaryStatus(){
     if [[ $ITERATION -eq $ONLINE_ITERATIONS ]]; then
       log "Primary node status is OFFLINE"
       log "Promoting new Primary"
+      echo "ITERATION=0" > ${ITERATION_CONFIG};
       curl --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
     else
       ITERATION=$(($ITERATION+1))
