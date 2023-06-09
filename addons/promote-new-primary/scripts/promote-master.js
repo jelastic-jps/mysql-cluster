@@ -479,14 +479,11 @@ function promoteNewPrimary() {
         }
 
         let resp = this.cmdByGroup("echo 1", nodeGroup, null, true);
-        this.log("checkNodesAvailability resp ->" + resp);
         if (resp.result == NOT_RUNNING ||
             (resp.responses[0] && resp.responses[0].error && resp.responses[0].error.indexOf("No route to host"))) {
-            this.log("checkNodesAvailability resp1 ->" + resp);
             let nodeResp;
             for (let i = 0, n = resp.responses.length; i < n; i++) {
                 nodeResp = resp.responses[i];
-                this.log("nodeResp ->" + nodeResp);
                 if (nodeResp.result == 0) {
                     nodeid = nodeResp.nodeid;
                     this.setAvailableProxy(nodeResp.nodeid);
@@ -495,7 +492,6 @@ function promoteNewPrimary() {
             }
             if (resp.result != 0 && resp.result != NOT_RUNNING) return resp;
 
-            this.log("this.getAvailableProxy() ->" + this.getAvailableProxy());
             return {
                 result: 0,
                 nodeid: this.getAvailableProxy()
