@@ -181,7 +181,7 @@ checkAuth(){
   #
   nodeType=$(getNodeType)
   if [[ "${nodeType}" == "galera" ]]; then
-    cluster_hosts=$(host sqldb |awk -F 'has address' '{print $2}'|xargs)
+    cluster_hosts=$(grep wsrep_cluster_address ${GALERA_CONF} |awk -F '/' '{print $3}'|xargs -d ',')
   else
     cluster_hosts="${DONOR_IP:=localhost}"
   fi
