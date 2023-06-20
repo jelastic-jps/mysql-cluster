@@ -52,6 +52,15 @@ responses:
       Corrupted data was discovered during the database diagnostic.
       Please check the **/var/log/db_recovery.log** log file for details.
 
+onAfterClone:
+  install: ${baseUrl}/manifest.yml?_r=${fn.random}
+  envName: ${event.response.env.envName}
+  nodeGroup: ${targetNodes.nodeGroup}
+  settings:
+    install: true
+    user: ${settings.user}
+    password: ${settings.password}
+
 onInstall:
   - if (!${settings.install:false}): authValidate
   - getReplicaUser

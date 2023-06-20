@@ -87,6 +87,7 @@ onInstall:
   - downloadScripts
   - createScript
   - addSchedulerToProxySQL
+  - idleTimeConfigure
   - addDomainToPrimary:
       domain: primarydb
       nodeId: ${nodes.sqldb.master.id}
@@ -94,6 +95,7 @@ onInstall:
   - if (${settings.is_endpoint:true}):
     - addEndpoint:
         nodeId: ${nodes.sqldb.master.id}
+    - getPublicPort
     - successDnsEndpoint
   - else: 
     - removeEndpoint
@@ -113,11 +115,12 @@ onCustomNodeEvent [name:executeScript]:
 
 actions:
   configure:
-    - removeTask
-    - createScript
+    - addSchedulerToProxySQL
+    - idleTimeConfigure
     - if (${settings.is_endpoint:true}):
       - addEndpoint:
           nodeId: ${nodes.sqldb.master.id}
+      - getPublicPort
       - successDnsEndpoint
     - else: 
       - removeEndpoint
@@ -149,9 +152,15 @@ actions:
       user: root
 
   idleTimeConfigure:
-    cmd[${nodes.proxy.master.id}]: |-
-      bash ${globals.jcmPath} setSchedulerTimeout --interval=${settings.primary_idle_time} --scheduler_name=primaryStatus;
-      
+    - script: |
+        var interval_1 = parseInt("${settings.primary_idle_time}"), interval_2 = parseInt("${settings.primary_idle_time}") + 20 ;
+        return {result:0, onAfterReturn:{setGlobals:{interval_1:interval_1, interval_2:interval_2}}};
+    - forEach(i:nodes.proxy):
+      - if (${@i.ismaster}):
+          cmd[${@i.id}]: bash ${globals.jcmPath} setSchedulerTimeout --interval=${globals.interval_1} --scheduler_name=primaryStatus;
+      - else:
+          cmd[${@i.id}]: bash ${globals.jcmPath} setSchedulerTimeout --interval=${globals.interval_2} --scheduler_name=primaryStatus;      
+  
   createScript:
     script: |
       let Response = com.hivext.api.Response;
