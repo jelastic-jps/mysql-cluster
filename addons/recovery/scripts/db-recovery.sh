@@ -152,6 +152,7 @@ cleanSyncData(){
     --exclude=auto.cnf \
     --exclude=mysqld.pid \
     --exclude=mysql.sock \
+    --exclude=mysql-bin.* \
     root@${mysql_src_ip}:/var/lib/mysql/ /var/lib/mysql/
 }
 
@@ -163,6 +164,7 @@ resyncData(){
     --exclude=auto.cnf \
     --exclude=mysqld.pid \
     --exclude=mysql.sock \
+    --exclude=mysql-bin.* \
     root@${mysql_src_ip}:/var/lib/mysql/ /var/lib/mysql/
 }
 
