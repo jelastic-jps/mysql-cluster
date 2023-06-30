@@ -80,6 +80,10 @@ function promoteNewPrimary() {
             resp = this.addIteration(true);
             if (resp.result != 0) return resp;
             return this.setIsRunningStatus(false);
+        } else {
+            let nodeGroup = this.getAddOnType() ? PROXY : SQLDB;
+
+            return this.cmdByGroup("rm -rf " + TMP_FILE, nodeGroup, 3);
         }
 
         return { result: 0 }
@@ -636,7 +640,7 @@ function promoteNewPrimary() {
             }
         }
 
-        let resp = api.env.control.ChangeTopology({
+        return api.env.control.ChangeTopology({
             envName: envName,
             session: session,
             env: {
@@ -645,9 +649,6 @@ function promoteNewPrimary() {
             },
             nodes: nodes
         });
-        if (resp.result != 0) return resp;
-
-        return this.cmdByGroup("rm -rf " + TMP_FILE, SQLDB, 3);
     };
 
     this.removeFailedPrimary = function() {
@@ -670,7 +671,7 @@ function promoteNewPrimary() {
 
         if (nodeGroup == PROXY && !test) {
             let resp = this.checkNodesAvailability(PROXY);
-            if (resp.nodeid) {
+            if (resp && resp.nodeid) {
                 return this.cmdById(resp.nodeid, command);
             }
         }
