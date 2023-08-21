@@ -3,7 +3,7 @@ id: mysql-master-master-replication-cluster
 name: MySQL/MariaDB/Percona Primary-Primary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-cluster
 
 success:
    text: /texts/phpmyadmin-credentials.md
@@ -88,7 +88,7 @@ actions:
     
   setupPrimaryPrimaryReplication:
     - cmd[${globals.primary2_id}]: |-
-        curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh;
+        curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh;
         bash /tmp/db-recovery.sh  --scenario restore_primary_from_primary --donor-ip ${globals.primary1_ip};
       user: root
   
