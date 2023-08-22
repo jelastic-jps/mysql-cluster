@@ -49,7 +49,7 @@ The add-on allows doing two actions:
 
 ![diagnostic failure](images/04-diagnostic-failure.png)
 
-> Tip: Cluster diagnostic is triggered automatically before the **environment stop** and **cloudlets change** operations. The respective actions will proceed only if the database integrity is verified (to avoid additional damage to the cluster).
+> **Tip:** Cluster diagnostic is triggered automatically before the **environment stop** and **cloudlets change** operations. The respective actions will proceed only if the database integrity is verified (to avoid additional damage to the cluster).
 
 - **Cluster Recovery** - if any failure has been detected, you can either try automatic database recovery by pressing the **Cluster Recovery** button or perform manual database recovery by following the link to the recovery guide. The best practice is to use the automatic recovery scenario.
 
