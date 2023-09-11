@@ -17,7 +17,7 @@ onInstall:
         message: Add-on does not provide performance tuning without ProxySQL nodes.
   
   - script: |
-        var nodeGroups, resp, scheme = "", actions = [], jps;
+        var nodeGroups, resp, scheme = "";
         resp = api.env.control.GetNodeGroups("${env.name}", session);
         if (resp.result != 0) return resp;
         nodeGroups = resp.object;
