@@ -17,7 +17,7 @@ onInstall:
         message: Add-on does not provide performance tuning without ProxySQL nodes.
   
   - script: |
-        var nodeGroups, resp, scheme = "";
+        var nodeGroups, resp, scheme = "", actions = [], jps;
         resp = api.env.control.GetNodeGroups("${env.name}", session);
         if (resp.result != 0) return resp;
         nodeGroups = resp.object;
@@ -27,5 +27,9 @@ onInstall:
           }
         }
         if (scheme !== "master" && scheme !== "slave" && scheme !== "galera") return 99;
-        
+        return api.marketplace.jps.Install({
+            jps: "https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/slave.jps",
+            envName: "${env.envName}",
+            nodeGroup: "proxy"
+        })
         
