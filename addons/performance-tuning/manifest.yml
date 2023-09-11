@@ -11,7 +11,7 @@ globals:
   
 settings:
   settingsTune:
-    onBeforeInit: addons/performance-tuning/scripts/variablesManager.js
+    onBeforeInit: /scripts/variablesManager.js
     fields:
      - type: list
        caption: ProxySQL Variable
