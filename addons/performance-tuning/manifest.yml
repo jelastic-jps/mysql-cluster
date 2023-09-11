@@ -4,127 +4,22 @@ id: proxysql-db-tune-addon
 logo: addons/performance-tuning/images/mysql-proxysql-tuning.png
 description: Change ProxySQL and Database settings according to your particular use case
 baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111
-targetNodes: proxysql
 
-globals:
-  dbMaxConnections: 2048
-  
-settings:
-  settingsTune:
-    onBeforeInit: /scripts/variablesManager.js
-    fields:
-     - type: list
-       caption: ProxySQL Variable
-       name: varName
-       default: mysql-monitor_connect_timeout
-       tooltip:
-         text: |
-              The behaviour of ProxySQL can be tweaked using global variables. There are 2 types of global variables, depending on which part of ProxySQL they control:
-              <ul>
-                <li><b>&#x2022; admin</b> variables, which control the behaviour of the admin interface. Their names begin with the token "admin-"
-                <li><b>&#x2022; mysql</b> variables, which control the MySQL functionality of the proxy. Their names begin with the token "mysql-"
-              </ul>
-              Read official documentation before changing Global Variables:<a href="https://proxysql.com/documentation/global-variables/"> https://proxysql.com/documentation/global-variables/</a>
-         maxWidth: 700
-         minWidth: 700
-     - type: list
-       caption: Variable Value
-       name: varValue
-       default: 1200
-       editable: true
-     - type: displayfield
-     - type: compositefield
-       caption: ProxySQL Threads
-       items:
-         - type: spinner
-           name: threadsNumber
-           value: 4
-         - type: tooltip
-           text: The number of background threads that ProxySQL uses in order to process MySQL traffic.
-           hidden: false     
-     - type: compositefield
-       caption: ProxySQL Connections
-       items:
-         - type: spinner
-           name: maxConnections
-           value: 1000
-           min: 1
-         - type: tooltip
-           text: ProxySQL maintains a pool of connections. A connection pool is a cache of database connections maintained so that the connections can be reused when future requests to the database are required.
-           hidden: false     
-     - type: displayfield
-     - type: compositefield
-       defaultMargins: "0 12 0 0"
-       items:
-         - type: displayfield
-           markup: Primary Node
-           name: prmnode
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 70
-           tooltip: Primary node weight for Select queries
-         - type: displayfield
-           markup: Secondary Node
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 70
-           tooltip: Secondary node weight for Select queries
-     - type: compositefield
-       caption: Weights Ratio
-       defaultMargins: "0 12 0 0"
-       tooltip:
-         text: The bigger the weight of a server relative to other weights, the higher the probability of the server to be chosen from a hostgroup. ProxySQL default load-balancing algorithm is random-weighted.
-         minWidth: 370        
-       items:
-         - type: spinner
-           name: weightMaster
-           min: 1
-           default: 50
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 10
-         - type: displayfield
-           markup: "/"
-           cls: x-form-item-label
-           width: 10
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 10
-         - type: spinner
-           name: weightSlave
-           min: 1
-           default: 50
-     - type: spinner
-       caption: DB Max Connections
-       name: dbMaxConnections
-       value: 2048
-       min: 1
-       tooltip: Maximum number of allowed connections to Database nodes
+onInstall:
+  - if (!nodes.proxy):
+      return:
+        type: warning
+        message: Add-on does not provide performance tuning without ProxySQL nodes.
 
-buttons:
-  - caption: Change Settings
-    action: settingsUpdate
-    settings: settingsTune
-
-
-actions:
-  settingsUpdate: 
-    - cmd[sqldb]: |-
-        sed -i s/^max_connections.*/max_connections=${settings.dbMaxConnections}/g /etc/mysql/conf.d/my_custom.cnf
-      user: root
-    - cmd[sqldb]: jem service restart
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE global_variables SET variable_value=${settings.threadsNumber} WHERE variable_name = 'mysql-threads'; SAVE MYSQL VARIABLES TO DISK;";
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightMaster} WHERE hostname='node${nodes.sqldb.master.id}' and hostgroup_id='11';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=1 WHERE hostname='node${nodes.sqldb.master.id}' and hostgroup_id='10';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - forEach(sql:nodes.sqldb):
-        if ('${@sql.displayName}' == "Secondary"):
-          cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightSlave} WHERE hostname='node${@sql.id}';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections};LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: |-
-        jem service restart
-      user: root
+  - script: |
+        var nodeGroups, resp, scheme = "";
+        resp = api.env.control.GetNodeGroups("${env.name}", session);
+        if (resp.result != 0) return resp;
+        nodeGroups = resp.object;
+        for (var i = 0, n = nodeGroups.length; i < n; i++) {
+          if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled && nodeGroups[i].cluster.settings.scheme) {
+            scheme = nodeGroups[i].cluster.settings.scheme;
+          }
+        }
+        
+        return { result: 0, scheme: scheme};
