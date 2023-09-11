@@ -28,7 +28,7 @@ onInstall:
         }
         if (scheme !== "master" && scheme !== "slave" && scheme !== "galera") return 99;
         return api.marketplace.jps.Install({
-            jps: "https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/slave.jps",
+            jps: "https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/" + scheme + ".jps?_r=${fn.random}",
             envName: "${env.envName}",
             nodeGroup: "proxy"
         })
