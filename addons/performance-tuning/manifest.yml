@@ -5,12 +5,17 @@ logo: addons/performance-tuning/images/mysql-proxysql-tuning.png
 description: Change ProxySQL and Database settings according to your particular use case
 baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111
 
+responses:
+  99:
+    type: warning
+    message: Add-on does not provide performance tuning for a non-cluster topologies.
+
 onInstall:
   - if (!nodes.proxy):
       return:
         type: warning
         message: Add-on does not provide performance tuning without ProxySQL nodes.
-
+  
   - script: |
         var nodeGroups, resp, scheme = "";
         resp = api.env.control.GetNodeGroups("${env.name}", session);
@@ -18,8 +23,9 @@ onInstall:
         nodeGroups = resp.object;
         for (var i = 0, n = nodeGroups.length; i < n; i++) {
           if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled && nodeGroups[i].cluster.settings.scheme) {
-            scheme = nodeGroups[i].cluster.settings.scheme;
+            scheme = String(nodeGroups[i].cluster.settings.scheme);
           }
         }
+        if (scheme !== "master" && scheme !== "slave" && scheme !== "galera") return 99;
         
-        return { result: 0, scheme: scheme};
+        
