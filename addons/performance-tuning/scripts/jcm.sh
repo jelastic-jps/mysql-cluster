@@ -321,13 +321,9 @@ getWeight(){
     esac
   done
 
- _get_weight(){
-    local node="$1"
-    local cmd="SELECT weight from mysql_servers where hostname = '$node';"
-    proxyCommandExec "$cmd"
-  }
-  local weight=$(execReturn "_get_weight $NODE" "Get weight for $NODE node")
-  echo $weight | sed '2,4!d'  | tail -n 1;
+  local cmd="SELECT weight from mysql_servers where hostname = '$NODE';"
+  local weight=$(proxyCommandExec "$cmd")
+  echo $weight
 }
 
 setWeight(){
