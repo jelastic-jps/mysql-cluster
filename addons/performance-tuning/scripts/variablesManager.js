@@ -28,8 +28,8 @@ function ApplySQLVariable() {
     };
 
     this.getVariables = function() {
-        let command = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/scripts/jcm.sh' -o jcm.sh\n" +
-            "bash jcm.sh getGlobalVariables"
+        let command = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/scripts/jcm.sh' -o /tmp/jcm.sh\n" +
+            "bash /tmp/jcm.sh getGlobalVariables"
         let resp = this.cmdById("${nodes.proxy.master.id}", command);
         if (resp.result != 0) return resp;
 
