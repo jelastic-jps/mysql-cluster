@@ -3,6 +3,9 @@ name: DB Cluster Tuning
 id: proxysql-db-tune-addon
 logo: addons/performance-tuning/images/mysql-proxysql-tuning.png
 description: Change ProxySQL and Database settings according to your particular use case
+
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning
+
 targetNodes: proxysql
 
 globals:
@@ -10,8 +13,15 @@ globals:
   
 settings:
   settingsTune:
-    onBeforeInit: variablesManager.js
+    onBeforeInit: /scripts/variablesManager.js
     fields:
+     - type: spinner
+       caption: DB Max Connections
+       name: dbMaxConnections
+       value: 2048
+       min: 1
+       tooltip: Maximum number of allowed connections to Database nodes
+
      - type: list
        caption: ProxySQL Variable
        name: varName
@@ -50,59 +60,9 @@ settings:
            min: 1
          - type: tooltip
            text: ProxySQL maintains a pool of connections. A connection pool is a cache of database connections maintained so that the connections can be reused when future requests to the database are required.
-           hidden: false     
+           hidden: false
+     
      - type: displayfield
-     - type: compositefield
-       defaultMargins: "0 12 0 0"
-       items:
-         - type: displayfield
-           markup: Primary Node
-           name: prmnode
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 70
-           tooltip: Primary node weight for Select queries
-         - type: displayfield
-           markup: Secondary Node
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 70
-           tooltip: Secondary node weight for Select queries
-     - type: compositefield
-       caption: Weights Ratio
-       defaultMargins: "0 12 0 0"
-       tooltip:
-         text: The bigger the weight of a server relative to other weights, the higher the probability of the server to be chosen from a hostgroup. ProxySQL default load-balancing algorithm is random-weighted.
-         minWidth: 370        
-       items:
-         - type: spinner
-           name: weightMaster
-           min: 1
-           default: 50
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 10
-         - type: displayfield
-           markup: "/"
-           cls: x-form-item-label
-           width: 10
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 10
-         - type: spinner
-           name: weightSlave
-           min: 1
-           default: 50
-     - type: spinner
-       caption: DB Max Connections
-       name: dbMaxConnections
-       value: 2048
-       min: 1
-       tooltip: Maximum number of allowed connections to Database nodes
 
 buttons:
   - caption: Change Settings
@@ -128,7 +88,7 @@ actions:
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections}; LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
   
   weightUpdate:
-      script: |
+    script: |
       var envInfo, weight, cmd, execCmd, nodeId, settings = JSON.parse('${settings}');        
       envInfo = api.env.control.GetEnvInfo("${env.name}", session);
       if (envInfo.result != 0) return envInfo;
