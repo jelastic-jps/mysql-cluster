@@ -129,7 +129,7 @@
                   "items": [{
                     "type": "spinner",
                     "name": nodes[i].id,
-                    "value": this.getWeight(nodes[i].id).weight,
+                    "value": (this.getWeight(nodes[i].id).weight / 10000000) * 100,
                     "min": "0",
                     "max": "100"
                   }]
