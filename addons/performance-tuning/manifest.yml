@@ -95,9 +95,9 @@ actions:
       for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
         if (envInfo.nodes[i].nodeGroup == 'sqldb') {   
           nodeId = envInfo.nodes[i].id;
-          weight = settings[nodeId];
+          weight = (settings[nodeId] / 100) * 10000000;
           cmd1 = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh";
-          cmd2 = "bash /tmp/jcm.sh setWeight --weight=" +weight+ " --node=node" +nodeId;
+          cmd2 = "bash /tmp/jcm.sh setWeight --weight=" + weight+ " --node=node" +nodeId;
           execCmd =  api.environment.control.ExecCmdByGroup({
             envName: '${env.envName}', 
             nodeGroup: 'proxy',
