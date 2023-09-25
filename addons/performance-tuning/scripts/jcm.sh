@@ -354,6 +354,34 @@ setWeight(){
   execAction "loadServersToRuntime" "Loading mysql servers to runtime"
 }
 
+getGaleraMaxWriters(){
+  local cmd="SELECT max_writers FROM mysql_galera_hostgroups;"
+  local output=$(proxyCommandExec "$cmd")
+  echo $output
+}
+
+setGaleraMaxWriters(){
+  for i in "$@"; do
+    case $i in
+      --count=*)
+      COUNT=${i#*=}
+      shift
+      shift
+      ;;
+      *)
+        ;;
+    esac
+  done
+
+  _set_max_writers(){
+    local count="$1"
+    local cmd="UPDATE mysql_galera_hostgroups SET max_writers=$count;"
+    proxyCommandExec "$cmd"
+  }
+  execAction "_set_max_writers $NODE $WEIGHT" "Set weight $WEIGHT for $NODE node"
+  execAction "loadServersToRuntime" "Loading mysql servers to runtime"
+}
+
 forceFailover(){
   curl --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" --data-urlencode "params={'name': 'executeScript'}"
 }
@@ -395,9 +423,17 @@ case ${1} in
     getWeight)
       getWeight "$@"
       ;;
-      
+
     setWeight)
       setWeight "$@"
+      ;;
+
+    getGaleraMaxWriters)
+      getGaleraMaxWriters
+      ;;
+
+    setGaleraMaxWriters)
+      setGaleraMaxWriters "$@"
       ;;
 
     *)
