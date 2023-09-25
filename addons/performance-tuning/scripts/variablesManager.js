@@ -107,7 +107,7 @@
                 "defaultMargins": "0 12 0 0",
                 "items": [{
                   "type": "displayfield",
-                  "markup": "Weights Ratio",
+                  "markup": "Weights Ratio %",
                   "name": "prmnode"
                  }, {
                   "type": "displayfield",
