@@ -153,5 +153,3 @@ actions:
       echo "JCM add-on logs" > /var/log/migrator.log;
       chown jelastic /var/log/jcm.log;
     user: root
-    
-    
