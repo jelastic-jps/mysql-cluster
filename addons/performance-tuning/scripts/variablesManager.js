@@ -130,7 +130,8 @@
                     "type": "spinner",
                     "name": nodes[i].id,
                     "value": this.getWeight(nodes[i].id).weight,
-                    "min": "1"
+                    "min": "0",
+                    "max": "100"
                   }]
                 });
               }
