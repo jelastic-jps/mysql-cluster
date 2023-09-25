@@ -1,252 +1,280 @@
-function ApplySQLVariable() {
-    let envName = "${env.envName}";
-    let varName = "varName";
-    let varValue = "varValue";
+      function ApplySQLVariable() {
+          let envName = "${env.envName}";
+          let varName = "varName";
+          let varValue = "varValue";
 
-    let threadsNumber = "threadsNumber";
-    let MYSQL_THREADS = "mysql-threads";
+          let threadsNumber = "threadsNumber";
+          let MYSQL_THREADS = "mysql-threads";
 
-    let MAX_CONNECTIONS = "mysql-max_connections";
-    let maxConnections = "maxConnections";
-    let dbMaxConnections = "dbMaxConnections";
+          let MAX_CONNECTIONS = "mysql-max_connections";
+          let maxConnections = "maxConnections";
+          let dbMaxConnections = "dbMaxConnections";
 
-    let ROOT = "root";
-    let MY_CNF = "/etc/my.cnf";
-    let envInfo;
-    let SQLDB = "sqldb";
-    let PRIMARY = "Primary";
-    let SECONDARY = "Secondary";
+          let ROOT = "root";
+          let MY_CNF = "/etc/my.cnf";
+          let envInfo;
+          let SQLDB = "sqldb";
+          let PRIMARY = "Primary";
+          let SECONDARY = "Secondary";
 
-    this.run = function() {
-        let resp = this.defineMyCNF();
-        if (resp.result != 0) return resp;
+          this.run = function() {
+              let resp = this.defineMyCNF();
+              if (resp.result != 0) return resp;
 
-        resp = this.defineWeights();
-        if (resp.result != 0) return resp;
+              return this.getVariables();
+          };
 
-        return this.getVariables();
-    };
-
-    this.getVariables = function() {
-        let command = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/scripts/jcm.sh' -o /tmp/jcm.sh\n" +
-            "bash /tmp/jcm.sh getGlobalVariables"
-        let resp = this.cmdById("${nodes.proxy.master.id}", command);
-        if (resp.result != 0) return resp;
-
-        let variables = JSON.parse(resp.responses[0].out);
-
-        resp = this.formatVariables(variables);
-        if (resp.result != 0) return resp;
-
-        settings = settings || {};
-        settings.fields = settings.fields || {};
-
-        let field;
-        for (let i = 0, n = settings.fields.length; i < n; i++) {
-            field = settings.fields[i];
-            if (field.name == varName) {
-                field.values = resp.variables;
+          this.getScheme =  function() {
+            let nodeGroups, resp, scheme = "";
+            
+            resp = api.env.control.GetNodeGroups("${env.name}", session);
+            if (resp.result != 0) return resp;
+            
+            nodeGroups = resp.object;
+            for (var i = 0, n = nodeGroups.length; i < n; i++) {
+              if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled && nodeGroups[i].cluster.settings.scheme) {
+                scheme = String(nodeGroups[i].cluster.settings.scheme);
+              }
             }
+            return scheme;
+          };
 
-            if (field.name == varValue) {
-                field.dependsOn = resp.dependsData;
-            }
+          this.getVariables = function() {
+              let command = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh\n" +
+                  "bash /tmp/jcm.sh getGlobalVariables"
+              let resp = this.cmdById("${nodes.proxy.master.id}", command);
+              if (resp.result != 0) return resp;
 
-            if (field.caption == "ProxySQL Threads" && this.getMySQLThreads()) {
-                if (field.items && field.items[0]) {
-                    field.items[0].value = this.getMySQLThreads();
-                }
-            }
+              let variables = JSON.parse(resp.responses[0].out);
 
-            if (field.name == maxConnections && this.getMaxConnections()) {
-                field.value = this.getMaxConnections();
-            }
+              resp = this.formatVariables(variables);
+              if (resp.result != 0) return resp;
 
-            if (field.name == dbMaxConnections && this.getDbMaxConnections()) {
-                field.value = this.getDbMaxConnections();
-            }
+              settings = settings || {};
+              fields = settings.fields || {};
 
-            if (field.caption == "Weights Ratio" && this.getWeights()) {
-                if (field.items) {
-                    let item;
-                    for (let k = 0, l = field.items.length; k < l; k++) {
-                        item = field.items[k];
-                        if (item) {
-                            if (item.name == "weightMaster") {
-                                item.value = parseInt(this.getWeights().primary);
-                            } else if (item.name == "weightSlave") {
-                                item.value = parseInt(this.getWeights().secondary);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+              let field;
+              for (let i = 0, n = fields.length; i < n; i++) {
+                  field = fields[i];
+                  if (field.name == varName) {
+                      field.values = resp.variables;
+                  }
 
-        return settings;
-    };
+                  if (field.name == varValue) {
+                      field.dependsOn = resp.dependsData;
+                  }
 
-    this.defineWeights = function() {
-        let resp = this.getNodesByGroup(SQLDB);
-        if (resp.result != 0) return resp;
+                  if (field.caption == "ProxySQL Threads" && this.getMySQLThreads()) {
+                      if (field.items && field.items[0]) {
+                          field.items[0].value = this.getMySQLThreads();
+                      }
+                  }
 
-        let primaryWeight = "";
-        let secondaryWeight = "";
+                  if (field.name == maxConnections && this.getMaxConnections()) {
+                      field.value = this.getMaxConnections();
+                  }
 
-        let nodes = resp.nodes;
+                  if (field.name == dbMaxConnections && this.getDbMaxConnections()) {
+                      field.value = this.getDbMaxConnections();
+                  }
+                  
+              }
 
-        for (let i = 0, n = nodes.length; i < n; i++) {
-            if (nodes[i].displayName == SECONDARY) {
-                resp = this.getWeight(nodes[i].id);
-                if (resp.result != 0) return resp;
+              resp = this.getNodesByGroup(SQLDB);
+              if (resp.result != 0) return resp;
 
-                secondaryWeight = resp.weight;
-            }
+              let nodes = resp.nodes.sort(function (a, b) { return a.id - b.id; });
+              let scheme = this.getScheme();
+              
+              if (scheme == "galera"){
+                fields.push({
+                  "type": "compositefield",
+                  "caption": "Write nodes count",
+                  "items": [{
+                    "type": "spinner",
+                    "name": "maxWriters",
+                    "value": this.getGaleraMaxWriters().maxWriters,
+                    "min": 1,
+                    "max": nodes.length
+                  }]
+                }, {
+                  "type": "displayfield"
+                });
+              }
+              
+              fields.push({
+                "type": "compositefield",
+                "defaultMargins": "0 12 0 0",
+                "items": [{
+                  "type": "displayfield",
+                  "markup": "Weights Ratio",
+                  "name": "prmnode"
+                 }, {
+                  "type": "displayfield",
+                  "markup": "",
+                  "cls": "x-form-item-label",
+                  "width": "70",
+                  "tooltip":[{
+                    "text": "The bigger the weight of a server relative to other weights, the higher the probability of the server to be chosen from a hostgroup. ProxySQL default load-balancing algorithm is random-weighted."
+                    }, {
+                    "minWidth": "370"
+                    }]  
+                  }]
+              });
 
-            if (nodes[i].displayName == PRIMARY) {
-                resp = this.getWeight(nodes[i].id);
-                if (resp.result != 0) return resp;
+              for (let i = 0, n = nodes.length; i < n; i++) {
+                fields.push({
+                  "type": "compositefield",
+                  "caption": nodes[i].displayName+" node"+nodes[i].id,
+                  "items": [{
+                    "type": "spinner",
+                    "name": nodes[i].id,
+                    "value": this.getWeight(nodes[i].id).weight,
+                    "min": "1"
+                  }]
+                });
+              }
+              return settings;
+          };
 
-                primaryWeight = resp.weight;
-            }
-        }
+          this.getWeight = function(id) {
+              let command = "bash /tmp/jcm.sh getWeight --node=node"+id;
+              let resp = this.cmdById("${nodes.proxy.master.id}", command);
+              if (resp.result != 0) return resp;
+              return {
+                  result: 0,
+                  weight: resp.responses[0].out
+              }
+          };
 
-        this.setWeights({
-            primary: primaryWeight,
-            secondary: secondaryWeight
-        });
+          this.getGaleraMaxWriters = function() {
+              let command = "bash /tmp/jcm.sh getGaleraMaxWriters";
+              let resp = this.cmdById("${nodes.proxy.master.id}", command);
+              if (resp.result != 0) return resp;
+              return {
+                  result: 0,
+                  maxWriters: resp.responses[0].out
+              }
+          };
 
-        return { result: 0 }
-    };
+          this.getEnvInfo = function() {
+              if (!envInfo) {
+                  envInfo = api.env.control.GetEnvInfo("${env.name}", session);
+                  if (envInfo.result != 0) return envInfo;
 
-    this.getWeight = function(id) {
-        let command = "mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e \"select weight from mysql_servers where hostname = 'node" + id + "';\"  | sed '2,4!d'  | tail -n 1";
-        let resp = this.cmdById("${nodes.proxy.master.id}", command);
-        if (resp.result != 0) return resp;
-        return {
-            result: 0,
-            weight: resp.responses[0].out
-        }
-    };
+              }
 
-    this.getEnvInfo = function() {
-        if (!envInfo) {
-            envInfo = api.env.control.GetEnvInfo("${env.name}", session);
-            if (envInfo.result != 0) return envInfo;
+              return envInfo;
+          };
 
-        }
+          this.getNodesByGroup = function(group) {
+              envInfo = this.getEnvInfo();
+              if (envInfo.result != 0) return envInfo;
 
-        return envInfo;
-    };
+              let nodes = [];
 
-    this.getNodesByGroup = function(group) {
-        envInfo = this.getEnvInfo();
-        if (envInfo.result != 0) return envInfo;
+              for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
+                  if (envInfo.nodes[i].nodeGroup == group) {
+                      nodes.push(envInfo.nodes[i]);
+                  }
+              }
 
-        let nodes = [];
+              return {
+                  result: 0,
+                  nodes: nodes
+              }
+          };
 
-        for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
-            if (envInfo.nodes[i].nodeGroup == group) {
-                nodes.push(envInfo.nodes[i]);
-            }
-        }
+          this.defineMyCNF = function() {
+              let command = "grep -q 'max_connections' " + MY_CNF + " && { grep -r 'max_connections' " + MY_CNF + " | cut -c 17- || echo \"\"; } || { sed -i \"s|\\[mysqld\\]|\\[mysqld\\]\\nmax_connections=2048|g\" " + MY_CNF + "; echo 2048; };";
+              let resp = this.cmdById("${nodes.proxy.master.id}", command);
+              if (resp.result != 0) return resp;
 
-        return {
-            result: 0,
-            nodes: nodes
-        }
-    };
+              let max_connections = resp.responses[0].out;
+              this.setDbMaxConnections(parseInt(max_connections));
 
-    this.defineMyCNF = function() {
-        let command = "grep -q 'max_connections' " + MY_CNF + " && { grep -r 'max_connections' " + MY_CNF + " | cut -c 17- || echo \"\"; } || { sed -i \"s|\\[mysqld\\]|\\[mysqld\\]\\nmax_connections=2048|g\" " + MY_CNF + "; echo 2048; };";
-        let resp = this.cmdById("${nodes.proxy.master.id}", command);
-        if (resp.result != 0) return resp;
+              return {
+                  result: 0
+              };
+          };
 
-        let max_connections = resp.responses[0].out;
-        this.setDbMaxConnections(parseInt(max_connections));
+          this.formatVariables = function(variables) {
+              let dependsData = {};
+              let dependsValues = {};
+              let formatedData = [];
+              let variable;
 
-        return {
-            result: 0
-        };
-    };
+              for (let i = 0 , n = variables.length; i < n; i++) {
+                  variable = variables[i];
+                  formatedData.push({
+                      caption: variable.variable_name,
+                      value: variable.variable_name
+                  });
 
-    this.formatVariables = function(variables) {
-        let dependsData = {};
-        let dependsValues = {};
-        let formatedData = [];
-        let variable;
+                  dependsData[variable.variable_name] = [{
+                      caption: variable.variable_value,
+                      value: variable.variable_value
+                  }];
 
-        for (let i = 0 , n = variables.length; i < n; i++) {
-            variable = variables[i];
-            formatedData.push({
-                caption: variable.variable_name,
-                value: variable.variable_name
-            });
+                  if (variable.variable_name == MYSQL_THREADS) {
+                      this.setMySQLThreads(variable.variable_value);
+                  }
 
-            dependsData[variable.variable_name] = [{
-                caption: variable.variable_value,
-                value: variable.variable_value
-            }];
+                  if (variable.variable_name == MAX_CONNECTIONS) {
+                      this.setMaxConnections(variable.variable_value);
+                  }
+              }
 
-            if (variable.variable_name == MYSQL_THREADS) {
-                this.setMySQLThreads(variable.variable_value);
-            }
+              if (dependsData) {
+                  dependsValues[varName] = dependsData;
+              }
 
-            if (variable.variable_name == MAX_CONNECTIONS) {
-                this.setMaxConnections(variable.variable_value);
-            }
-        }
+              return {
+                  result: 0,
+                  variables: formatedData,
+                  dependsData: dependsValues
+              }
+          };
 
-        if (dependsData) {
-            dependsValues[varName] = dependsData;
-        }
+          this.getDbMaxConnections = function() {
+              return this.dbMaxConnections;
+          };
 
-        return {
-            result: 0,
-            variables: formatedData,
-            dependsData: dependsValues
-        }
-    };
+          this.setDbMaxConnections = function(connections) {
+              this.dbMaxConnections = connections;
+          };
 
-    this.getDbMaxConnections = function() {
-        return this.dbMaxConnections;
-    };
+          this.getWeights = function() {
+              return this.weights;
+          };
 
-    this.setDbMaxConnections = function(connections) {
-        this.dbMaxConnections = connections;
-    };
+          this.setWeights = function(weights) {
+              this.weights = weights;
+          };
 
-    this.getWeights = function() {
-        return this.weights;
-    };
+          this.getMySQLThreads = function() {
+              return this.mysqlThreads;
+          };
 
-    this.setWeights = function(weights) {
-        this.weights = weights;
-    };
+          this.setMySQLThreads = function(threads) {
+              this.mysqlThreads = threads;
+          };
 
-    this.getMySQLThreads = function() {
-        return this.mysqlThreads;
-    };
+          this.getMaxConnections = function() {
+              return this.maxConnections;
+          };
 
-    this.setMySQLThreads = function(threads) {
-        this.mysqlThreads = threads;
-    };
+          this.setMaxConnections = function(connections) {
+              this.maxConnections = connections;
+          };
 
-    this.getMaxConnections = function() {
-        return this.maxConnections;
-    };
+          this.cmdById = function(id, command) {
+              return api.env.control.ExecCmdById(envName, session, id, toJSON([{ command: command }]), true, ROOT);
+          };
+      };
 
-    this.setMaxConnections = function(connections) {
-        this.maxConnections = connections;
-    };
+      function log(message) {
+          api.marketplace.console.WriteLog(message);
+      }
 
-    this.cmdById = function(id, command) {
-        return api.env.control.ExecCmdById(envName, session, id, toJSON([{ command: command }]), true, ROOT);
-    };
-};
-
-function log(message) {
-    api.marketplace.console.WriteLog(message);
-}
-
-return new ApplySQLVariable().run();
+      return new ApplySQLVariable().run();    
