@@ -124,19 +124,29 @@ actions:
       user: root
     - cmd[sqldb]: jem service restart
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE global_variables SET variable_value=${settings.threadsNumber} WHERE variable_name = 'mysql-threads'; SAVE MYSQL VARIABLES TO DISK;";
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightMaster} WHERE hostname='node${nodes.sqldb.master.id}' and hostgroup_id='11';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=1 WHERE hostname='node${nodes.sqldb.master.id}' and hostgroup_id='10';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - forEach(sql:nodes.sqldb):
-        if ('${@sql.displayName}' == "Secondary"):
-          cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightSlave} WHERE hostname='node${@sql.id}';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections};LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: |-
-        jem service restart
-      user: root
+    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE global_variables SET variable_value=${settings.threadsNumber} WHERE variable_name = 'mysql-threads'; LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;";
+    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections}; LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
   
   weightUpdate:
-    
+      script: |
+      var envInfo, weight, cmd, execCmd, nodeId, settings = JSON.parse('${settings}');        
+      envInfo = api.env.control.GetEnvInfo("${env.name}", session);
+      if (envInfo.result != 0) return envInfo;
+      for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
+        if (envInfo.nodes[i].nodeGroup == 'sqldb') {   
+          nodeId = envInfo.nodes[i].id;
+          weight = settings[nodeId];
+          cmd1 = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh";
+          cmd2 = "bash /tmp/jcm.sh setWeight --weight=" +weight+ " --node=node" +nodeId;
+          execCmd =  api.environment.control.ExecCmdByGroup({
+            envName: '${env.envName}', 
+            nodeGroup: 'proxy',
+            commandList: toJSON([{"command": cmd1},{"command": cmd2}])
+          });
+          if (execCmd.result != 0) return execCmd;
+        }
+      }
+      return {result : 0};
   
   jcmLogPermission:
     cmd[proxy]: |-
