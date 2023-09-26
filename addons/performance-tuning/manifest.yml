@@ -59,14 +59,43 @@ buttons:
     action: settingsUpdate
     settings: settingsTune
 
+responses:
+  99:
+    type: warning
+    message: Add-on does not provide performance tuning for a non-cluster topologies.
 
 onInstall:
+  - getClusterScheme
   - jcmLogPermission
 
 actions:
+  
+  jcmLogPermission:
+    cmd[proxy]: |-
+      echo "JCM add-on logs" > /var/log/migrator.log;
+      chown jelastic /var/log/jcm.log;
+    user: root
+
+  getClusterScheme:
+    - script: |
+        var nodeGroups, resp, scheme = "";
+        resp = api.env.control.GetNodeGroups("${env.name}", session);
+        if (resp.result != 0) return resp;
+        nodeGroups = resp.object;
+        for (var i = 0, n = nodeGroups.length; i < n; i++) {
+          if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled && nodeGroups[i].cluster.settings.scheme) {
+            scheme = String(nodeGroups[i].cluster.settings.scheme);
+          }
+        }
+        if (scheme !== "master" && scheme !== "slave" && scheme !== "galera") return 98;
+        return {result: 0, onAfterReturn:{ setGlobals:{ "scheme": scheme }}}
+
   settingsUpdate:
     - variableUpdate
     - weightUpdate
+    - getClusterScheme
+    - if ('${globals.scheme}' == 'galera'):
+        setGaleraMaxWriters
   
   variableUpdate:
     cmd[proxysql]: |-
@@ -109,9 +138,15 @@ actions:
         }
       }
       return {result : 0};
-  
-  jcmLogPermission:
-    cmd[proxy]: |-
-      echo "JCM add-on logs" > /var/log/migrator.log;
-      chown jelastic /var/log/jcm.log;
-    user: root
+
+  setGaleraMaxWriters:
+    script: |
+      var cmd1 = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh";
+      var cmd2 = "bash /tmp/jcm.sh setGaleraMaxWriters --count=" + '${settings.maxWriters}';
+      
+      return cmd2;
+      return api.environment.control.ExecCmdByGroup({
+        envName: '${env.envName}', 
+        nodeGroup: 'proxy',
+        commandList: toJSON([{"command": cmd1},{"command": cmd2}])
+      });
