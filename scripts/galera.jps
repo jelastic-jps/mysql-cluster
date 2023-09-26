@@ -38,7 +38,21 @@ onAfterScaleOut[sqldb]:
     - cmd[${@i.id}]: jem service restart
 
 onAfterScaleIn[sqldb]: setupSeeds
-  
+
+onBeforeMigrate:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before migration, otherwise the database cluster will be broken."
+
+onBeforeClone:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before cloning, otherwise the database cluster will be broken."
+
 onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
