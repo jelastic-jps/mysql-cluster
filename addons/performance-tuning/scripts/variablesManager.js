@@ -3,6 +3,9 @@
           let varName = "varName";
           let varValue = "varValue";
 
+          let minWeight = 0; 
+          let maxWeight = 10000000;
+            
           let threadsNumber = "threadsNumber";
           let MYSQL_THREADS = "mysql-threads";
 
@@ -38,7 +41,14 @@
             }
             return scheme;
           };
-
+          
+          this.weightToPercent =  function(weight) {
+                  parsedWeight = parseInt(weight);
+                  if (parsedWeight == minWeight) return 0;
+                  if (parsedWeight >= 1 && parsedWeight <= 100000) return 1;
+                  if (parsedWeight > 100000) return (parsedWeight / maxWeight) * 100;
+          };
+            
           this.getVariables = function() {
               let command = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh\n" +
                   "bash /tmp/jcm.sh getGlobalVariables"
