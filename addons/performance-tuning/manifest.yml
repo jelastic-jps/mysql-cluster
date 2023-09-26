@@ -15,13 +15,6 @@ settings:
   settingsTune:
     onBeforeInit: /scripts/variablesManager.js
     fields:
-     - type: spinner
-       caption: DB Max Connections
-       name: dbMaxConnections
-       value: 2048
-       min: 1
-       tooltip: Maximum number of allowed connections to Database nodes
-
      - type: list
        caption: ProxySQL Variable
        name: varName
