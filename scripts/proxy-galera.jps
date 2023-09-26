@@ -1,51 +1,54 @@
 jpsType: update
 id: mysql-proxy-galera-cluster
-name: MariaDB Galera Cluster with ProxySQL
-description: MariaDB Galera Cluster
+name: Galera/XtraDB Cluster with ProxySQL
+description: Galera/XtraDB Cluster
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 success: /texts/proxy-entrypoint.md
 
+targetNodes: none
 nodeGroupAlias:
-  "${targetNodes.nodeGroup}": sqldb
+  ${settings.nodeGroup}: sqldb
 
 mixins:
   - /scripts/common.yml
+  - /scripts/proxy-common.yml
 
 globals:
-  PATH: "${settings.path}"
-  DB_USER: "${settings.db_user}"
-  DB_PASS: "${settings.db_pass}"
-  ORCH_PASS: "${fn.password(10)}"
+  DB_USER: ${settings.db_user}
+  DB_PASS: ${settings.db_pass}
+  ORCH_PASS: ${fn.password(10)}
+  ADMIN_USER: admin-${fn.random}
+  ADMIN_PASS: ${fn.password(10)}
   
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
       addNode:
-        id: "${@i.id}"
+        id: ${@i.id}
 
 onBeforeScaleIn[sqldb]:
   - forEach(event.response.nodes):
       removeNode:
-        id: "${@i.id}"
+        id: ${@i.id}
   - cmd[proxy]: 'MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;" '
-  
+
 onAfterMigrate:
-  install: ${globals.PATH}/scripts/proxy-galera.jps?_r=${fn.random}
-  nodeGroup: sqldb
-  settings:
-    db_user: "${globals.DB_USER}"
-    db_pass: "${globals.DB_PASS}"
-    path: "${globals.PATH}"
-    
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    settings:
+      nodeGroup: ${settings.nodeGroup}
+      db_user: ${globals.DB_USER}
+      db_pass: ${globals.DB_PASS}
+
 onAfterClone:
-  install: ${globals.PATH}/scripts/proxy-galera.jps?_r=${fn.random}
-  envName: ${event.response.env.envName}
-  nodeGroup: sqldb
-  settings:
-    db_user: "${globals.DB_USER}"
-    db_pass: "${globals.DB_PASS}"
-    path: "${globals.PATH}"
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    envName: ${event.response.env.envName}
+    settings:
+      nodeGroup: ${settings.nodeGroup}
+      db_user: ${globals.DB_USER}
+      db_pass: ${globals.DB_PASS}
 
 onBeforeRemoveNode[proxy]:
   stopEvent:
@@ -58,28 +61,12 @@ onBeforeAddNode[proxy]:
     message: Scaling is not supported for ProxySQL.
 
 onInstall:
-
   - getReplicaUser
-
   - resetProxyNodes
-
-  - cmd[proxy]: |-
-      mysql -h 127.0.0.1 -P3360 -uroot -e "CREATE DATABASE IF NOT EXISTS orchestrator;"
-      mysql -h 127.0.0.1 -P3360 -uroot -e "GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';"
-      wget ${globals.PATH}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
-      sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json
-      sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json
-      sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json
-      sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
-      sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json
-      sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
-      systemctl restart orchestrator; sleep 5
-    user: root
-
+  - setupOrchestrator
+  - setupProxySQLCluster
   - if(${fn.compare([nodes.proxy.master.version], 2.0)} > 0): initGaleraForProxy2
-
   - if(${fn.compare([nodes.proxy.master.version], 2.0)} < 0): initGaleraForProxy1
- 
   - forEach(nodes.sqldb):
     - addNode:
         id: "${@i.id}"
@@ -92,7 +79,7 @@ actions:
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_USER}' WHERE variable_name='mysql-monitor_username';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_PSWD}' WHERE variable_name='mysql-monitor_password';"
-        wget ${globals.PATH}/scripts/proxysql_galera_checker.sh -O /var/lib/proxysql/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
+        wget ${baseUrl}/scripts/proxysql_galera_checker.sh -O /var/lib/proxysql/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO scheduler(id,interval_ms,filename,arg1,arg2,arg3,arg4) VALUES
         (1,'2000','/var/lib/proxysql/proxysql_galera_checker.sh','127.0.0.1','6032','2', '/var/lib/proxysql/proxysql_galera_checker.log');"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD SCHEDULER TO RUNTIME; SAVE SCHEDULER TO DISK;"
@@ -123,15 +110,4 @@ actions:
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}';"
-   
-  resetProxyNodes:
-    - if(${fn.compare([nodes.proxy.master.version], 2.0)} > 0):
-        cmd[proxy]: MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "delete from mysql_galera_hostgroups; delete from mysql_users; delete from mysql_servers;"
-    - if(${fn.compare([nodes.proxy.master.version], 2.0)} < 0):
-        cmd[proxy]: MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "delete from mysql_replication_hostgroups; delete from mysql_users; delete from scheduler; delete from mysql_servers;"
-    - cmd[proxy]: |-  
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "SAVE MYSQL VARIABLES TO DISK;"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "SAVE MYSQL SERVERS TO DISK;"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "SAVE MYSQL USERS TO DISK;"
-        mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
-        sudo service proxysql restart;
+      

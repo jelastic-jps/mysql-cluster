@@ -1,3 +1,6 @@
+globals:
+  customConfigFile: /etc/mysql/conf.d/my_custom.cnf
+  
 actions:
   
   isEnvRunning:
@@ -62,9 +65,16 @@ actions:
             if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SELECT, RELOAD, LOCK TABLES, REPLICATION SLAVE, REPLICATION SLAVE ADMIN, SLAVE MONITOR, BINLOG MONITOR ON *.* TO '${this.user}'@'%';"; fi;
             if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"; fi;
 
+    - if (/percona/.test("${nodes.sqldb.nodeType}")):
+          cmd[${this.id}]: |-
+            mysqladmin ping -u${globals.DB_USER} -p${globals.DB_PASS} 2>/dev/null 1>/dev/null; MYSQLD_RUNNING=${?};
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "CREATE USER IF NOT EXISTS '${this.user}'@'%' IDENTIFIED BY '${this.pswd}';"; fi;
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "GRANT USAGE, SUPER, SELECT, RELOAD, LOCK TABLES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO '${this.user}'@'%';"; fi;
+            if [[ ${MYSQLD_RUNNING} -eq 0 ]] ; then MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -e "FLUSH PRIVILEGES;"; fi;
+
   setupAdminUser:
     - cmd[${this.id}]: |-
-        wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
+        wget ${baseUrl}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
 
@@ -75,3 +85,31 @@ actions:
         id: ${this.id}
         user: ${globals.REPLICA_USER}
         pswd: ${globals.REPLICA_PSWD}
+
+  addCustomConfig:
+    - cmd[sqldb]: wget ${baseUrl}/configs/custom.cnf -O ${globals.customConfigFile} &>> /var/log/run.log;
+    - env.file.AddFavorite:
+      nodeGroup: sqldb
+      path: ${globals.customConfigFile}
+      keyword: my_custom.cnf
+      isDir: false
+      
+  syncCustomConfig:
+    - nodeIdFrom: ${this.nodeIdFrom}
+      nodeIdTo: ${this.nodeIdTo}
+      script: |
+        var resp = api.env.file.Read({
+              envName: '${env.envName}',
+              path: '${globals.customConfigFile}',
+              nodeId: nodeIdFrom
+            });
+        if (resp.result == 2002) return {result: 0};
+        if (resp.result != 0) return resp
+        var resp = api.env.file.Write({
+              envName: '${env.envName}',
+              path: '${globals.customConfigFile}',
+              nodeId: nodeIdTo,
+              body: resp.body
+            });
+        if (resp.result != 0) return resp;
+        return {result: 0};

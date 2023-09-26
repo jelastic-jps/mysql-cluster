@@ -1,7 +1,7 @@
 jpsType: update
-id: mysql-galera-cluster
-name: MariaDB Galera Cluster
-description: MariaDB Galera Auto Clustering
+id: percona-xtradb-cluster
+name: Percona XtraDB Cluster
+description: Percona XtraDB Auto Clustering
 
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
@@ -17,9 +17,8 @@ mixins:
 globals:
   DB_USER: ${settings.db_user:user-[fn.random]}
   DB_PASS: ${settings.db_pass:[fn.password(20)]}
-  CLUSTER_NAME: galera-${env.name}
-  GALERA_CONF: /etc/mysql/conf.d/galera.cnf
-  CUSTOM_CONF: ${settings.custom_conf}
+  CLUSTER_NAME: xtradb-${env.name}
+  CLUSTER_CONF: /etc/mysql/conf.d/galera.cnf
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
@@ -38,21 +37,7 @@ onAfterScaleOut[sqldb]:
     - cmd[${@i.id}]: jem service restart
 
 onAfterScaleIn[sqldb]: setupSeeds
-
-onBeforeMigrate:
-  - isEnvRunning
-  - if (!${response.isEnvRunning}):
-    - stopEvent:
-        type: warning
-        message: "Please run the environment before migration, otherwise the database cluster will be broken."
-
-onBeforeClone:
-  - isEnvRunning
-  - if (!${response.isEnvRunning}):
-    - stopEvent:
-        type: warning
-        message: "Please run the environment before cloning, otherwise the database cluster will be broken."
-
+  
 onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
@@ -66,9 +51,9 @@ onAfterClone:
 
 onBeforeStop:
   - forEach(i:nodes.sqldb):
-      cmd[${@i.id}]: sudo jem service stop
+      env.control.StopNode [${@i.id}]
       
-onAfterStart:
+onAfterStart:   
   - if (nodes.proxy):
       cmd[proxy]: sudo service proxysql restart
 
@@ -105,21 +90,18 @@ onInstall:
     path: /var/lib/mysql/grastate.dat
     keyword: grastate.dat
     isDir: false
-        
+
 actions:
   initialSetup:
     - setupUsers:
         id: ${this.id}
-    - setNodeDisplayName[${this.id}]: Galera
-      if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
-        cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
-        user: root
+    - setNodeDisplayName[${this.id}]: XtraDB
     - cmd[${this.id}]: |-
-        [ -e /etc/systemd/system/mariadb.service.d ] && wget ${baseUrl}/scripts/mariadb-systemd-override.conf -O /etc/systemd/system/mariadb.service.d/bootstrap.conf || wget ${baseUrl}/scripts/mysql -O /etc/init.d/mysql;
-        chmod +x /usr/local/sbin/setMySQLOOMScore; echo '/etc/systemd/system/mariadb.service.d/bootstrap.conf' >> /etc/jelastic/redeploy.conf; systemctl daemon-reload
+        [ -e /etc/systemd/system/mysql.service.d ] && wget ${baseUrl}/scripts/percona-systemd-override.conf -O /etc/systemd/system/mysql.service.d/bootstrap.conf || wget ${baseUrl}/scripts/mysql -O /etc/init.d/mysql;
+        chmod +x /usr/local/sbin/setMySQLOOMScore; echo '/etc/systemd/system/mysql.service.d/bootstrap.conf' >> /etc/jelastic/redeploy.conf; systemctl daemon-reload;
       user: root
     - cmd[${this.id}]: |-
-        wget ${baseUrl}/configs/galera.cnf -O ${globals.GALERA_CONF} &>> /var/log/run.log
+        wget ${baseUrl}/configs/xtradb.cnf -O ${globals.CLUSTER_CONF} &>> /var/log/run.log;
  
   setupSeeds:
     script: |
@@ -129,25 +111,24 @@ actions:
       for (var i = 0, n = resp.nodes; i < n.length; i++)
         n[i].nodeGroup == "sqldb" ? intIP.push(n[i].intIP) : 0
       resp = {result:0, onAfterReturn: {}};
-      resp.onAfterReturn['cmd[sqldb]'] = 'sed -i "s|wsrep_cluster_address.*|wsrep_cluster_address = gcomm://'+ intIP.join(',') +'|g " ${globals.GALERA_CONF}';
+      resp.onAfterReturn['cmd[sqldb]'] = 'sed -i "s|wsrep_cluster_address.*|wsrep_cluster_address = gcomm://'+ intIP.join(',') +'|g " ${globals.CLUSTER_CONF}';
       resp.onAfterReturn['user'] = 'root';
       return resp;
   
   setupInstance:
     cmd[${this.id}]: |-
-      sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}"  | head -n1)/" ${globals.GALERA_CONF}
-      sed -i "s/bind-address.*/bind-address = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
-      sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_node_name.*/wsrep_node_name = $(hostname | cut -d'-' -f 1)/" ${globals.GALERA_CONF}
-      sed -i "s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/" ${globals.GALERA_CONF}
- 
+      sed -i "s/bind-address.*/bind-address = $(hostname | cut -d'-' -f 1)/" ${globals.CLUSTER_CONF}
+      sed -i "s/report_host.*/report_host = $(hostname | cut -d'-' -f 1)/" ${globals.CLUSTER_CONF}
+      sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = ${globals.CLUSTER_NAME}/" ${globals.CLUSTER_CONF}
+      sed -i "s/wsrep_node_name.*/wsrep_node_name = $(hostname | cut -d'-' -f 1)/" ${globals.CLUSTER_CONF}
+      sed -i "s/wsrep_node_address.*/wsrep_node_address = ${this.ip}/" ${globals.CLUSTER_CONF}
+
   wsrepSlaveThreads:
-    cmd[${this.id}]: sed -i "s/wsrep_slave_threads.*/wsrep_slave_threads = $(nproc --all)/" ${globals.GALERA_CONF}
- 
+    cmd[${this.id}]: sed -i "s/wsrep_slave_threads.*/wsrep_slave_threads = $(nproc --all)/" ${globals.CLUSTER_CONF}
+
   resetCluster:
     - cmd[sqldb]: |-
-        [ -f ${globals.GALERA_CONF} ] && rm -f ${globals.GALERA_CONF}
+        [ -f ${globals.CLUSTER_CONF} ] && rm -f ${globals.CLUSTER_CONF}
         [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
         [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache

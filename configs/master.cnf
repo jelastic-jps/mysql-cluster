@@ -4,7 +4,7 @@ auto-increment-increment = 2
 auto-increment-offset = 
 binlog_format = mixed
 log-bin = mysql-bin
-log-slave-updates
+log-slave-updates = OFF
 expire_logs_days = 7
 slave-skip-errors = 1062
 relay-log = /var/lib/mysql/mysql-relay-bin
