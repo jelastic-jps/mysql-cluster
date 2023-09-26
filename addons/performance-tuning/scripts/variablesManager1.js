@@ -140,7 +140,7 @@ function ApplySQLVariable() {
         "items": [{
           "type": "spinner",
           "name": nodes[i].id,
-          "value": this.weightToPercent((nodes[i].id).weight).percent,
+          "value": this.weightToPercent(this.getWeight(nodes[i].id).weight).percent,
           "min": "0",
           "max": "100"
         }]
