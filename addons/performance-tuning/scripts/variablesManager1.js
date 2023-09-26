@@ -89,10 +89,6 @@ function ApplySQLVariable() {
       if (field.name == maxConnections && this.getMaxConnections()) {
         field.value = this.getMaxConnections();
       }
-
-      if (field.name == dbMaxConnections && this.getDbMaxConnections()) {
-        field.value = this.getDbMaxConnections();
-      }
     }
 
     resp = this.getNodesByGroup(SQLDB);
