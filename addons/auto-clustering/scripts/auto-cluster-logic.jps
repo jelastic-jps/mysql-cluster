@@ -40,7 +40,7 @@ onInstall:
         REPLICA_PSWD: ${fn.password(20)}
         SCHEME: ${settings.scheme}
 
-  - install: 
+  - install:
       jps: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/manifest.yml?_r=${fn.random}
       nodeGroup: sqldb
       targetNodes: sqldb
