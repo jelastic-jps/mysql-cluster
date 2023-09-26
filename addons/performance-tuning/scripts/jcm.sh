@@ -378,7 +378,7 @@ setGaleraMaxWriters(){
     local cmd="UPDATE mysql_galera_hostgroups SET max_writers=$count;"
     proxyCommandExec "$cmd"
   }
-  execAction "_set_max_writers $NODE $WEIGHT" "Set weight $WEIGHT for $NODE node"
+  execAction "_set_max_writers $COUNT" "Set max writers count for galera cluster"
   execAction "loadServersToRuntime" "Loading mysql servers to runtime"
 }
 
