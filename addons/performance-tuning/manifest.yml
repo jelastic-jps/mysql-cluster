@@ -7,9 +7,6 @@ description: Change ProxySQL and Database settings according to your particular 
 baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning
 
 targetNodes: proxysql
-
-globals:
-  dbMaxConnections: 2048
   
 settings:
   settingsTune:
@@ -72,10 +69,6 @@ actions:
     - weightUpdate
   
   variableUpdate:
-    - cmd[sqldb]: |-
-        sed -i s/^max_connections.*/max_connections=${settings.dbMaxConnections}/g /etc/mysql/conf.d/my_custom.cnf
-      user: root
-    - cmd[sqldb]: jem service restart
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;"
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE global_variables SET variable_value=${settings.threadsNumber} WHERE variable_name = 'mysql-threads'; LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;";
     - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections}; LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
