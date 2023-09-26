@@ -10,7 +10,7 @@ targetNodes: proxysql
   
 settings:
   settingsTune:
-    onBeforeInit: /scripts/variablesManager2.js
+    onBeforeInit: /scripts/variablesManager.js?_r=${fn.random}
     fields:
      - type: list
        caption: ProxySQL Variable
