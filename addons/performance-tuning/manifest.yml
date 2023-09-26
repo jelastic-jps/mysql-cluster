@@ -60,6 +60,11 @@ buttons:
     settings: settingsTune
 
 responses:
+  98:
+    type: warning
+    message: |
+      An error occurs while updating the ProxySQL settiings.  
+      Please check the **/var/log/jcm.log** log file for details.
   99:
     type: warning
     message: Add-on does not provide performance tuning for a non-cluster topologies.
@@ -87,7 +92,7 @@ actions:
             scheme = String(nodeGroups[i].cluster.settings.scheme);
           }
         }
-        if (scheme !== "master" && scheme !== "slave" && scheme !== "galera") return 98;
+        if (scheme !== "master" && scheme !== "slave" && scheme !== "galera") return 99;
         return {result: 0, onAfterReturn:{ setGlobals:{ "scheme": scheme }}}
 
   settingsUpdate:
@@ -96,7 +101,10 @@ actions:
     - getClusterScheme
     - if ('${globals.scheme}' == 'galera'):
         setGaleraMaxWriters
-  
+    - return:
+        type: success
+        message: ProxySQL settings were updated successfully.
+
   variableUpdate:
     cmd[proxysql]: |-
       mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;"
@@ -143,8 +151,6 @@ actions:
     script: |
       var cmd1 = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh";
       var cmd2 = "bash /tmp/jcm.sh setGaleraMaxWriters --count=" + '${settings.maxWriters}';
-      
-      return cmd2;
       return api.environment.control.ExecCmdByGroup({
         envName: '${env.envName}', 
         nodeGroup: 'proxy',
