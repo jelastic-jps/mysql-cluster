@@ -12,11 +12,13 @@ resp=$(mysql -u$USER -p$PASSWORD mysql --execute="SHOW COLUMNS FROM user")
    openssl_version="$(openssl version | sed -r 's/^OpenSSL[[:blank:]]+([0-9]+)[.][^[:space:]]+[[:blank:]]+.*/\1/')"
    if  (( $openssl_version >= 3 )); then
        openssl_parameters='-aes-256-cbc -pbkdf2 -md sha512 -iter 10000 -salt -S 429488b2f3870b4a -iv dcb9fe5ecb4011cd20114119930aadc3'
+       STATIC="static:"
    else
        openssl_parameters='-aes-128-cbc -nosalt -A -nosalt'
+       STATIC="static"
    fi
    encPass=$(echo $ADMIN_PASSWORD | openssl enc -e -a $openssl_parameters -pass "pass:TFVhBKDOSBspeSXesw8fElCcOzbJzYed")
-   $JEM passwd set -p static::$encPass
+   $JEM passwd set -p $STATIC:$encPass
    $MYSQL -uroot -p${ADMIN_PASSWORD} --execute="$cmd"
 } || {
    echo "[Info] User $user has the required access to the database."
