@@ -77,7 +77,7 @@ actions:
   
   jcmLogPermission:
     cmd[proxy]: |-
-      echo "JCM add-on logs" > /var/log/migrator.log;
+      echo "JCM add-on logs" > /var/log/jcm.log;
       chown jelastic /var/log/jcm.log;
     user: root
 
