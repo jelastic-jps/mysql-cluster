@@ -107,6 +107,10 @@ function ApplySQLVariable() {
           "value": this.getGaleraMaxWriters().maxWriters,
           "min": 1,
           "max": nodes.length
+        } , {
+          "type": "tooltip",
+          "text": "This value determines the maximum number of nodes that should be allowed in the writer_hostgroup.",
+          "hidden": false
         }]
       }, {
         "type": "displayfield"
