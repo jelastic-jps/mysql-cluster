@@ -118,7 +118,7 @@ function ApplySQLVariable() {
       "defaultMargins": "0 12 0 0",
       "items": [{
         "type": "displayfield",
-        "markup": "Weights Ratio %",
+        "markup": "Weights Ratio 1-100",
         "name": "prmnode"
       }, {
         "type": "displayfield",
@@ -141,8 +141,8 @@ function ApplySQLVariable() {
           "type": "spinner",
           "name": nodes[i].id,
           "value": this.weightToPercent(this.getWeight(nodes[i].id).weight).percent,
-          "min": "0",
-          "max": "100"
+          "min": 0,
+          "max": 100
         }]
       });
     }
