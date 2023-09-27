@@ -121,15 +121,9 @@ function ApplySQLVariable() {
         "markup": "Weights Ratio 1-100",
         "name": "prmnode"
       }, {
-        "type": "displayfield",
-        "markup": "",
-        "cls": "x-form-item-label",
-        "width": "70",
-        "tooltip":[{
-          "text": "The bigger the weight of a server relative to other weights, the higher the probability of the server to be chosen from a hostgroup. ProxySQL default load-balancing algorithm is random-weighted."
-        }, {
-          "minWidth": "370"
-        }]
+        "type": "tooltip",
+        "text": "The bigger the weight of a server relative to other weights, the higher the probability of the server to be chosen from a hostgroup. ProxySQL default load-balancing algorithm is random-weighted.",
+        "hidden": false
       }]
     });
 
