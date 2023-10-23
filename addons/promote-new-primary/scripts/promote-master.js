@@ -40,14 +40,15 @@ function promoteNewPrimary() {
             if (resp.isRunning) return {result: 0}
 
             //NO PROXY
-            resp = this.DefinePrimaryNode();
-            if (resp.result != 0) return resp;
-
             resp = this.checkAvailability();
             if (resp.result != MySQL_FAILED) {
                 return resp;
             }
         }
+
+        resp = this.DefinePrimaryNode();
+        this.log("DefinePrimaryNode resp->" + resp);
+        if (resp.result != 0) return resp;
 
         resp = this.newPrimaryOnProxy();
         if (resp.result != 0) return resp;
