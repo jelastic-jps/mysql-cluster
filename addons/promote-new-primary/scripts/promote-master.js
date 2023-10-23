@@ -241,7 +241,7 @@ function promoteNewPrimary() {
             return api.environment.control.GetContainerEnvVars(envName, session, secondaryNodeId);
         }
 
-        return (resp.result == 0) ? resp || {result: GET_ENVS_FAILED, error: "Can not get environment variables"};
+        return (resp.result == 0) ? resp : {result: GET_ENVS_FAILED, error: "Can not get environment variables"};
     };
 
     this.checkAvailability = function() {
