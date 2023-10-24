@@ -37,11 +37,6 @@ function promoteNewPrimary() {
         if (this.getAddOnType()) {
             resp = this.auth();
             if (resp.result != 0) return resp;
-
-            resp = this.checkAvailability();
-            if (resp.result != MySQL_FAILED || resp.result != 0) {
-                return resp;
-            }
         } else {
             //NO PROXY
             let resp = this.isProcessRunning();
@@ -555,6 +550,7 @@ function promoteNewPrimary() {
 
     this.newPrimaryOnProxy = function() {
         let alreadySetNewPrimary = false;
+        let resp;
         // let resp = this.diagnosticNodes();
         // if (resp.result != 0) return resp;
 
