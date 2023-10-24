@@ -29,10 +29,19 @@ function promoteNewPrimary() {
         let resp = this.defineAddonType();
         if (resp.result != 0) return resp;
 
+        resp = this.DefinePrimaryNode();
+        this.log("DefinePrimaryNode resp->" + resp);
+        if (resp.result != 0) return resp;
+
         //PROXY
         if (this.getAddOnType()) {
             resp = this.auth();
             if (resp.result != 0) return resp;
+
+            resp = this.checkAvailability();
+            if (resp.result != MySQL_FAILED || resp.result != 0) {
+                return resp;
+            }
         } else {
             //NO PROXY
             let resp = this.isProcessRunning();
@@ -41,14 +50,10 @@ function promoteNewPrimary() {
 
             //NO PROXY
             resp = this.checkAvailability();
-            if (resp.result != MySQL_FAILED) {
+            if (resp.result != MySQL_FAILED || resp.result != 0) {
                 return resp;
             }
         }
-
-        resp = this.DefinePrimaryNode();
-        this.log("DefinePrimaryNode resp->" + resp);
-        if (resp.result != 0) return resp;
 
         resp = this.newPrimaryOnProxy();
         if (resp.result != 0) return resp;
@@ -99,12 +104,22 @@ function promoteNewPrimary() {
         if (force || resp.result == 4109 ||
             (resp.responses && resp.responses[0].result == 4109) ||
             (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
-            resp = this.addIteration();
-            if (resp.result != 0) return resp;
+            if (this.getAddOnType()) {
+                resp = this.addIteration();
+                if (resp.result != 0) return resp;
+            }
 
-            return this.setIsRunningStatus(false);
+            if ((resp.iterator >= primary_idle_time / 10) || force) {
+                if (this.getAddOnType()) {
+                    resp = this.setIsRunningStatus(true);
+                    if (resp.result != 0) return resp;
+                    return {
+                        result: MySQL_FAILED
+                    }
+                }
+            }
         }
-        if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host")) {
+        if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host") != -1) {
             return {
                 result: MySQL_FAILED
             }
@@ -223,7 +238,7 @@ function promoteNewPrimary() {
 
     this.getContainerEnvs = function() {
         let secondaryNodeId = "";
-        let nodeId, envVars;
+        let nodeId;
         let resp = this.getEnvInfo();
         if (resp.result != 0) return resp;
 
@@ -243,27 +258,6 @@ function promoteNewPrimary() {
         }
 
         return (resp.result == 0) ? resp : {result: GET_ENVS_FAILED, error: "Can not get environment variables"};
-    };
-
-    this.checkAvailability = function() {
-        let command = "mysqladmin -u" + containerEnvs["REPLICA_USER"] + " -p" + containerEnvs["REPLICA_PSWD"] +  " ping";
-        let resp = this.cmdById(this.getPrimaryNode().id, command);
-
-        if (force == "false") force = false;
-        if (force || resp.result == 4109 || (resp.responses && resp.responses[0].result == 4109) || (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
-            resp = this.addIteration();
-            if (resp.result != 0) return resp;
-
-            if ((resp.iterator >= primary_idle_time / 10) || force) {
-                resp = this.setIsRunningStatus(true);
-                if (resp.result != 0) return resp;
-                return {
-                    result: MySQL_FAILED
-                }
-            }
-        }
-
-        return { result: 0 }
     };
 
     this.getPromoteData = function() {
@@ -561,9 +555,8 @@ function promoteNewPrimary() {
 
     this.newPrimaryOnProxy = function() {
         let alreadySetNewPrimary = false;
-        let resp = this.diagnosticNodes();
-
-        if (resp.result != 0) return resp;
+        // let resp = this.diagnosticNodes();
+        // if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
         resp = this.getNodesByGroup(SQLDB);
@@ -688,6 +681,13 @@ function promoteNewPrimary() {
         if (nodeGroup == PROXY && !test) {
             let resp = this.checkNodesAvailability(PROXY);
             if (resp && resp.nodeid) {
+                return this.cmdById(resp.nodeid, command);
+            }
+        }
+
+        if (nodeGroup == SQLDB && test) {
+            let resp = this.checkAvailability();
+            if (resp.result == MySQL_FAILED) {
                 return this.cmdById(resp.nodeid, command);
             }
         }
