@@ -33,10 +33,6 @@ function promoteNewPrimary() {
         this.log("DefinePrimaryNode resp->" + resp);
         if (resp.result != 0) return resp;
 
-        resp = this.checkAvailability();
-        if (resp.result != MySQL_FAILED || resp.result != 0) {
-            return resp;
-        }
         //PROXY
         if (this.getAddOnType()) {
             resp = this.auth();
@@ -54,10 +50,18 @@ function promoteNewPrimary() {
             // }
         }
 
+        resp = this.checkAvailability();
+        this.log("checkAvailability resp->" + resp);
+        if (resp.result != MySQL_FAILED && resp.result != 0) {
+            return resp;
+        }
+
         resp = this.newPrimaryOnProxy();
+        this.log("newPrimaryOnProxy resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.promoteNewSQLPrimary();
+        this.log("promoteNewSQLPrimary resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setDomains();
@@ -67,6 +71,7 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.setContainerVar();
+        this.log("setContainerVar resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setNewMasterNode();
@@ -103,13 +108,13 @@ function promoteNewPrimary() {
         if (force || resp.result == 4109 ||
             (resp.responses && resp.responses[0].result == 4109) ||
             (resp.responses[0].out && resp.responses[0].out.indexOf("is alive") == -1)) {
-            if (this.getAddOnType()) {
+            if (!this.getAddOnType()) {
                 resp = this.addIteration();
                 if (resp.result != 0) return resp;
             }
 
             if ((resp.iterator >= primary_idle_time / 10) || force) {
-                if (this.getAddOnType()) {
+                if (!this.getAddOnType()) {
                     resp = this.setIsRunningStatus(true);
                     if (resp.result != 0) return resp;
                     return {
@@ -118,8 +123,10 @@ function promoteNewPrimary() {
                 }
             }
         }
+        
         if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host") != -1) {
             this.setFailedPrimary(this.getPrimaryNode());
+            this.log("checkAvailability this.getFailedPrimary ->" + this.getFailedPrimary());
             return {
                 result: MySQL_FAILED
             }
@@ -382,7 +389,7 @@ function promoteNewPrimary() {
                 });
                 if (resp.result != 0) return resp;
             }
-            
+
             return { result: 0 }
         }
 
