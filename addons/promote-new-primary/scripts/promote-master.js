@@ -79,12 +79,15 @@ function promoteNewPrimary() {
         //SAME DONE
 
         resp = this.restoreNodes();
+        this.log("restoreNodes resp" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.addNode();
+        this.log("addNode resp" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.removeFailedPrimary();
+        this.log("removeFailedPrimary resp" + resp);
         if (resp.result != 0) return resp;
 
         if (!this.getAddOnType()) {
@@ -100,10 +103,11 @@ function promoteNewPrimary() {
         return { result: 0 }
     };
 
-    this.checkAvailability = function() {
+    this.checkAvailability = function(skipIteration) {
         let command = "mysqladmin -u" + containerEnvs["REPLICA_USER"] + " -p" + containerEnvs["REPLICA_PSWD"] +  " ping";
         let resp = this.cmdById(this.getPrimaryNode().id, command, 10);
 
+        if (skipIteration) return resp;
         if (force == "false") force = false;
         if (force || resp.result == 4109 ||
             (resp.responses && resp.responses[0].result == 4109) ||
@@ -123,7 +127,7 @@ function promoteNewPrimary() {
                 }
             }
         }
-        
+
         if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host") != -1) {
             this.setFailedPrimary(this.getPrimaryNode());
             this.log("checkAvailability this.getFailedPrimary ->" + this.getFailedPrimary());
@@ -425,7 +429,7 @@ function promoteNewPrimary() {
         let clusterUp = false;
         let command = "curl -fsSL 'https://github.com/jelastic-jps/mysql-cluster/raw/master/addons/recovery/scripts/db-recovery.sh' -o /tmp/db_recovery.sh\n" +
             "bash /tmp/db_recovery.sh --diagnostic"
-        let resp = this.cmdByGroup(command, SQLDB, 60);
+        let resp = this.cmdByGroup(command, SQLDB, 60, true);
         if (resp.result != 0) return resp;
 
         let responses = resp.responses, out;
@@ -434,14 +438,16 @@ function promoteNewPrimary() {
         if (responses.length) {
             for (let i = 0, n = responses.length; i < n; i++) {
                 out = JSON.parse(responses[i].out);
-                nodes.push({
-                    address: out.address,
-                    id: responses[i].nodeid,
-                    type: out.node_type
-                });
+                if (out.result == 0) {
+                    nodes.push({
+                        address: out.address,
+                        id: responses[i].nodeid,
+                        type: out.node_type
+                    });
 
-                if (out.service_status == "up" || out.status == "ok") {
-                    clusterUp = true;
+                    if (out.service_status == "up" || out.status == "ok") {
+                        clusterUp = true;
+                    }
                 }
             }
 
@@ -604,9 +610,8 @@ function promoteNewPrimary() {
 
     this.newPrimaryOnProxy = function() {
         let alreadySetNewPrimary = false;
-        let resp;
-        // let resp = this.diagnosticNodes();
-        // if (resp.result != 0) return resp;
+        let resp = this.diagnosticNodes();
+        if (resp.result != 0) return resp;
 
         let nodes = this.getParsedNodes();
         resp = this.getNodesByGroup(SQLDB);
@@ -657,12 +662,18 @@ function promoteNewPrimary() {
     };
 
     this.restoreNodes = function() {
-        let nodes = this.getParsedNodes();
+        // let nodes = this.getParsedNodes();
         let newPrimary = this.getNewPrimaryNode();
 
+        let resp = this.getAvailableSQL(SQLDB);
+        if (resp.result != 0) return resp;
+        let nodes = resp.nodes;
+        // node.address != containerEnvs["PRIMARY_IP"]
+        this.log("this.restoreNodes nodes ->" + nodes);
         let command = "bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
         for (let i = 0, n = nodes.length; i < n; i++) {
-            if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
+            // if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
+            if (nodes[i].id != newPrimary.id && nodes[i].address != containerEnvs["PRIMARY_IP"]) {
                 let resp = this.cmdById(nodes[i].id, command);
                 if (resp.result != 0) return resp;
             }
@@ -738,6 +749,15 @@ function promoteNewPrimary() {
         if (nodeGroup == SQLDB && test) {
             let resp = this.checkAvailability();
             if (resp.result == MySQL_FAILED) {
+                let resp = this.getAvailableSQL();
+                if (resp.result != 0) return resp;
+                
+                for (let i = 0, n = resp.nodes.length; i < n; i++) {
+                    if (resp.nodes[i].id) {
+                        resp = this.cmdById(resp.nodes[i].id, command);
+                        if (resp.result != 0) return resp;
+                    }
+                }
                 return this.cmdById(resp.nodeid, command);
             }
         }
