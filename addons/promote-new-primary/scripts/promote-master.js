@@ -694,7 +694,7 @@ function promoteNewPrimary() {
 
             if (nodeGroups.indexOf(String(node.nodeGroup)) == -1) {
                 nodeGroups.push(String(node.nodeGroup));
-                resp = this.getNodesByGroup(node.nodeGroup);
+                let resp = this.getNodesByGroup(node.nodeGroup);
                 if (resp.result != 0) return resp;
 
                 count = resp.nodes.length;
@@ -751,10 +751,11 @@ function promoteNewPrimary() {
             if (resp.result == MySQL_FAILED) {
                 let resp = this.getAvailableSQL();
                 if (resp.result != 0) return resp;
-                
+
                 for (let i = 0, n = resp.nodes.length; i < n; i++) {
                     if (resp.nodes[i].id) {
                         resp = this.cmdById(resp.nodes[i].id, command);
+                        this.log("in cmdByGroup cmdById resp->" + resp);
                         if (resp.result != 0) return resp;
                     }
                 }
