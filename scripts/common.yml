@@ -64,7 +64,7 @@ actions:
 
   setupAdminUser:
     - cmd[${this.id}]: |-
-        wget ${baseUrl}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
+        wget https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/setupUser.sh -O ~/setupUser.sh;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
 
@@ -77,7 +77,7 @@ actions:
         pswd: ${globals.REPLICA_PSWD}
 
   addCustomConfig:
-    - cmd[sqldb]: wget ${baseUrl}/configs/custom.cnf -O ${globals.customConfigFile} &>> /var/log/run.log;
+    - cmd[sqldb]: wget https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/configs/custom.cnf -O ${globals.customConfigFile};
     - env.file.AddFavorite:
       nodeGroup: sqldb
       path: ${globals.customConfigFile}
