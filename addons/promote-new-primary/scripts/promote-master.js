@@ -352,7 +352,7 @@ function promoteNewPrimary() {
     };
 
     this.auth = function() {
-        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "RCmfxWady8") {
+        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "${token}") {
             return {
                 result: Response.PERMISSION_DENIED,
                 error: "wrong token",
@@ -756,7 +756,6 @@ function promoteNewPrimary() {
                 for (let i = 0, n = resp.nodes.length; i < n; i++) {
                     if (resp.nodes[i].id) {
                         resp = this.cmdById(resp.nodes[i].id, command);
-// {"result":0,"responses":[{"result":0,"errOut":"","nodeid":8482,"exitStatus":0,"out":"{\"result\":0,\"node_type\":\"secondary\",\"address\":\"192.168.130.79\",\"service_status\":\"up\",\"status\":\"failed\",\"galera_size\":\"\",\"galera_myisam\":\"\",\"error\":\"\"}"}]}
                         if (resp.result != 0) return resp;
                         responses.push(resp.responses[0]);
                     }
