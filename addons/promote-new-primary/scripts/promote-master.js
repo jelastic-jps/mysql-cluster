@@ -29,17 +29,13 @@ function promoteNewPrimary() {
         let resp = this.defineAddonType();
         if (resp.result != 0) return resp;
 
-        resp = this.DefinePrimaryNode();
-        this.log("DefinePrimaryNode resp->" + resp);
-        if (resp.result != 0) return resp;
-
         //PROXY
         if (this.getAddOnType()) {
             resp = this.auth();
             if (resp.result != 0) return resp;
         } else {
             //NO PROXY
-            let resp = this.isProcessRunning();
+            resp = this.isProcessRunning();
             if (resp.result != 0) return resp;
             if (resp.isRunning) return {result: 0}
 
@@ -50,18 +46,18 @@ function promoteNewPrimary() {
             // }
         }
 
+        resp = this.DefinePrimaryNode();
+        if (resp.result != 0) return resp;
+
         resp = this.checkAvailability();
-        this.log("checkAvailability resp->" + resp);
         if (resp.result != MySQL_FAILED && resp.result != 0) {
             return resp;
         }
 
         resp = this.newPrimaryOnProxy();
-        this.log("newPrimaryOnProxy resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.promoteNewSQLPrimary();
-        this.log("promoteNewSQLPrimary resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setDomains();
@@ -71,7 +67,6 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
 
         resp = this.setContainerVar();
-        this.log("setContainerVar resp->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.setNewMasterNode();
@@ -79,15 +74,12 @@ function promoteNewPrimary() {
         //SAME DONE
 
         resp = this.restoreNodes();
-        this.log("restoreNodes resp" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.addNode();
-        this.log("addNode resp" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.removeFailedPrimary();
-        this.log("removeFailedPrimary resp" + resp);
         if (resp.result != 0) return resp;
 
         if (!this.getAddOnType()) {
@@ -130,7 +122,7 @@ function promoteNewPrimary() {
 
         if (resp.responses[0].error && resp.responses[0].error.indexOf("No route to host") != -1) {
             this.setFailedPrimary(this.getPrimaryNode());
-            this.log("checkAvailability this.getFailedPrimary ->" + this.getFailedPrimary());
+            this.setNoRoute(true);
             return {
                 result: MySQL_FAILED
             }
@@ -214,7 +206,8 @@ function promoteNewPrimary() {
             this.log("API api.env.control.SetMasterNode");
             return api.env.control.SetMasterNode({
                 envName: envName,
-                nodeId: this.getNewPrimaryNode().id
+                nodeId: this.getNewPrimaryNode().id,
+                ignoreErrors: true
             });
         } else {
             this.log("Eval SetMasterNode");
@@ -359,7 +352,7 @@ function promoteNewPrimary() {
     };
 
     this.auth = function() {
-        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "${token}") {
+        if (!session && String(getParam("token", "")).replace(/\s/g, "") != "RCmfxWady8") {
             return {
                 result: Response.PERMISSION_DENIED,
                 error: "wrong token",
@@ -410,8 +403,9 @@ function promoteNewPrimary() {
     this.getAvailableSQL = function() {
         let availableNodes = [];
 
-        let nodes = this.getNodesByGroup(SQLDB);
-        if (nodes.result != 0) return nodes;
+        let resp = this.getNodesByGroup(SQLDB);
+        if (resp.result != 0) return resp;
+        let nodes = resp.nodes;
 
         for (let i = 0, n = nodes.length; i < n; i++) {
             if (nodes[i].address != this.getFailedPrimary().address) {
@@ -525,6 +519,14 @@ function promoteNewPrimary() {
         this.failedPrimary = node;
     };
 
+    this.setNoRoute = function(value) {
+        this.noRoute = value;
+    };
+
+    this.getNoRoute = function() {
+        return this.noRoute;
+    };
+
     this.getAvailableProxy = function() {
         return this.availableProxy || "";
     };
@@ -613,7 +615,7 @@ function promoteNewPrimary() {
         let resp = this.diagnosticNodes();
         if (resp.result != 0) return resp;
 
-        let nodes = this.getParsedNodes();
+        // let nodes = this.getParsedNodes();
         resp = this.getNodesByGroup(SQLDB);
 
         if (resp && resp.nodes) {
@@ -669,7 +671,6 @@ function promoteNewPrimary() {
         if (resp.result != 0) return resp;
         let nodes = resp.nodes;
         // node.address != containerEnvs["PRIMARY_IP"]
-        this.log("this.restoreNodes nodes ->" + nodes);
         let command = "bash /tmp/db_recovery.sh --scenario restore_secondary_from_primary --donor-ip " + newPrimary.address;
         for (let i = 0, n = nodes.length; i < n; i++) {
             // if (nodes[i].id != newPrimary.id && nodes[i].type == SECONDARY) {
@@ -747,19 +748,20 @@ function promoteNewPrimary() {
         }
 
         if (nodeGroup == SQLDB && test) {
-            let resp = this.checkAvailability();
-            if (resp.result == MySQL_FAILED) {
+            if (this.getNoRoute()) {
                 let resp = this.getAvailableSQL();
                 if (resp.result != 0) return resp;
 
+                let responses = [];
                 for (let i = 0, n = resp.nodes.length; i < n; i++) {
                     if (resp.nodes[i].id) {
                         resp = this.cmdById(resp.nodes[i].id, command);
-                        this.log("in cmdByGroup cmdById resp->" + resp);
+// {"result":0,"responses":[{"result":0,"errOut":"","nodeid":8482,"exitStatus":0,"out":"{\"result\":0,\"node_type\":\"secondary\",\"address\":\"192.168.130.79\",\"service_status\":\"up\",\"status\":\"failed\",\"galera_size\":\"\",\"galera_myisam\":\"\",\"error\":\"\"}"}]}
                         if (resp.result != 0) return resp;
+                        responses.push(resp.responses[0]);
                     }
                 }
-                return this.cmdById(resp.nodeid, command);
+                return { result: 0, responses: responses }
             }
         }
 
