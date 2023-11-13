@@ -3,7 +3,7 @@ id: mysql-master-slave-replication-cluster
 name: MySQL/MariaDB/Percona Primary-Secondary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-cluster
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 success:
   text: /texts/phpmyadmin-credentials.md
@@ -18,6 +18,20 @@ mixins:
 globals:
   DB_USER: ${settings.db_user:user-[fn.random]}
   DB_PASS: ${settings.db_pass:[fn.password(20)]}
+
+onBeforeMigrate:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before migration, otherwise the database cluster will be broken."
+
+onBeforeClone:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before cloning, otherwise the database cluster will be broken."
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
@@ -83,6 +97,6 @@ actions:
       - setGlobals:
           PRIMARY_IP: ${nodes.sqldb.master.address}
     - cmd[${this}]: |-
-        curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
         bash /tmp/db-recovery.sh --scenario restore_secondary_from_primary --donor-ip ${globals.PRIMARY_IP};
       user: root
