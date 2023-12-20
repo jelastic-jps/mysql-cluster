@@ -263,20 +263,17 @@ newPrimary(){
 }
 
 getGlobalVariables(){
-
-  local cmd="SELECT variable_name from global_variables WHERE variable_name LIKE 'mysql-%' and variable_value <> '' AND variable_value IS NOT NULL;"
+  local cmd="SELECT variable_name,variable_value FROM global_variables WHERE variable_name LIKE 'mysql-%' and variable_value <> '' AND variable_value IS NOT NULL;"
   local global_variables=$(proxyCommandExec "$cmd")
   local json_variables=$(jq -n '[]')
-  variables=($global_variables)
-  for variable in "${variables[@]}"
+
+  while IFS=$'\t' read -r variable variable_value;
   do
-    get_value_cmd="SELECT variable_value from global_variables WHERE variable_name='$variable';"
-    variable_value=$(proxyCommandExec "$get_value_cmd")
-         json_variables=$(echo $json_variables | jq \
-        --arg variable_name "$variable" \
-        --arg variable_value "$variable_value" \
-        '. += [{"variable_name": $variable_name, "variable_value": $variable_value}]')
-  done
+    json_variables=$(echo $json_variables | jq \
+    --arg variable_name "$variable" \
+    --arg variable_value "$variable_value" \
+    '. += [{"variable_name": $variable_name, "variable_value": $variable_value}]')
+  done <<< "$global_variables"
   echo $json_variables
 }
 
