@@ -16,6 +16,8 @@ settings:
        caption: ProxySQL Variable
        name: varName
        default: mysql-monitor_connect_timeout
+       editable: true
+       forceSelection: true
        tooltip:
          text: |
               The behaviour of ProxySQL can be tweaked using global variables. There are 2 types of global variables, depending on which part of ProxySQL they control:
