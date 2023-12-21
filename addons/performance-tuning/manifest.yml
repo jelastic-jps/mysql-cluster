@@ -38,6 +38,7 @@ settings:
          - type: spinner
            name: threadsNumber
            value: 4
+           min: 1
          - type: tooltip
            text: The number of background threads that ProxySQL uses in order to process MySQL traffic.
            hidden: false     
@@ -107,9 +108,10 @@ actions:
 
   variableUpdate:
     cmd[proxysql]: |-
-      mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;"
-      mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE global_variables SET variable_value=${settings.threadsNumber} WHERE variable_name = 'mysql-threads'; LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;";
-      mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections}; LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
+      curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh;
+      bash /tmp/jcm.sh setMySQLThreads --value=${settings.threadsNumber};
+      mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;";
+      mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections}; LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;";
   
   weightUpdate:
     script: |
@@ -135,12 +137,11 @@ actions:
         if (envInfo.nodes[i].nodeGroup == 'sqldb') {   
           nodeId = envInfo.nodes[i].id;
           weight = percentToWeight(settings[nodeId]).weight;
-          cmd1 = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh";
-          cmd2 = "bash /tmp/jcm.sh setWeight --weight=" + weight+ " --node=node" +nodeId;
+          cmd = "bash /tmp/jcm.sh setWeight --weight=" + weight+ " --node=node" +nodeId;
           execCmd =  api.environment.control.ExecCmdByGroup({
             envName: '${env.envName}', 
             nodeGroup: 'proxy',
-            commandList: toJSON([{"command": cmd1},{"command": cmd2}])
+            commandList: toJSON([{"command": cmd}])
           });
           if (execCmd.result != 0) return execCmd;
         }
@@ -149,10 +150,9 @@ actions:
 
   setGaleraMaxWriters:
     script: |
-      var cmd1 = "curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh";
-      var cmd2 = "bash /tmp/jcm.sh setGaleraMaxWriters --count=" + '${settings.maxWriters}';
+      var cmd = "bash /tmp/jcm.sh setGaleraMaxWriters --count=" + '${settings.maxWriters}';
       return api.environment.control.ExecCmdByGroup({
         envName: '${env.envName}', 
         nodeGroup: 'proxy',
-        commandList: toJSON([{"command": cmd1},{"command": cmd2}])
+        commandList: toJSON([{"command": cmd1}])
       });
