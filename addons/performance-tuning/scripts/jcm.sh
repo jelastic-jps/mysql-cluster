@@ -101,7 +101,12 @@ loadServersToRuntime(){
 }
 
 loadVariablesToRuntime(){
-  local cmd="LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
+  local cmd="LOAD MYSQL VARIABLES TO RUNTIME;"
+  proxyCommandExec "$cmd"
+}
+
+saveVariablesToDisk(){
+  local cmd="SAVE MYSQL VARIABLES TO DISK;"
   proxyCommandExec "$cmd"
 }
 
@@ -303,6 +308,38 @@ setGlobalVariable(){
   }
   execAction "_set_global_variable $VARIABLE_NAME $VARIABLE_VALUE" "Set global variable ${VARIABLE_NAME}=${VARIABLE_VALUE}"
   execAction "loadVariablesToRuntime" "Loading global variables to runtime"
+  execAction "saveVariablesToDisk" "Save global variables to disk"
+}
+
+getMySQLThreads(){
+  local cmd="SELECT variable_value FROM global_variables WHERE variable_name='mysql-threads';"
+  local mysql_threads=$(proxyCommandExec "$cmd")
+  echo $mysql_threads
+}
+
+
+setMySQLThreads(){
+  for i in "$@"; do
+    case $i in
+      --value=*)
+      VALUE=${i#*=}
+      shift
+      shift
+      ;;
+      *)
+        ;;
+    esac
+  done
+
+ _set_mysql_threads(){
+    local value="$1"
+    local cmd="UPDATE global_variables SET variable_value=$value WHERE variable_name='mysql-threads';"
+    proxyCommandExec "$cmd"
+  }
+  local old_value=$(getMySQLThreads)
+  execAction "_set_mysql_threads $VALUE" "Set mysql threads value to $VALUE"
+  execAction "saveVariablesToDisk" "Save global variables to disk"
+  sudo jem service restart;
 }
 
 getWeight(){
@@ -433,6 +470,14 @@ case ${1} in
       setGaleraMaxWriters "$@"
       ;;
 
+    getMySQLThreads)
+      getMySQLThreads
+      ;;
+
+    setMySQLThreads)
+      setMySQLThreads "$@"
+      ;;      
+      
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
