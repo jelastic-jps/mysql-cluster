@@ -337,9 +337,12 @@ setMySQLThreads(){
     proxyCommandExec "$cmd"
   }
   local old_value=$(getMySQLThreads)
-  execAction "_set_mysql_threads $VALUE" "Set mysql threads value to $VALUE"
-  execAction "saveVariablesToDisk" "Save global variables to disk"
-  sudo jem service restart;
+  if [ "x$old_value" != "x$VALUE"  ];
+  then
+    execAction "_set_mysql_threads $VALUE" "Set mysql threads value to $VALUE"
+    execAction "saveVariablesToDisk" "Save global variables to disk"
+    sudo jem service restart;
+  fi;
 }
 
 getWeight(){
@@ -476,8 +479,8 @@ case ${1} in
 
     setMySQLThreads)
       setMySQLThreads "$@"
-      ;;      
-      
+      ;;
+
     *)
       echo "Please use $(basename "$BASH_SOURCE") primaryStatus or $(basename "$BASH_SOURCE") newPrimary"
 esac
