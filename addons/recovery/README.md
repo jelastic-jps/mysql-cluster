@@ -45,11 +45,13 @@ Click **Install** and wait for the successful installation. The add-on will appe
 
 The add-on allows doing two actions:
 
-- **Cluster Diagnostic** - with this action, the add-on automatically scans all nodes in the cluster in order to identify whether the nodes are accessible and whether databases are consistent. If during diagnostic the database corruption or even node failure is detected, the add-on will warn you with a respective popup window:
+- **Cluster Diagnostic** - with this action, the add-on automatically scans all nodes in the cluster in order to identify whether the nodes are accessible and whether databases are consistent. If during diagnostic the database corruption or even node failure is detected, the add-on will warn you with a respective pop-up window:
 
 ![diagnostic failure](images/04-diagnostic-failure.png)
 
-- **Cluster Recovery** - once any failure has been detected, you can either try automatic database recovery by pressing the **Cluster Recovery** button or perform manual database recovery by following the link to the recovery guide. The best practice is to use the automatic recovery scenario.
+> **Tip:** Cluster diagnostic is triggered automatically before the **environment stop** and **cloudlets change** operations. The respective actions will proceed only if the database integrity is verified (to avoid additional damage to the cluster).
+
+- **Cluster Recovery** - if any failure has been detected, you can either try automatic database recovery by pressing the **Cluster Recovery** button or perform manual database recovery by following the link to the recovery guide. The best practice is to use the automatic recovery scenario.
 
 To perform automatic recovery, provide database user credentials either you got upon database cluster installation or the credentials of another privileged user you created.
 

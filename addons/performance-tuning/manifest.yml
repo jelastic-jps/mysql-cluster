@@ -1,22 +1,23 @@
 type: update
-name: DB Cluster Tuning (Alpha)
+name: ProxySQL Tuning
 id: proxysql-db-tune-addon
 logo: addons/performance-tuning/images/mysql-proxysql-tuning.png
-description: Change ProxySQL and Database settings according to your particular use case
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/
-targetNodes: proxysql
+description: Change ProxySQL settings according to your particular use case
 
-globals:
-  dbMaxConnections: 2048
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning
+
+targetNodes: proxysql
   
 settings:
   settingsTune:
-    onBeforeInit: addons/performance-tuning/scripts/variablesManager.js
+    onBeforeInit: /scripts/variablesManager.js?_r=${fn.random}
     fields:
      - type: list
        caption: ProxySQL Variable
        name: varName
        default: mysql-monitor_connect_timeout
+       editable: true
+       forceSelection: true
        tooltip:
          text: |
               The behaviour of ProxySQL can be tweaked using global variables. There are 2 types of global variables, depending on which part of ProxySQL they control:
@@ -39,6 +40,7 @@ settings:
          - type: spinner
            name: threadsNumber
            value: 4
+           min: 1
          - type: tooltip
            text: The number of background threads that ProxySQL uses in order to process MySQL traffic.
            hidden: false     
@@ -51,80 +53,108 @@ settings:
            min: 1
          - type: tooltip
            text: ProxySQL maintains a pool of connections. A connection pool is a cache of database connections maintained so that the connections can be reused when future requests to the database are required.
-           hidden: false     
+           hidden: false
+     
      - type: displayfield
-     - type: compositefield
-       defaultMargins: "0 12 0 0"
-       items:
-         - type: displayfield
-           markup: Primary Node
-           name: prmnode
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 70
-           tooltip: Primary node weight for Select queries
-         - type: displayfield
-           markup: Secondary Node
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 70
-           tooltip: Secondary node weight for Select queries
-     - type: compositefield
-       caption: Weights Ratio
-       defaultMargins: "0 12 0 0"
-       tooltip:
-         text: The bigger the weight of a server relative to other weights, the higher the probability of the server to be chosen from a hostgroup. ProxySQL default load-balancing algorithm is random-weighted.
-         minWidth: 370        
-       items:
-         - type: spinner
-           name: weightMaster
-           min: 1
-           default: 50
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 10
-         - type: displayfield
-           markup: "/"
-           cls: x-form-item-label
-           width: 10
-         - type: displayfield
-           markup: ""
-           cls: x-form-item-label
-           width: 10
-         - type: spinner
-           name: weightSlave
-           min: 1
-           default: 50
-     - type: spinner
-       caption: DB Max Connections
-       name: dbMaxConnections
-       value: 2048
-       min: 1
-       tooltip: Maximum number of allowed connections to Database nodes
 
 buttons:
   - caption: Change Settings
     action: settingsUpdate
     settings: settingsTune
 
+responses:
+  98:
+    type: warning
+    message: |
+      An error occurs while updating the ProxySQL settiings.  
+      Please check the **/var/log/jcm.log** log file for details.
+  99:
+    type: warning
+    message: Add-on does not provide performance tuning for a non-cluster topologies.
+
+onInstall:
+  - getClusterScheme
+  - jcmLogPermission
 
 actions:
-  settingsUpdate: 
-    - cmd[sqldb]: |-
-        sed -i s/^max_connections.*/max_connections=${settings.dbMaxConnections}/g /etc/mysql/conf.d/my_custom.cnf
-      user: root
-    - cmd[sqldb]: jem service restart
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE global_variables SET variable_value=${settings.threadsNumber} WHERE variable_name = 'mysql-threads'; SAVE MYSQL VARIABLES TO DISK;";
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightMaster} WHERE hostname='node${nodes.sqldb.master.id}' and hostgroup_id='11';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=1 WHERE hostname='node${nodes.sqldb.master.id}' and hostgroup_id='10';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - forEach(sql:nodes.sqldb):
-        if ('${@sql.displayName}' == "Secondary"):
-          cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET weight=${settings.weightSlave} WHERE hostname='node${@sql.id}';LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections};LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;"
-    - cmd[proxysql]: |-
-        jem service restart
-      user: root
+  
+  jcmLogPermission:
+    cmd[proxy]: |-
+      echo "JCM add-on logs" > /var/log/jcm.log;
+      chown jelastic /var/log/jcm.log;
+    user: root
+
+  getClusterScheme:
+    - script: |
+        var nodeGroups, resp, scheme = "";
+        resp = api.env.control.GetNodeGroups("${env.name}", session);
+        if (resp.result != 0) return resp;
+        nodeGroups = resp.object;
+        for (var i = 0, n = nodeGroups.length; i < n; i++) {
+          if (nodeGroups[i].name == 'sqldb' && nodeGroups[i].cluster && nodeGroups[i].cluster.enabled && nodeGroups[i].cluster.settings.scheme) {
+            scheme = String(nodeGroups[i].cluster.settings.scheme);
+          }
+        }
+        if (scheme !== "master" && scheme !== "slave" && scheme !== "galera") return 99;
+        return {result: 0, onAfterReturn:{ setGlobals:{ "scheme": scheme }}}
+
+  settingsUpdate:
+    - variableUpdate
+    - weightUpdate
+    - getClusterScheme
+    - if ('${globals.scheme}' == 'galera'):
+        setGaleraMaxWriters
+    - return:
+        type: success
+        message: ProxySQL settings were updated successfully.
+
+  variableUpdate:
+    cmd[proxysql]: |-
+      curl -fsSL 'https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66111/addons/performance-tuning/scripts/jcm.sh' -o /tmp/jcm.sh;
+      bash /tmp/jcm.sh setMySQLThreads --value=${settings.threadsNumber};
+      mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "update global_variables set variable_value=${settings.varValue} where variable_name='${settings.varName}';LOAD MYSQL VARIABLES TO RUNTIME;SAVE MYSQL VARIABLES TO DISK;";
+      mysql -uadmin -padmin -h 127.0.0.1 -P6032 -e "UPDATE mysql_servers SET max_connections=${settings.maxConnections}; LOAD MYSQL SERVERS TO RUNTIME;SAVE MYSQL SERVERS TO DISK;";
+  
+  weightUpdate:
+    script: |
+      let envInfo, weight, cmd, execCmd, nodeId, settings = JSON.parse('${settings}');        
+      let minWeight = 0; 
+      let maxWeight = 10000000;
+      
+      function percentToWeight(percent){
+        let localWeight=1;
+        let parsedPercent = parseInt(percent);
+        if (parsedPercent == 0) localWeight = 0;
+        if (parsedPercent == 1) localWeight = 100000;
+        if (parsedPercent > 1) localWeight = (parsedPercent / 100) * maxWeight;
+        return {
+          result: 0,
+          weight: localWeight
+        }
+      };
+      
+      envInfo = api.env.control.GetEnvInfo("${env.name}", session);
+      if (envInfo.result != 0) return envInfo;
+      for (let i = 0, n = envInfo.nodes.length; i < n; i++) {
+        if (envInfo.nodes[i].nodeGroup == 'sqldb') {   
+          nodeId = envInfo.nodes[i].id;
+          weight = percentToWeight(settings[nodeId]).weight;
+          cmd = "bash /tmp/jcm.sh setWeight --weight=" + weight+ " --node=node" +nodeId;
+          execCmd =  api.environment.control.ExecCmdByGroup({
+            envName: '${env.envName}', 
+            nodeGroup: 'proxy',
+            commandList: toJSON([{"command": cmd}])
+          });
+          if (execCmd.result != 0) return execCmd;
+        }
+      }
+      return {result : 0};
+
+  setGaleraMaxWriters:
+    script: |
+      var cmd = "bash /tmp/jcm.sh setGaleraMaxWriters --count=" + '${settings.maxWriters}';
+      return api.environment.control.ExecCmdByGroup({
+        envName: '${env.envName}', 
+        nodeGroup: 'proxy',
+        commandList: toJSON([{"command": cmd1}])
+      });
