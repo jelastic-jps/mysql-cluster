@@ -3,7 +3,7 @@ id: mysql-master-slave-replication-cluster
 name: MySQL/MariaDB/Percona Primary-Secondary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-59466-new
 
 success:
   text: /texts/phpmyadmin-credentials.md
@@ -77,6 +77,11 @@ actions:
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/master.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/master.cnf
         sed -i "/auto-increment/d" /etc/mysql/conf.d/master.cnf
+        
+    - applyVersionConfiguration:
+        id: ${this}
+        conf_file: /etc/mysql/conf.d/master.cnf
+    
     - if (!${settings.clone:false}):
       - setupUsers:
           id: ${this}
@@ -87,6 +92,11 @@ actions:
         wget ${baseUrl}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/slave.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/slave.cnf
+        
+    - applyVersionConfiguration:
+        id: ${this}
+        conf_file: /etc/mysql/conf.d/slave.cnf
+    
     - setNodeDisplayName[${this}]: Secondary
 
   addSlave:
