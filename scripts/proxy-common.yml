@@ -1,6 +1,3 @@
-globals:
-  db_cluster_path: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
-
 actions:
   setupOrchestrator:
     - log: Orchestrator configuration
@@ -14,7 +11,7 @@ actions:
           mysql -h 127.0.0.1 -P3360 -uroot -e "SET PASSWORD FOR 'admin'@'127.0.0.1' = PASSWORD('${globals.ORCH_PASS}');"
         fi
         mysql -h 127.0.0.1 -P3360 -uroot -e "FLUSH PRIVILEGES;"
-        wget ${globals.db_cluster_path}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
+        wget ${baseUrl}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
         sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json
         sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json
         sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json
