@@ -93,14 +93,15 @@ actions:
         sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf;
         sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf;
         
-    - applyVersionConfiguration:
-        id: ${this.id}
-        conf_file: /etc/mysql/conf.d/master.cnf
-        
     - if (/mysql/.test("${nodes.sqldb.nodeType}")):
       - cmd[${this.id}]: |-
           echo "master_info_repository=TABLE" >> /etc/mysql/conf.d/master.cnf;
           echo "relay_log_info_repository=TABLE" >> /etc/mysql/conf.d/master.cnf;
+
+    - applyVersionConfiguration:
+        id: ${this.id}
+        conf_file: /etc/mysql/conf.d/master.cnf
+
     - setupUsers:
         id: ${this.id}
     - setNodeDisplayName[${this.id}]: Primary
