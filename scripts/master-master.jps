@@ -94,7 +94,7 @@ actions:
         sed -i "s/auto-increment-offset.*/auto-increment-offset = ${this.increment}/" /etc/mysql/conf.d/master.cnf;
         
     - applyVersionConfiguration:
-        id: ${this}
+        id: ${this.id}
         conf_file: /etc/mysql/conf.d/master.cnf
         
     - if (/mysql/.test("${nodes.sqldb.nodeType}")):
