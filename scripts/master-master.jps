@@ -119,14 +119,15 @@ actions:
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/slave.cnf;
         sed -i '/log-slave-updates/d' /etc/mysql/conf.d/slave.cnf;
     
-    - applyVersionConfiguration:
-        id: ${this}
-        conf_file: /etc/mysql/conf.d/slave.cnf
-
     - if (/mysql/.test("${nodes.sqldb.nodeType}")):
       - cmd[${this}]: |-
           echo "master_info_repository=TABLE" >> /etc/mysql/conf.d/slave.cnf;
           echo "relay_log_info_repository=TABLE" >> /etc/mysql/conf.d/slave.cnf;
+    
+    - applyVersionConfiguration:
+        id: ${this}
+        conf_file: /etc/mysql/conf.d/slave.cnf
+ 
     - setupUsers:
         id: ${this}
     - setNodeDisplayName[${this}]: Secondary  
