@@ -103,7 +103,7 @@ responses:
   96:
     type: warning
     message: |
-      MySQL and MariaDB command not found.  
+      mysql or mariadb command not found.  
 
 actions:
   clusterValidate:
