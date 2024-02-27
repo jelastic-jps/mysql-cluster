@@ -100,6 +100,11 @@ responses:
       Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
       Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
+  96:
+    type: warning
+    message: |
+      MySQL and MariaDB command not found.  
+
 actions:
   clusterValidate:
     - script: |
