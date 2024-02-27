@@ -118,11 +118,11 @@ SERVICE_FAIL_CODE=96
 #NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
 NODE_ADDRESS=$(host $(hostname) | awk '/has.*address/{print $NF; exit}')
 
-if systemctl status mariadb &> /dev/null; then
-  MYSQL=`which mariadb`
+if command -v mariadb &> /dev/null; then
+  MYSQL="mariadb"
 else
-  if systemctl status mysql &> /dev/null; then
-    MYSQL=`which mysql`
+  if command -v mysql &> /dev/null; then
+    MYSQL="mysql"
   else
     echo "{result: $SERVICE_FAIL_CODE}"
     exit 0
