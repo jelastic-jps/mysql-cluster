@@ -23,16 +23,6 @@ globals:
   ADMIN_USER: admin-${fn.random}
   ADMIN_PASS: ${fn.password(10)}
   MAX_REPL_LAG: 20
-  
-onBeforeRemoveNode[proxy]:
-  stopEvent:
-    type: warning
-    message: Scaling is not supported for ProxySQL.
-
-onBeforeAddNode[proxy]:
-  stopEvent:
-    type: warning
-    message: Scaling is not supported for ProxySQL.
 
 onAfterScaleOut[sqldb]:
   forEach(event.response.nodes):
