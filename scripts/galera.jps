@@ -153,6 +153,7 @@ actions:
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
         pgrep mysql 1>/dev/null && pkill -9 mysql;
         pgrep mariadb 1>/dev/null && pkill -9 mariadb || true
+        systemctl reset-failed
       user: root
  
   restartNodesInOrder:
