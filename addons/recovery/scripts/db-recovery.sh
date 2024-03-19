@@ -124,7 +124,7 @@ else
   if command -v mysql &> /dev/null; then
     MYSQL="mysql"
   else
-    echo "{result: $SERVICE_FAIL_CODE, error: $SERVICE_FAIL_MESSAGE}"
+    echo "{result: $SERVICE_FAIL_CODE, error: \"$SERVICE_FAIL_MESSAGE\"}"
     exit 0
   fi
 fi
