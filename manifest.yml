@@ -7,6 +7,7 @@ categories:
   - apps/clustered-dbs
   - apps/popular
   - apps/clusters
+  - apps/databases
   
 description: 
   text: "/texts/description.md?_r=1"
@@ -16,7 +17,7 @@ logo: /images/mysql-mariadb-percona-logo.png?_r=1
 
 onBeforeInit: /scripts/settings.js?_r=${fn.random}
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-59466-new
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-cluster
 
 settings:
   fields:
