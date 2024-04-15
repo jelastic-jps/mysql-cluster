@@ -75,7 +75,7 @@ actions:
 
   setupAdminUser:
     - cmd[${this.id}]: |-
-        wget ${globals.db_cluster_path}/scripts/setupUser.sh -O ~/setupUser.sh;
+        wget ${baseUrl}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
 
@@ -88,7 +88,7 @@ actions:
         pswd: ${globals.REPLICA_PSWD}
 
   addCustomConfig:
-    - cmd[sqldb]: wget ${globals.db_cluster_path}/configs/custom.cnf -O ${globals.customConfigFile};
+    - cmd[sqldb]: wget ${baseUrl}/configs/custom.cnf -O ${globals.customConfigFile} &>> /var/log/run.log;
     - env.file.AddFavorite:
       nodeGroup: sqldb
       path: ${globals.customConfigFile}
@@ -114,3 +114,12 @@ actions:
             });
         if (resp.result != 0) return resp;
         return {result: 0};
+
+  applyVersionConfiguration:
+    - if (/mysql/.test("${nodes.sqldb.nodeType}") && '${fn.compare([nodes.sqldb.version], 8.0.25)}' == 1):
+        cmd[${this.id}]: |-
+          sed -i "s/log-slave-updates/log_replica_updates/" ${this.conf_file};
+          sed -i "s/slave-skip-errors/replica_skip_errors/" ${this.conf_file};
+          sed -i "s/expire_logs_days.*/binlog_expire_logs_seconds = 604800/" ${this.conf_file};
+          sed -i "/master_info_repository/d" ${this.conf_file};
+          sed -i "/relay_log_info_repository/d" ${this.conf_file};
