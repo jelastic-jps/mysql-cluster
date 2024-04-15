@@ -38,7 +38,21 @@ onAfterScaleOut[sqldb]:
     - cmd[${@i.id}]: jem service restart
 
 onAfterScaleIn[sqldb]: setupSeeds
-  
+
+onBeforeMigrate:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before migration, otherwise the database cluster will be broken."
+
+onBeforeClone:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before cloning, otherwise the database cluster will be broken."
+
 onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
@@ -137,6 +151,7 @@ actions:
         [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
         [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
+        [ -f /var/lib/mysql/tc.log ] && rm -f /var/lib/mysql/tc.log
         pgrep mysql 1>/dev/null && pkill -9 mysql;
         pgrep mariadb 1>/dev/null && pkill -9 mariadb || true
       user: root

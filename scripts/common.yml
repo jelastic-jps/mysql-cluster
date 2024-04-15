@@ -1,7 +1,18 @@
 globals:
+  db_cluster_path: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
   customConfigFile: /etc/mysql/conf.d/my_custom.cnf
   
 actions:
+  
+  isEnvRunning:
+    script: |
+      import com.hivext.api.server.system.service.utils.EnvironmentStatus;
+      var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+      if (resp.result != 0) return resp;
+      var status = resp.env.status;
+      var isEnvRunning = status == EnvironmentStatus['ENV_STATUS_TYPE_RUNNING'].getValue() ? true : false;
+      return {result: 0, isEnvRunning: isEnvRunning}
+
   getReplicaUser:
     - env.control.GetContainerEnvVarsByGroup[sqldb]
     - setGlobals:
@@ -64,7 +75,7 @@ actions:
 
   setupAdminUser:
     - cmd[${this.id}]: |-
-        wget ${baseUrl}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
+        wget ${globals.db_cluster_path}/scripts/setupUser.sh -O ~/setupUser.sh;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
 
@@ -77,7 +88,7 @@ actions:
         pswd: ${globals.REPLICA_PSWD}
 
   addCustomConfig:
-    - cmd[sqldb]: wget ${baseUrl}/configs/custom.cnf -O ${globals.customConfigFile} &>> /var/log/run.log;
+    - cmd[sqldb]: wget ${globals.db_cluster_path}/configs/custom.cnf -O ${globals.customConfigFile};
     - env.file.AddFavorite:
       nodeGroup: sqldb
       path: ${globals.customConfigFile}
