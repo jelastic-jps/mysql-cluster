@@ -100,7 +100,6 @@ if [[ "${diagnostic}" != "YES" ]] && [[ "${check_corrupts}" != "YES" ]]; then
   fi
 fi
 
-
 RUN_LOG="/var/log/db_recovery.log"
 PRIVATE_KEY='/root/.ssh/id_rsa_db_monitoring'
 SSH="timeout 300 ssh -i ${PRIVATE_KEY} -T -o StrictHostKeyChecking=no"
@@ -113,26 +112,39 @@ SUCCESS_CODE=0
 FAIL_CODE=99
 AUTHORIZATION_ERROR_CODE=701
 CORRUPT_CHECK_FAIL_CODE=97
+SERVICE_FAIL_CODE=96
+SERVICE_FAIL_MESSAGE="mysql or mariadb command not found"
 
 #NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
 NODE_ADDRESS=$(host $(hostname) | awk '/has.*address/{print $NF; exit}')
 
+if command -v mariadb &> /dev/null; then
+  MYSQL="mariadb"
+else
+  if command -v mysql &> /dev/null; then
+    MYSQL="mysql"
+  else
+    echo "{result: $SERVICE_FAIL_CODE, error: \"$SERVICE_FAIL_MESSAGE\"}"
+    exit 0
+  fi
+fi
+
 mysqlCommandExec(){
   command="$1"
   server_ip=$2
-  MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -e "$command"
+  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL -u${MYSQL_USER} -h${server_ip} -e "$command"
 }
 
 mysqlNoTablesCommandExec(){
   command="$1"
   server_ip=$2
-  MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -sNe "$command"
+  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL -u${MYSQL_USER} -h${server_ip} -sNe "$command"
 }
 
 mysqlCommandExec2(){
   command="$1"
   server_ip=$2
-  MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -sNe "$command"
+  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL -u${MYSQL_USER} -h${server_ip} -sNe "$command"
 }
 
 log(){
