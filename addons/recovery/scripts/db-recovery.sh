@@ -537,6 +537,7 @@ galeraGetPrimaryNode(){
   local primary_node='undefined'
   local primary_node_by_seq
   local serverName="$(getMysqlServerName)"
+  local wsrep_recover_log='/tmp/wsrep_recover.log'
   for node in "${nodes_to_fix[@]}"
   do
       [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
@@ -549,14 +550,15 @@ galeraGetPrimaryNode(){
       else
         stopMysqlService "${node}"
         [[ ${primary_node} == 'undefined' ]] || continue
-        
+ 
         if [[ "${serverName}" == "mariadb" ]]; then
-          command="${SSH} ${node} 'mysqld --wsrep-recover > /dev/null 2>&1 && tail -2 /var/log/mysql/mysqld.log |grep \"Recovered position\"'"
+          command="${SSH} ${node} 'mysqld --wsrep-recover --log-error=${wsrep_recover_log} > /dev/null 2>&1 && tail -2 ${wsrep_recover_log} |grep \"Recovered position\"'"
         else
-          command="${SSH} ${node} 'mysqld --wsrep-recover --user=root> /dev/null 2>&1 && tail -2 /var/log/mysqld.log |grep \"Recovered position\"'"
+          command="${SSH} ${node} 'mysqld --wsrep-recover --user=root --log-error=${wsrep_recover_log} > /dev/null 2>&1 && tail -2 ${wsrep_recover_log} |grep \"Recovered position\"'"
         fi
         cur_seq_num=$(execSshReturn "$command" "[Node: ${node}]: Get seqno"|awk -F 'Recovered position:' '{print $2}'|awk -F : '{print $2}' )
-        log "[Node: ${node}]: seqno=${cur_seq_num}"
+        [[ -f ${wsrep_recover_log} ]] && rm -f ${wsrep_recover_log}
+	log "[Node: ${node}]: seqno=${cur_seq_num}"
       fi
 
       if [[ "${seq_num}" -lt "${cur_seq_num}" ]]; then
