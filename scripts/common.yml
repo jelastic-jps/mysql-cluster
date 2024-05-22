@@ -114,3 +114,23 @@ actions:
             });
         if (resp.result != 0) return resp;
         return {result: 0};
+
+  applyVersionConfiguration:
+    - if (/mysql/.test("${nodes.sqldb.nodeType}") && '${fn.compare([nodes.sqldb.version], 8.0.25)}' == 1):
+        cmd[${this.id}]: |-
+          sed -i "s/log-slave-updates/log_replica_updates/" ${this.conf_file};
+          sed -i "s/slave-skip-errors/replica_skip_errors/" ${this.conf_file};
+          sed -i "s/expire_logs_days.*/binlog_expire_logs_seconds = 604800/" ${this.conf_file};
+          sed -i "/master_info_repository/d" ${this.conf_file};
+          sed -i "/relay_log_info_repository/d" ${this.conf_file};
+
+    - if (/mysql/.test("${nodes.sqldb.nodeType}") && '${fn.compare([nodes.sqldb.version], 8.0.33)}' == 1):
+        cmd[${this.id}]: |-
+          sed -i "/binlog_format/d" ${this.conf_file};
+
+    - if (/percona/.test("${nodes.sqldb.nodeType}") && '${fn.compare([nodes.sqldb.version], 8.0.33)}' == 1):
+        cmd[${this.id}]: |-
+          sed -i "s/log-slave-updates/log_replica_updates/" ${this.conf_file};
+          sed -i "s/slave-skip-errors/replica_skip_errors/" ${this.conf_file};
+          sed -i "s/expire_logs_days.*/binlog_expire_logs_seconds = 604800/" ${this.conf_file};
+          sed -i "/binlog_format/d" ${this.conf_file};
