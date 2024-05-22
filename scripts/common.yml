@@ -75,7 +75,7 @@ actions:
 
   setupAdminUser:
     - cmd[${this.id}]: |-
-        wget ${baseUrl}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log;
+        wget ${globals.db_cluster_path}/scripts/setupUser.sh -O ~/setupUser.sh;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
 
@@ -88,7 +88,7 @@ actions:
         pswd: ${globals.REPLICA_PSWD}
 
   addCustomConfig:
-    - cmd[sqldb]: wget ${baseUrl}/configs/custom.cnf -O ${globals.customConfigFile} &>> /var/log/run.log;
+    - cmd[sqldb]: wget ${globals.db_cluster_path}/configs/custom.cnf -O ${globals.customConfigFile};
     - env.file.AddFavorite:
       nodeGroup: sqldb
       path: ${globals.customConfigFile}
