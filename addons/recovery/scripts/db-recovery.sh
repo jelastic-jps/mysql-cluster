@@ -377,12 +377,23 @@ setPrimaryWriteMode(){
   mysqlCommandExec "unlock tables;" ${node}
 }
 
+getUserAuthPlugin(){
+  local node=$1
+  local user=$2
+  local plugin
+  plugin=$(mysqlNoTablesCommandExec "SELECT plugin FROM mysql.user WHERE User = '$user' and Host = '%';" ${node})
+  echo $plugin
+}
 
 restoreSecondaryPosition(){
   local node=$1
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
   mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
+  local plugin="$(getUserAuthPlugin ${node} ${ReplicaUser})"
+  if [[ x$plugin == *"caching_sha2_password"* ]]; then
+    mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START SLAVE;" ${node}
+  fi
 }
 
 getMysqlServerName(){
@@ -409,6 +420,11 @@ restoreMultiSecondaryPosition(){
     mysqlCommandExec "CHANGE MASTER '${MasterName}' TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position};" ${node}
   else
     mysqlCommandExec "CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position} FOR CHANNEL '${primNane}';" ${node}
+  fi
+  
+  local plugin="$(getUserAuthPlugin ${node} ${ReplicaUser})"
+  if [[ x$plugin == *"caching_sha2_password"* ]]; then
+    mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START SLAVE;" ${node}
   fi
 }
 
