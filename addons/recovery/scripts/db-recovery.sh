@@ -286,6 +286,10 @@ setReplicaUserFromEnv(){
   [[ -z "${REPLICA_USER}" ]] && { echo "Environment variable REPLICA_USER do not set"; return ${FAIL_CODE}; }
   [[ -z "${REPLICA_PSWD}" ]] && { echo "Environment variable REPLICA_PSWD do not set"; return ${FAIL_CODE}; }
   mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_USER = '${REPLICA_USER}', MASTER_PASSWORD = '${REPLICA_PSWD}'; START SLAVE;" "localhost"
+  local plugin="$(getUserAuthPlugin 'localhost' ${REPLICA_USER})"
+  if [[ x$plugin == *"caching_sha2_password"* ]]; then
+    mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START SLAVE;" "localhost"}
+  fi
 }
 
 
