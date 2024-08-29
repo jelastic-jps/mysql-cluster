@@ -103,8 +103,6 @@ actions:
     cmd [proxy]: |-
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${this.id}', 3306);"
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -hnode${this.id} -e "show slave hosts;"
-      /usr/local/orchestrator/orchestrator -c discover -i node${this.id} cli;
     user: root
   
   addSlave:
