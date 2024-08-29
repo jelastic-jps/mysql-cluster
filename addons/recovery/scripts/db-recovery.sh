@@ -129,6 +129,12 @@ else
   fi
 fi
 
+source /etc/jelastic/metainf.conf
+
+SLAVE="SLAVE"
+COMPUTE_TYPE_FULL_VERSION_FORMATTED=$(echo "$COMPUTE_TYPE_FULL_VERSION" | sed 's/\.//')
+[[ "$COMPUTE_TYPE" == "mysql" && "$COMPUTE_TYPE_FULL_VERSION_FORMATTED" -ge 81 ]] && SLAVE="REPLICA"
+
 mysqlCommandExec(){
   command="$1"
   server_ip=$2
@@ -293,10 +299,10 @@ setReplicaUserFromEnv(){
   [[ "${nodeType}" != "secondary" ]] && { echo "Note type is not secondary"; return ${SUCCESS_CODE}; }
   [[ -z "${REPLICA_USER}" ]] && { echo "Environment variable REPLICA_USER do not set"; return ${FAIL_CODE}; }
   [[ -z "${REPLICA_PSWD}" ]] && { echo "Environment variable REPLICA_PSWD do not set"; return ${FAIL_CODE}; }
-  mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_USER = '${REPLICA_USER}', MASTER_PASSWORD = '${REPLICA_PSWD}'; START SLAVE;" "localhost"
+  mysqlCommandExec "STOP $SLAVE; RESET $SLAVE; CHANGE MASTER TO MASTER_USER = '${REPLICA_USER}', MASTER_PASSWORD = '${REPLICA_PSWD}'; START $SLAVE;" "localhost"
   local plugin="$(getUserAuthPlugin 'localhost' ${REPLICA_USER})"
   if [[ x$plugin == *"caching_sha2_password"* ]]; then
-    mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START SLAVE;" "localhost"}
+    mysqlCommandExec "STOP $SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START $SLAVE;" "localhost"}
   fi
 }
 
@@ -351,7 +357,7 @@ getPrimaryStatus(){
   local status="failed"
 
   is_primary_have_binlog=$(mysqlCommandExec "SHOW MASTER STATUS \G" "${node}" |grep -E 'File|Position'|wc -l)
-  is_primary_have_secondary=$(mysqlCommandExec "SHOW SLAVE STATUS \G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
+  is_primary_have_secondary=$(mysqlCommandExec "SHOW $SLAVE STATUS \G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
   if [[ ${is_primary_have_binlog} == 2 ]] && [[ ${is_primary_have_secondary} == 0 ]]; then
     echo 'ok'
     log "[Node: ${node}]: Primary status...ok"
@@ -392,11 +398,11 @@ restoreSecondaryPosition(){
   local node=$1
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
-  mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
+  mysqlCommandExec "STOP $SLAVE; RESET $SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START $SLAVE;" ${node}
   
   local plugin="$(getUserAuthPlugin ${node} ${ReplicaUser})"
   if [[ x$plugin == *"caching_sha2_password"* ]]; then
-    mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START SLAVE;" ${node}
+    mysqlCommandExec "STOP $SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START $SLAVE;" ${node}
   fi
 }
 
@@ -428,7 +434,7 @@ restoreMultiSecondaryPosition(){
   
   local plugin="$(getUserAuthPlugin ${node} ${ReplicaUser})"
   if [[ x$plugin == *"caching_sha2_password"* ]]; then
-    mysqlCommandExec "STOP SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START SLAVE;" ${node}
+    mysqlCommandExec "STOP $SLAVE; CHANGE MASTER TO GET_MASTER_PUBLIC_KEY=1; START $SLAVE;" ${node}
   fi
 }
 
@@ -438,7 +444,7 @@ stopAllSlaves(){
   if [[ "${serverName}" == "mariadb" ]]; then
     mysqlCommandExec "STOP ALL SLAVES; RESET SLAVE ALL;" ${node}
   else
-    mysqlCommandExec "STOP SLAVE; RESET SLAVE ALL;" ${node}
+    mysqlCommandExec "STOP $SLAVE; RESET SLAVE ALL;" ${node}
   fi
 }
 
@@ -448,7 +454,7 @@ startAllSlaves(){
   if [[ "${serverName}" == "mariadb" ]]; then
     mysqlCommandExec "START ALL SLAVES;" ${node}
   else
-    mysqlCommandExec "START SLAVE;" ${node}
+    mysqlCommandExec "START $SLAVE;" ${node}
   fi
 }
 
