@@ -107,6 +107,6 @@ actions:
       - setGlobals:
           PRIMARY_IP: ${nodes.sqldb.master.address}
     - cmd[${this}]: |-
-        curl --silent https://raw.githubusercontent.com/sych74/mysql-cluster/JE-72311-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        curl --silent https://raw.githubusercontent.com/sych74/mysql-cluster/JE-72432-addon/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
         bash /tmp/db-recovery.sh --scenario restore_secondary_from_primary --donor-ip ${globals.PRIMARY_IP};
       user: root
