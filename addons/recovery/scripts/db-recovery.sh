@@ -134,6 +134,7 @@ source /etc/jelastic/metainf.conf
 STOP_SLAVE="STOP SLAVE"
 START_SLAVE="START SLAVE"
 RESET_SLAVE="RESET SLAVE"
+RESET_SLAVE_ALL="RESET SLAVE ALL"
 CHANGE_MASTER_TO="CHANGE MASTER TO"
 MASTER_USER="MASTER_USER"
 MASTER_PASSWORD="MASTER_PASSWORD"
@@ -142,6 +143,7 @@ MASTER_LOG_FILE="MASTER_LOG_FILE"
 MASTER_LOG_POS="MASTER_LOG_POS"
 SHOW_MASTER_STATUS="SHOW MASTER STATUS"
 SHOW_SLAVE_STATUS="SHOW SLAVE STATUS"
+SHOW_ALL_SLAVES_STATUS="SHOW ALL SLAVES STATUS"
 GET_MASTER_PUBLIC_KEY="GET_MASTER_PUBLIC_KEY"
 
 COMPUTE_TYPE_FULL_VERSION_FORMATTED=$(echo "$COMPUTE_TYPE_FULL_VERSION" | sed 's/\.//')
@@ -351,10 +353,10 @@ getPrimaryPosition(){
 getSecondaryStatus(){
   local node=$1
   local secondary_running_values
-  local SHOW_SLAVE_COMMAND='SHOW ALL SLAVES STATUS \G;'
+  local SHOW_SLAVE_COMMAND="${SHOW_ALL_SLAVES_STATUS}\G;"
 
   mysqlCommandExec "${SHOW_SLAVE_COMMAND}" ${node} > /dev/null 2>&1
-  [[ $? != 0 ]] && SHOW_SLAVE_COMMAND='SHOW SLAVE STATUS \G;'
+  [[ $? != 0 ]] && SHOW_SLAVE_COMMAND="${SHOW_SLAVE_STATUS}\G;"
 
 
   slave_ok=$(mysqlCommandExec "${SHOW_SLAVE_COMMAND}" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |wc -l)
@@ -373,7 +375,7 @@ getSecondaryStatus(){
 
 removeSecondaryFromPrimary(){
   local node=$1
-  mysqlCommandExec "stop slave; reset slave all;" ${node}
+  mysqlCommandExec "${STOP_SLAVE}; ${RESET_SLAVE_ALL};" ${node}
 }
 
 
@@ -383,8 +385,8 @@ getPrimaryStatus(){
   local is_primary_have_secondary
   local status="failed"
 
-  is_primary_have_binlog=$(mysqlCommandExec "SHOW MASTER STATUS \G" "${node}" |grep -E 'File|Position'|wc -l)
-  is_primary_have_secondary=$(mysqlCommandExec "SHOW $SLAVE STATUS \G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
+  is_primary_have_binlog=$(mysqlCommandExec "${SHOW_MASTER_STATUS}\G" "${node}" |grep -E 'File|Position'|wc -l)
+  is_primary_have_secondary=$(mysqlCommandExec "${SHOW_SLAVE_STATUS}\G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
   if [[ ${is_primary_have_binlog} == 2 ]] && [[ ${is_primary_have_secondary} == 0 ]]; then
     echo 'ok'
     log "[Node: ${node}]: Primary status...ok"
