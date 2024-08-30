@@ -341,8 +341,8 @@ setReplicaUserFromEnv(){
 getPrimaryPosition(){
   local node=$1
   local masterName=$2
-  echo "File=$(mysqlCommandExec \"${SHOW_MASTER_STATUS}\G;\" ${node} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
-  echo "Position=$(mysqlCommandExec \"${SHOW_MASTER_STATUS}\G;\" ${node}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  echo "File=$(mysqlCommandExec "${SHOW_MASTER_STATUS}\G;" ${node} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
+  echo "Position=$(mysqlCommandExec "${SHOW_MASTER_STATUS}\G;" ${node}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
   if [[ -n "${ADDITIONAL_PRIMARY}" ]]; then
     echo "ReportHost=${node}" >> ${REPLICATION_INFO}
   else
