@@ -483,14 +483,12 @@ restoreMultiSecondaryPosition(){
     if [[ x$plugin == *"caching_sha2_password"* ]]; then
       mysqlCommandExec "${CHANGE_MASTER} '${MasterName}' TO ${GET_MASTER_PUBLIC_KEY}=1;" ${node}
     fi
-    
   else
     mysqlCommandExec "${CHANGE_MASTER} TO ${MASTER_HOST}='${ReportHost}', ${MASTER_USER}='${ReplicaUser}', ${MASTER_PASSWORD}='${ReplicaPassword}', ${MASTER_LOG_FILE}='${File}', ${MASTER_LOG_POS}=${Position} FOR CHANNEL '${primNane}';" ${node}
     if [[ x$plugin == *"caching_sha2_password"* ]]; then
       mysqlCommandExec "${CHANGE_MASTER} TO ${GET_MASTER_PUBLIC_KEY}=1 FOR CHANNEL '${primNane}';" ${node}
     fi
   fi
-
 }
 
 stopAllSlaves(){
