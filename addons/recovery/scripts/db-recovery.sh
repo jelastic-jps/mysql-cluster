@@ -475,18 +475,22 @@ restoreMultiSecondaryPosition(){
   local node=$1
   local primNane=$2
   local serverName="$(getMysqlServerName)"
+  local plugin="$(getUserAuthPlugin ${node} ${ReplicaUser})"
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
   if [[ "${serverName}" == "mariadb" ]]; then
     mysqlCommandExec "${CHANGE_MASTER} '${MasterName}' TO ${MASTER_HOST}='${ReportHost}', ${MASTER_USER}='${ReplicaUser}', ${MASTER_PASSWORD}='${ReplicaPassword}', ${MASTER_LOG_FILE}='${File}', ${MASTER_LOG_POS}=${Position};" ${node}
+    if [[ x$plugin == *"caching_sha2_password"* ]]; then
+      mysqlCommandExec "${CHANGE_MASTER} '${MasterName}' TO ${GET_MASTER_PUBLIC_KEY}=1;" ${node}
+    fi
+    
   else
     mysqlCommandExec "${CHANGE_MASTER} TO ${MASTER_HOST}='${ReportHost}', ${MASTER_USER}='${ReplicaUser}', ${MASTER_PASSWORD}='${ReplicaPassword}', ${MASTER_LOG_FILE}='${File}', ${MASTER_LOG_POS}=${Position} FOR CHANNEL '${primNane}';" ${node}
+    if [[ x$plugin == *"caching_sha2_password"* ]]; then
+      mysqlCommandExec "${CHANGE_MASTER} TO ${GET_MASTER_PUBLIC_KEY}=1 FOR CHANNEL '${primNane}';" ${node}
+    fi
   fi
-  
-  local plugin="$(getUserAuthPlugin ${node} ${ReplicaUser})"
-  if [[ x$plugin == *"caching_sha2_password"* ]]; then
-    mysqlCommandExec "${STOP_SLAVE}; ${CHANGE_MASTER} TO ${GET_MASTER_PUBLIC_KEY}=1; ${START_SLAVE};" ${node}
-  fi
+
 }
 
 stopAllSlaves(){
