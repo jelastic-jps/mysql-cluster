@@ -2,6 +2,21 @@ globals:
   db_cluster_path: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 actions:
+  
+  setReplicaCommands:
+    - if ((/mariadb/.test("${nodes.sqldb.nodeType}")) && ('${fn.compare([nodes.sqldb.version], 11.0)}' >= 0)):
+        setGlobals:
+          show_slave_hosts: "SHOW REPLICA HOSTS"
+    - elif ((/mysql/.test("${nodes.sqldb.nodeType}")) && ('${fn.compare([nodes.sqldb.version], 8.1)}' >= 0)):
+        setGlobals:
+          show_slave_hosts: "SHOW REPLICAS"
+    - elif ((/percona/.test("${nodes.sqldb.nodeType}")) && ('${fn.compare([nodes.sqldb.version], 8.1)}' >= 0)):
+        setGlobals:
+          show_slave_hosts: "SHOW REPLICAS"
+    - else:
+        setGlobals:
+          show_slave_hosts: "SHOW SLAVE HOSTS"
+  
   setupOrchestrator:
     - log: Orchestrator configuration
     - cmd [proxy]: |-
