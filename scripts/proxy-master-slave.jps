@@ -59,8 +59,10 @@ onInstall:
   - setReplicaCommands
   - getReplicaUser
   - resetProxyNodes
+  - disableOrchestrator
   - setupProxySQLCluster
   - setupProxySQL
+  - setupProxySQLGUI
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - setGlobals:
         MAX_REPL_LAG: 0
