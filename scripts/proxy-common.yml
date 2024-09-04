@@ -23,6 +23,9 @@ actions:
         mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
         systemctl stop orchestrator;
       user: root
+
+  setupProxySQLGUI:
+    - log: ProxySQL GUI configuration
     
   setupOrchestrator:
     - log: Orchestrator configuration
