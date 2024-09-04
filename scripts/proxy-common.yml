@@ -17,6 +17,13 @@ actions:
         setGlobals:
           show_slave_hosts: "SHOW SLAVE HOSTS"
   
+  disableOrchestrator:
+    - log: Disabling orchestrator
+    - cmd [proxy]: |-
+        mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
+        systemctl stop orchestrator;
+      user: root
+    
   setupOrchestrator:
     - log: Orchestrator configuration
     - cmd [proxy]: |-
