@@ -26,6 +26,15 @@ actions:
 
   setupProxySQLGUI:
     - log: ProxySQL GUI configuration
+    - cmd[proxy]: |-
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='true' WHERE variable_name='admin-web_enabled';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='6080' WHERE variable_name='admin-web_port';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.ADMIN_USER}:${globals.ADMIN_PASS}' WHERE variable_name='admin-stats_credentials';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD ADMIN VARIABLES TO RUNTIME; SAVE ADMIN VARIABLES TO DISK;"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
+    - script[proxy]: firewallRules.js?_r=${fn.random}
+      ports: '6080'
+      name: ProxySQL Admin Web 
     
   setupOrchestrator:
     - log: Orchestrator configuration
