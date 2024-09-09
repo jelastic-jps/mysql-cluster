@@ -1,28 +1,21 @@
 <p align="center"> 
-<img style="padding: 0 15px; float: left;" src="images/logo.png" width="70">
+<img style="padding: 0 15px; float: left;" src="images/mysql-mariadb-percona-logo.svg" width="70">
 </p>
 
-## MariaDB/MySQL Auto-Сlustering with Embedded Load Balancing and Replication Types Selection
+## MySQL/MariaDB/Percona Auto-Сlustering with Embedded Load Balancing and Replication Types Selection
 
-MariaDB/MySQL Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed Jelastic dockerized stack templates.
+MySQL/MariaDB/Percona Auto-Clustering solution is packaged as an advanced highly available and auto-scalable cluster on top of managed dockerized stack templates.
 
 <p align="left"> 
-<img src="images/mysql-maria-scheme.png" width="500">
+<img src="images/mysql-maria-percona-scheme.svg" width="500">
 </p>
 
-The package includes Highly Available [*ProxySQL Load Balancer*](http://www.proxysql.com) and [*Cluster Orchestrator*](https://github.com/github/orchestrator) to manage MariaDB/MySQL replication topology. And there is a choice between different MariaDB/MySQL replication types:
+The package includes Highly Available [*ProxySQL Load Balancer*](http://www.proxysql.com) and [*Cluster Orchestrator*](https://github.com/github/orchestrator) to manage MySQL/MariaDB/Percona replication topology. And there is a choice between different MySQL/MariaDB/Percona replication types:
 
-## Simple MariaDB/MySQL Replication
+## Simple MySQL/MariaDB/Percona Replication
 
 * *primary*-*secondary*(*source*-*replica*) - provides a good consistency (i.e. exactly one node to modify data), but no automatic failover upon primary failure. Secondaries can be read without impact on primary. This topology is previously known as *master-slave*
 * *primary*-*primary*(*source*-*source*) - operates with two primary nodes simultaneously, while other instances are configured as secondaries. This topology is previously known as *master-master*
-
-## MariaDB/MySQL Group Replication (MGR)
-
-[MySQL group replication](https://dev.mysql.com/doc/refman/5.7/en/group-replication.html) provides benefits of the elastic, highly-available and fault-tolerant topology.
-
-* *single-primary group* - a group of replicated servers with an automatic primary election, i.e. only one node accepts the data updates at a time
-* *multi-primary group* - solution allows all servers to accept the updates (all nodes are primaries with the read-write permissions)
 
 ## MariaDB Galera Cluster
 
@@ -33,35 +26,40 @@ The package includes Highly Available [*ProxySQL Load Balancer*](http://www.prox
 * Both read and write scalability
 * Smaller client latencies
 
+## Percona XtraDB Cluster
+
+[Percona XtraDB Cluster](https://www.percona.com/software/mysql-database/percona-xtradb-cluster) (PXC) is a solution for high availability and scalability for MySQL clustering. In a nutshell, it is the Percona implementation of Galera Cluster for MySQL. PXC comes with XtraDB storage engine (a drop-in replacement of InnoDB) and follows the upstream Oracle MySQL releases very closely with the following benefits:
+
+* No secondary lag
+* No lost transactions
+* Both read and write scalability
+* Smaller client latencies
+
 ## Deployment to the Cloud
 
-To get started, log in to Jelastic dashboard, import the required manifest using the link from GitHub:
-[https://github.com/jelastic-jps/mysql-cluster/blob/master/manifest.jps](https://github.com/jelastic-jps/mysql-cluster/blob/master/manifest.jps)
+To get started, you can click the **Deploy to Cloud** button, specify your email address within the widget, choose one of the [Virtuozzo Public Cloud Providers](https://www.virtuozzo.com/application-platform-partners/) providers and press **Install**.
 
-<p align="left">
-<img src="images/import-maria-mysql.png" width="500">
-</p>
+[![Deploy](images/deploy-to-cloud.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/manifest.yml)
 
-Or you can click the **Deploy to Jelastic** button, specify your email address within the widget, choose one of the [Jelastic Public Cloud](https://jelastic.cloud/) providers and press **Install**.
+If you are already registered at Virtuozzo Application Platform(VAP), you can deploy this cluster from Marketplace.
 
-[![Deploy](https://github.com/jelastic-jps/git-push-deploy/raw/master/images/deploy-to-jelastic.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/manifest.jps)
-
-**Note:** If you are already registered at Jelastic, you can deploy this cluster from Marketplace.
-
+<p align="left"> 
+<img src="images/marketplace-w-percona.png" width="600">
+</p> 
 
 ## Installation Process
 
-In the opened confirmation window at Jelastic dashboard, choose MariaDB/MySQL replication type with appropriate cluster topology, state the *Environment* name, optionally, customize its [Display Name](https://docs.jelastic.com/environment-aliases). Then, select the preferable [region](https://docs.jelastic.com/environment-regions) (if several are available) and click on **Install**.
+In the opened confirmation window at VAP dashboard, choose MariaDB/MySQL/Percona replication type with appropriate cluster topology, state the *Environment* name, optionally, customize its [Display Name](https://docs.jelastic.com/environment-aliases). Then, select the preferable [region](https://docs.jelastic.com/environment-regions) (if several are available) and click on **Install**.
 
 <p align="left">
-<img src="images/install.png" width="500">
+<img src="images/install-w-percona.png" width="500">
 </p>
 
 After successful installation, you’ll receive a number of default emails based on your environment topology with access credentials.
 
-## MariaDB/MySQL Managed Hosting Business
+## MySQL/MariaDB/Percona Managed Hosting Business
 
-To start offering this solution to your customers please follow to [Auto-Scalable Clusters for Managed Cloud Business](https://jelastic.com/apaas/)
+To start offering this solution to your customers please follow to [Auto-Scalable Clusters for Managed Cloud Business](https://www.virtuozzo.com/application-platform/?referer=jelastic)
 
 
 

@@ -1,9 +1,9 @@
 type: update
 id: mysql-master-slave-replication-cluster
-name: MySQL/MariaDB Primary-Secondary Replication Database Cluster
+name: MySQL/MariaDB/Percona Primary-Secondary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-63374
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 success:
   text: /texts/phpmyadmin-credentials.md
@@ -16,177 +16,97 @@ mixins:
   - /scripts/common.yml
 
 globals:
-  PATH: "${settings.path}"
-  DB_USER: "${settings.db_user}"
-  DB_PASS: "${settings.db_pass}"
-  SCHEME: "${settings.scheme}"
-  CUSTOM_CONF: "${settings.custom_conf}"
+  DB_USER: ${settings.db_user:user-[fn.random]}
+  DB_PASS: ${settings.db_pass:[fn.password(20)]}
 
-onBeforeCloneNodes[sqldb]:
-  - getReplicaUser
-  - getSlaveId
-  - set:
-      slaveId: ${response.slaveId}
-  - script: |
-      var nodeCount = [];
-      for (var i = 0, n = ${event.params.count}; i < n; i ++) 
-        nodeCount.push(i);
-      return { result : 0, nodeCount: nodeCount}
-  - forEach(response.nodeCount):
-    - cloneSlave:
-        slaveId: ${this.slaveId}
-  - stopEvent:
-      type: success
-      message: New slaves successfully added
+onBeforeMigrate:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before migration, otherwise the database cluster will be broken."
+
+onBeforeClone:
+  - isEnvRunning
+  - if (!${response.isEnvRunning}):
+    - stopEvent:
+        type: warning
+        message: "Please run the environment before cloning, otherwise the database cluster will be broken."
+
+onAfterScaleOut[sqldb]:
+  - forEach(event.response.nodes):
+    - syncCustomConfig:
+        nodeIdFrom: ${nodes.sqldb.master.id}
+        nodeIdTo: ${@i.id}
+    - setupSlave: ${@i.id}
+    - addSlave: ${@i.id}
+
+onAfterMigrate:
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    settings:
+      nodeGroup: ${settings.nodeGroup}
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
-    envName: ${event.response.env.envName}    
-    settings: 
-      nodeGroup: ${settings.nodeGroup}      
-      clone: true    
+    envName: ${event.response.env.envName}
+    settings:
+      nodeGroup: ${settings.nodeGroup}
 
 onInstall:
   - getReplicaUser
-  - if (${settings.clone:false}):
-    - importGlobalsFromNodeGroup: sqldb
-    - forEach(i:nodes.sqldb):
-      - if (${@i.ismaster}):
-          cmd[${@i.id}]: |-
-            sed -i "s/report_host.*/report_host = node${@i.id}/" /etc/mysql/conf.d/master.cnf;
-            sudo /etc/init.d/mysql restart;
-      - else:
-          reconfigureSlave:
-            id: "${@i.id}"
-            master_id: "${nodes.sqldb.master.id}"
-  - else:
-    - setScalingMode
-    - setupMaster:
-        id: "${nodes.sqldb.master.id}"
-    - forEach(i:nodes.sqldb):
-        if (!${@i.ismaster}):
-          addSlave:
-            id: "${@i.id}"
-            masterId: "${nodes.sqldb.master.id}"
-            
-    - exportsGlobalsToNodeGroup
-
-    - return:
-        result: success
+  - addCustomConfig
+  - forEach(i:nodes.sqldb):
+    - if (${@i.ismaster}):
+      - setupMaster: ${@i.id}
+      - env.control.AddContainerEnvVars[sqldb]:
+          vars:
+            PRIMARY_IP: ${@i.address}
+    - else:
+        setupSlave: ${@i.id}
+  - forEach(i:nodes.sqldb):
+    - if (!${@i.ismaster}):
+        addSlave: ${@i.id}
 
 actions:
 
-  setupReplication:
-    - if (/mariadb/.test("${nodes.sqldb.nodeType}")):
-        cmd[${this.id}]: |-
-          yum install https://downloads.mysql.com/archives/get/p/29/file/mysql-connector-python-8.0.11-1.el7.x86_64.rpm -y &>> /var/log/run.log
-          yum install https://downloads.mysql.com/archives/get/p/30/file/mysql-utilities-1.6.5-1.el7.noarch.rpm -y &>> /var/log/run.log
-          ln -s /usr/lib/python2.7/site-packages/mysql/utilities /usr/lib64/python2.7/site-packages/mysql/utilities
-        user: root
-    - cmd[${this.id}]: |-
-        wget ${globals.PATH}/scripts/setupReplication.sh -O ~/setupReplication.sh &>> /var/log/run.log
-        bash ~/setupReplication.sh node${this.masterId} node${this.id} ${globals.DB_USER} ${globals.DB_PASS} ${globals.REPLICA_USER} ${globals.REPLICA_PSWD} &>> /var/log/run.log
-      user: root
-
   setupMaster:
-    - addCustomConfig:
-        id: "${this.id}"
-    - cmd[${this.id}]: |-
-        wget ${globals.PATH}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
-        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/master.cnf
-        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/master.cnf
+    - cmd[${this}]: |-
+        wget ${baseUrl}/configs/master.cnf -O /etc/mysql/conf.d/master.cnf &>> /var/log/run.log
+        sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/master.cnf
+        sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/master.cnf
         sed -i "/auto-increment/d" /etc/mysql/conf.d/master.cnf
-    - setupUsers:
-        id: "${this.id}"
-    - setNodeDisplayName[${this.id}]: Primary
+        
+    - applyVersionConfiguration:
+        id: ${this}
+        conf_file: /etc/mysql/conf.d/master.cnf
+    
+    - if (!${settings.clone:false}):
+      - setupUsers:
+          id: ${this}
+    - setNodeDisplayName[${this}]: Primary
 
   setupSlave:
-    - cmd[${this.id}]: |-
-        wget ${globals.PATH}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
-        sed -i "s/server-id.*/server-id = ${this.id}/" /etc/mysql/conf.d/slave.cnf
-        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf
-    - setNodeDisplayName[${this.id}]: Secondary
-  
-  addSlave:
-    - addCustomConfig:
-        id: "${this.id}"
-    - setupSlave:
-        id: "${this.id}"
-    - setupUsers:
-        id: "${this.id}"
-    - setupReplication:
-        id: "${this.id}"
-        masterId: "${this.masterId}"
-
-  addCustomConfig:
-    if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
-      cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
-      
-  getSlaveId:
-    - script: |
-        var api = [], slaveId;
-        var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
-        if (resp.result != 0) return resp;
-        for (var i = 0, k = resp.nodes; i < k.length; i++) {
-           if ((k[i].nodeGroup == 'sqldb') && (!k[i].ismaster)) 
-              slaveId = k[i].id;
-        }
-        return { result: 0, slaveId: slaveId }
-
-  cloneSlave:
-    - if (nodes.proxy):
-        cmd[proxy]: |-
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='OFFLINE_HARD' where hostname='node${this.slaveId}';"
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
-    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql stop
-    - api: environment.control.AddNode
-      nodeGroup: sqldb
-      nodeid: ${this.slaveId}
-      nodeType: ${nodes.sqldb.nodeType}
-      flexibleCloudlets: ${nodes.sqldb.flexibleCloudlets}
-      fixedCloudlets: ${nodes.sqldb.fixedCloudlets}
-    - set:
-        newSlaveId: ${response.node.id}
-    - setNodeDisplayName[${nodes.sqldb.master.id}]: ${nodes.sqldb.master.displayName}
-    - cmd[${this.newSlaveId}]: sudo /etc/init.d/mysql stop
-    - cmd[${this.slaveId}]: sudo /etc/init.d/mysql start
-    - if (nodes.proxy):
-        cmd[proxy]: |-
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "update mysql_servers set status='ONLINE' where hostname='node${this.slaveId}';"
-          MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME;"
-    - cmd[${this.newSlaveId}]: |-
-        rm -f /var/lib/mysql/auto.cnf;
-        sed -i "s/server-id.*/server-id = ${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
-        sed -i "s/report_host.*/report_host = node${this.newSlaveId}/" /etc/mysql/conf.d/slave.cnf;
-        sudo /etc/init.d/mysql restart;
-    - setNodeDisplayName[${this.newSlaveId}]: Secondary
+    - cmd[${this}]: |-
+        wget ${baseUrl}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
+        sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/slave.cnf
+        sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/slave.cnf
+        
+    - applyVersionConfiguration:
+        id: ${this}
+        conf_file: /etc/mysql/conf.d/slave.cnf
     
-  setScalingMode:
-    - api: jelastic.env.control.ApplyNodeGroupData
-      nodeGroup: sqldb
-      data:
-        scalingMode: STATEFUL
+    - setNodeDisplayName[${this}]: Secondary
 
-  reconfigureSlave:
-    cmd[${this.id}]: |-
-      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/slave.cnf;
-      sudo /etc/init.d/mysql restart;
-      mysqlreplicate --master=${globals.DB_USER}:${globals.DB_PASS}@node${this.master_id}:3306 --slave=${globals.DB_USER}:${globals.DB_PASS}@node${this.id}:3306 --rpl-user=${globals.REPLICA_USER}:${globals.REPLICA_PSWD}
-
-  importGlobalsFromNodeGroup:
-    - script: |
-        var resp = api.env.control.GetNodeGroups("${env.name}", session);
-        if (resp.result != 0) return resp;
-        var groups = resp.object, globals;
-        for (var i = 0, n = groups.length; i < n; i++)
-          if (groups[i].name == "${this}" && groups[i].globals) {
-            globals = new org.yaml.snakeyaml.Yaml().load(groups[i].globals);
-            break;
-          }
-        return { result: 0, onAfterReturn: { setGlobals: globals } };
-
-  exportsGlobalsToNodeGroup:
-    - env.control.ApplyNodeGroupData [sqldb]:
-        data: 
-          globals: "${globals.toJSON()}" 
+  addSlave:
+    - env.control.GetContainerEnvVarsByGroup[sqldb]
+    - setGlobals:
+        PRIMARY_IP: ${response.object.PRIMARY_IP}
+    - if (/response/.test("${globals.PRIMARY_IP}")):
+      - setGlobals:
+          PRIMARY_IP: ${nodes.sqldb.master.address}
+    - cmd[${this}]: |-
+        curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        bash /tmp/db-recovery.sh --scenario restore_secondary_from_primary --donor-ip ${globals.PRIMARY_IP};
+      user: root

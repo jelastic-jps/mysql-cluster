@@ -1,0 +1,18 @@
+[mysqld]
+
+binlog_format = ROW
+default-storage-engine = innodb
+innodb_autoinc_lock_mode = 2
+
+bind-address =
+report_host = 
+
+wsrep_provider = /usr/lib64/galera/libgalera_smm.so
+wsrep_cluster_name = 
+wsrep_cluster_address = gcomm://
+
+wsrep_node_address =
+wsrep_node_name =
+
+pxc_strict_mode=ENFORCING
+pxc_encrypt_cluster_traffic=OFF

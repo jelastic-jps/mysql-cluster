@@ -1,73 +1,66 @@
 jpsType: update
 id: mysql-proxy-master-slave-cluster
-name: MySQL/MariaDB Database Cluster with ProxySQL
+name: MySQL/MariaDB/Percona Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v2.5.0
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 success: /texts/proxy-entrypoint.md
 
+targetNodes: none
 nodeGroupAlias:
-  "${targetNodes.nodeGroup}": sqldb
+  ${settings.nodeGroup}: sqldb
 
 mixins:
   - /scripts/common.yml
+  - /scripts/proxy-common.yml
 
 globals:
-  PATH: "${settings.path}"
-  DB_USER: "${settings.db_user}"
-  DB_PASS: "${settings.db_pass}"
-  SCHEME: "${settings.scheme}"
-  ORCH_PASS: "${fn.password(10)}"
+  DB_USER: ${settings.db_user}
+  DB_PASS: ${settings.db_pass}
+  SCHEME: ${settings.scheme}
+  ORCH_PASS: ${fn.password(10)}
+  ADMIN_USER: admin-${fn.random}
+  ADMIN_PASS: ${fn.password(10)}
   MAX_REPL_LAG: 20
-  
-onBeforeRemoveNode[proxy]:
-  stopEvent:
-    type: warning
-    message: Scaling is not supported for ProxySQL.
-
-onBeforeAddNode[proxy]:
-  stopEvent:
-    type: warning
-    message: Scaling is not supported for ProxySQL.
 
 onAfterScaleOut[sqldb]:
   forEach(event.response.nodes):
   - addSlave:
-      id: "${@i.id}"
+      id: ${@i.id}
 
 onBeforeScaleIn[sqldb]:
   forEach(event.response.nodes):
     removeSlave:
-      id: "${@i.id}"
+      id: ${@i.id}
       
 onAfterScaleIn[sqldb]:
   forEach(event.response.nodes):
     cmd[proxy]: MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin -e "DELETE FROM orchestrator.database_instance where hostname='node${@i.id}-${env.domain}';"
 
 onAfterClone:
-  install: ${globals.PATH}/scripts/proxy-master-slave.jps?_r=${fn.random}
-  envName: ${event.response.env.envName}
-  nodeGroup: sqldb
-  settings:
-    db_user: "${globals.DB_USER}"
-    db_pass: "${globals.DB_PASS}"
-    path: "${globals.PATH}"
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    envName: ${event.response.env.envName}
+    settings:
+      nodeGroup: ${settings.nodeGroup}
+      db_user: "${globals.DB_USER}"
+      db_pass: "${globals.DB_PASS}"
 
 onAfterMigrate:
-  install: ${globals.PATH}/scripts/proxy-master-slave.jps?_r=${fn.random}
-  nodeGroup: sqldb
-  settings:
-    db_user: "${globals.DB_USER}"
-    db_pass: "${globals.DB_PASS}"
-    path: "${globals.PATH}"
+  - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+  - install: ${response.jps}
+    settings:
+      nodeGroup: ${settings.nodeGroup}
+      db_user: "${globals.DB_USER}"
+      db_pass: "${globals.DB_PASS}"
 
 onInstall:
   - getReplicaUser
   - resetProxyNodes
   - setupOrchestrator
+  - setupProxySQLCluster
   - setupProxySQL
-
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - setGlobals:
         MAX_REPL_LAG: 0
@@ -89,22 +82,6 @@ onInstall:
             id: "${@l.id}"
 
 actions:
-
-  setupOrchestrator:
-    - log: Orchestrator configuration
-    - cmd [proxy]: |-
-        mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
-        mysql -h 127.0.0.1 -P3360 -uroot -e "CREATE DATABASE IF NOT EXISTS orchestrator;"
-        mysql -h 127.0.0.1 -P3360 -uroot -e "GRANT ALL PRIVILEGES ON orchestrator.* TO 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';"
-        wget ${globals.PATH}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
-        sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json
-        sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json
-        sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json
-        sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
-        sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json
-        sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
-        systemctl restart orchestrator
-      user: root
 
   setupProxySQL:
     - log: ProxySQL configuration
@@ -142,15 +119,6 @@ actions:
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
       MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin  -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
       
-  resetProxyNodes:
-    cmd[proxy]: |-
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "delete from mysql_replication_hostgroups; delete from mysql_users; delete from scheduler; delete from mysql_servers;"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "SAVE MYSQL VARIABLES TO DISK;"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "SAVE MYSQL SERVERS TO DISK;"
-      MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "SAVE MYSQL USERS TO DISK;"
-      mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
-      sudo service proxysql restart;
-
   getMastersIDs:
     - script: |
         var envInfo, resp, groups,
