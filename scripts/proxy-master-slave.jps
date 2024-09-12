@@ -62,7 +62,6 @@ onInstall:
   - disableOrchestrator
   - setupProxySQLCluster
   - setupProxySQL
-  - setupProxySQLGUI
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - setGlobals:
         MAX_REPL_LAG: 0
@@ -82,6 +81,7 @@ onInstall:
               id: "${@l.id}"
         - addSlave:
             id: "${@l.id}"
+  - setupProxySQLGUI
 
 actions:
 
