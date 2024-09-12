@@ -22,6 +22,7 @@ actions:
     - cmd [proxy]: |-
         mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
         systemctl stop orchestrator;
+        systemctl disable orchestrator;
       user: root
 
   setupProxySQLGUI:
@@ -35,28 +36,6 @@ actions:
     - script[proxy]: ${globals.db_cluster_path}/scripts/firewallRules.js?_r=${fn.random}
       ports: '6080'
       name: ProxySQL Admin Web 
-    
-  setupOrchestrator:
-    - log: Orchestrator configuration
-    - cmd [proxy]: |-
-        mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
-        mysql -h 127.0.0.1 -P3360 -uroot -e "CREATE DATABASE IF NOT EXISTS orchestrator;"
-        major_version=$(rpm -qi mysql-community-server | grep Version | awk '{print $3}' | awk -F'.' '{print $1}');
-        if [ $major_version -ge 8 ]; then
-          mysql -h 127.0.0.1 -P3360 -uroot -e "ALTER USER 'admin'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';"
-        else
-          mysql -h 127.0.0.1 -P3360 -uroot -e "SET PASSWORD FOR 'admin'@'127.0.0.1' = PASSWORD('${globals.ORCH_PASS}');"
-        fi
-        mysql -h 127.0.0.1 -P3360 -uroot -e "FLUSH PRIVILEGES;"
-        wget ${globals.db_cluster_path}/configs/orchestrator.conf.json -O /etc/orchestrator.conf.json &>> /var/log/run.log
-        sed -i -e 's|orc_client_user|${globals.DB_USER}|g' /etc/orchestrator.conf.json
-        sed -i -e 's|orc_client_password|${globals.DB_PASS}|g' /etc/orchestrator.conf.json
-        sed -i -e 's|orc_server_user|admin|g' /etc/orchestrator.conf.json
-        sed -i -e 's|orc_server_password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
-        sed -i -e 's|HTTP_Auth_User|admin|g' /etc/orchestrator.conf.json
-        sed -i -e 's|HTTP_Auth_Password|${globals.ORCH_PASS}|g' /etc/orchestrator.conf.json
-        systemctl restart orchestrator
-      user: root
 
   setupProxySQLCluster:
     - log: ProxySQL clusterization
