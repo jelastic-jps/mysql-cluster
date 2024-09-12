@@ -21,8 +21,10 @@ actions:
     - log: Disabling orchestrator
     - cmd [proxy]: |-
         mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
-        systemctl stop orchestrator;
-        systemctl disable orchestrator;
+        if systemctl list-unit-files --type=service | grep -q 'orchestrator.service'; then
+          systemctl stop orchestrator;
+          systemctl disable orchestrator;
+        fi
       user: root
 
   setupProxySQLGUI:
