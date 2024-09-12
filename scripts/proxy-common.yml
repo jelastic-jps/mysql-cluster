@@ -1,5 +1,6 @@
 globals:
   db_cluster_path: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64263
+  proxy_web_port: 4848
 
 actions:
   
@@ -31,12 +32,11 @@ actions:
     - log: ProxySQL GUI configuration
     - cmd[proxy]: |-
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='true' WHERE variable_name='admin-web_enabled';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='6080' WHERE variable_name='admin-web_port';"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.ADMIN_USER}:${globals.ADMIN_PASS}' WHERE variable_name='admin-stats_credentials';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.proxy_web_port}' WHERE variable_name='admin-web_port';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='admin:${globals.ADMIN_PASS}' WHERE variable_name='admin-stats_credentials';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD ADMIN VARIABLES TO RUNTIME; SAVE ADMIN VARIABLES TO DISK;"
-        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD MYSQL VARIABLES TO RUNTIME; SAVE MYSQL VARIABLES TO DISK;"
     - script[proxy]: ${globals.db_cluster_path}/scripts/firewallRules.js?_r=${fn.random}
-      ports: '6080'
+      ports: ${globals.proxy_web_port}
       name: ProxySQL Admin Web 
 
   setupProxySQLCluster:
