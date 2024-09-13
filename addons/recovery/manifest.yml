@@ -7,7 +7,7 @@ description:
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 logo: /images/database-recovery.png
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-72432-addon/addons/recovery
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-addon/addons/recovery
 
 targetNodes:
   nodeType:
