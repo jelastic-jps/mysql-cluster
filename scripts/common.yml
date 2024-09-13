@@ -1,5 +1,5 @@
 globals:
-  db_cluster_path: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64263
+  db_cluster_path: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-cluster
   customConfigFile: /etc/mysql/conf.d/my_custom.cnf
   
 actions:
