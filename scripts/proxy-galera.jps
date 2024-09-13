@@ -3,7 +3,7 @@ id: mysql-proxy-galera-cluster
 name: Galera/XtraDB Cluster with ProxySQL
 description: Galera/XtraDB Cluster
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/stage-cluster
 
 success: /texts/proxy-entrypoint.md
 
@@ -53,8 +53,9 @@ onAfterClone:
 onInstall:
   - getReplicaUser
   - resetProxyNodes
-  - setupOrchestrator
+  - disableOrchestrator
   - setupProxySQLCluster
+  - setupProxySQLGUI
   - if(${fn.compare([nodes.proxy.master.version], 2.0)} > 0): initGaleraForProxy2
   - if(${fn.compare([nodes.proxy.master.version], 2.0)} < 0): initGaleraForProxy1
   - forEach(nodes.sqldb):
