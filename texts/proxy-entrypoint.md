@@ -17,9 +17,9 @@ ___
 
 ### ProxySQL Web Panel
 
-**Web panel URL:** [https://proxy.${env.domain}:${globals.proxy_web_port}](https://proxy.${env.domain}:${globals.proxy_web_port})  
-**Username:** admin  
-**Password:** ${globals.ORCH_PASS}  
+**Web panel URL:** [https://node${nodes.proxy.master.id}-${env.domain}:${globals.proxy_web_port}](https://proxy.${env.domain}:${globals.proxy_web_port})  
+**Username:** ${globals.ADMIN_USER}  
+**Password:** ${globals.ADMIN_PASS}  
 
 ___
 
