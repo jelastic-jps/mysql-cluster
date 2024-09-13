@@ -100,7 +100,6 @@ if [[ "${diagnostic}" != "YES" ]] && [[ "${check_corrupts}" != "YES" ]]; then
   fi
 fi
 
-
 RUN_LOG="/var/log/db_recovery.log"
 PRIVATE_KEY='/root/.ssh/id_rsa_db_monitoring'
 SSH="timeout 300 ssh -i ${PRIVATE_KEY} -T -o StrictHostKeyChecking=no"
@@ -113,26 +112,39 @@ SUCCESS_CODE=0
 FAIL_CODE=99
 AUTHORIZATION_ERROR_CODE=701
 CORRUPT_CHECK_FAIL_CODE=97
+SERVICE_FAIL_CODE=96
+SERVICE_FAIL_MESSAGE="mysql or mariadb command not found"
 
 #NODE_ADDRESS=$(ifconfig | grep 'inet' | awk '{ print $2 }' |grep -E '^(192\.168|10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.)')
 NODE_ADDRESS=$(host $(hostname) | awk '/has.*address/{print $NF; exit}')
 
+if command -v mariadb &> /dev/null; then
+  MYSQL="mariadb"
+else
+  if command -v mysql &> /dev/null; then
+    MYSQL="mysql"
+  else
+    echo "{result: $SERVICE_FAIL_CODE, error: \"$SERVICE_FAIL_MESSAGE\"}"
+    exit 0
+  fi
+fi
+
 mysqlCommandExec(){
   command="$1"
   server_ip=$2
-  MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -e "$command"
+  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL -u${MYSQL_USER} -h${server_ip} -e "$command"
 }
 
 mysqlNoTablesCommandExec(){
   command="$1"
   server_ip=$2
-  MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -sNe "$command"
+  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL -u${MYSQL_USER} -h${server_ip} -sNe "$command"
 }
 
 mysqlCommandExec2(){
   command="$1"
   server_ip=$2
-  MYSQL_PWD=${MYSQL_PASSWORD} mysql -u${MYSQL_USER} -h${server_ip} -sNe "$command"
+  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL -u${MYSQL_USER} -h${server_ip} -sNe "$command"
 }
 
 log(){
@@ -525,6 +537,7 @@ galeraGetPrimaryNode(){
   local primary_node='undefined'
   local primary_node_by_seq
   local serverName="$(getMysqlServerName)"
+  local wsrep_recover_log='/tmp/wsrep_recover.log'
   for node in "${nodes_to_fix[@]}"
   do
       [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
@@ -537,14 +550,15 @@ galeraGetPrimaryNode(){
       else
         stopMysqlService "${node}"
         [[ ${primary_node} == 'undefined' ]] || continue
-        
+ 
         if [[ "${serverName}" == "mariadb" ]]; then
-          command="${SSH} ${node} 'mysqld --wsrep-recover > /dev/null 2>&1 && tail -2 /var/log/mysql/mysqld.log |grep \"Recovered position\"'"
+          command="${SSH} ${node} 'mysqld --wsrep-recover --log-error=${wsrep_recover_log} > /dev/null 2>&1 && tail -2 ${wsrep_recover_log} |grep \"Recovered position\"'"
         else
-          command="${SSH} ${node} 'mysqld --wsrep-recover --user=root> /dev/null 2>&1 && tail -2 /var/log/mysqld.log |grep \"Recovered position\"'"
+          command="${SSH} ${node} 'mysqld --wsrep-recover --user=root --log-error=${wsrep_recover_log} > /dev/null 2>&1 && tail -2 ${wsrep_recover_log} |grep \"Recovered position\"'"
         fi
         cur_seq_num=$(execSshReturn "$command" "[Node: ${node}]: Get seqno"|awk -F 'Recovered position:' '{print $2}'|awk -F : '{print $2}' )
-        log "[Node: ${node}]: seqno=${cur_seq_num}"
+        [[ -f ${wsrep_recover_log} ]] && rm -f ${wsrep_recover_log}
+	log "[Node: ${node}]: seqno=${cur_seq_num}"
       fi
 
       if [[ "${seq_num}" -lt "${cur_seq_num}" ]]; then
@@ -646,13 +660,6 @@ nodeDiagnostic(){
     return ${SUCCESS_CODE}
   }
   log "[Node: localhost]: Detected node type: ${node_type}...done"
-
-  service_status=$(checkMysqlServiceStatus 'localhost')
-
-  if [[ "${service_status}" == "down" ]]; then
-    stopMysqlService "localhost"
-    startMysqlService "localhost"
-  fi
 
   service_status=$(checkMysqlServiceStatus 'localhost') || {
       diagnosticResponse "$result" "$node_type" "$service_status" "$status" "$galera_size_status" "$galera_myisam" "$error"

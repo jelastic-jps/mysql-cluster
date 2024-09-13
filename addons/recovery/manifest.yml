@@ -60,7 +60,6 @@ onAfterScaleOut[sqldb]: generate-share-keys
 
 onAfterRedeployContainer[sqldb]: generate-share-keys
 onBeforeStop:  eventDiagnostic
-onBeforeSetCloudletCount: eventDiagnostic
 
 onAfterClone:
   install: ${baseUrl}/manifest.yml?_r=${fn.random}
@@ -100,6 +99,11 @@ responses:
       Errors were discovered during the Database Cluster diagnostic.
       Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
       Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+
+  96:
+    type: warning
+    message: |
+      mysql or mariadb command not found.  
 
 actions:
   clusterValidate:
