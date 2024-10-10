@@ -129,6 +129,63 @@ else
   fi
 fi
 
+source /etc/jelastic/metainf.conf
+
+COMPUTE_TYPE_FULL_VERSION_FORMATTED=$(echo "$COMPUTE_TYPE_FULL_VERSION" | sed 's/\.//')
+
+if [[ ("$COMPUTE_TYPE" == "mysql" || "$COMPUTE_TYPE" == "percona") && "$COMPUTE_TYPE_FULL_VERSION_FORMATTED" -ge "81" ]]; then
+  STOP_SLAVE="STOP REPLICA"
+  START_SLAVE="START REPLICA"
+  RESET_SLAVE="RESET REPLICA"
+  RESET_SLAVE_ALL="RESET REPLICA ALL"
+  CHANGE_MASTER="CHANGE REPLICATION SOURCE"
+  MASTER_USER="SOURCE_USER"
+  MASTER_PASSWORD="SOURCE_PASSWORD"
+  MASTER_HOST="SOURCE_HOST"
+  MASTER_LOG_FILE="SOURCE_LOG_FILE"
+  MASTER_LOG_POS="SOURCE_LOG_POS"
+  SHOW_MASTER_STATUS="SHOW BINARY LOG STATUS"
+  SHOW_SLAVE_STATUS="SHOW REPLICA STATUS"
+  GET_MASTER_PUBLIC_KEY="GET_SOURCE_PUBLIC_KEY"
+
+elif [[ "$COMPUTE_TYPE" == "mariadb" && "$COMPUTE_TYPE_FULL_VERSION_FORMATTED" -ge "110" ]]; then
+  STOP_SLAVE="STOP REPLICA"
+  START_SLAVE="START REPLICA"
+  RESET_SLAVE="RESET REPLICA"
+  RESET_SLAVE_ALL="RESET REPLICA ALL"
+  START_ALL_SLAVES="START ALL REPLICAS"
+  STOP_ALL_SLAVES="STOP ALL REPLICAS"
+  CHANGE_MASTER="CHANGE MASTER"
+  MASTER_USER="MASTER_USER"
+  MASTER_PASSWORD="MASTER_PASSWORD"
+  MASTER_HOST="MASTER_HOST"
+  MASTER_LOG_FILE="MASTER_LOG_FILE"
+  MASTER_LOG_POS="MASTER_LOG_POS"
+  SHOW_MASTER_STATUS="SHOW BINLOG STATUS"
+  SHOW_SLAVE_STATUS="SHOW REPLICA STATUS"
+  SHOW_ALL_SLAVES_STATUS="SHOW ALL REPLICAS STATUS"
+  GET_MASTER_PUBLIC_KEY="GET_SOURCE_PUBLIC_KEY"
+
+else
+  STOP_SLAVE="STOP SLAVE"
+  START_SLAVE="START SLAVE"
+  RESET_SLAVE="RESET SLAVE"
+  RESET_SLAVE_ALL="RESET SLAVE ALL"
+  START_ALL_SLAVES="START ALL SLAVES"
+  STOP_ALL_SLAVES="STOP ALL SLAVES"
+  CHANGE_MASTER="CHANGE MASTER"
+  MASTER_USER="MASTER_USER"
+  MASTER_PASSWORD="MASTER_PASSWORD"
+  MASTER_HOST="MASTER_HOST"
+  MASTER_LOG_FILE="MASTER_LOG_FILE"
+  MASTER_LOG_POS="MASTER_LOG_POS"
+  SHOW_MASTER_STATUS="SHOW MASTER STATUS"
+  SHOW_SLAVE_STATUS="SHOW SLAVE STATUS"
+  SHOW_ALL_SLAVES_STATUS="SHOW ALL SLAVES STATUS"
+  GET_MASTER_PUBLIC_KEY="GET_MASTER_PUBLIC_KEY"  
+fi
+
+
 mysqlCommandExec(){
   command="$1"
   server_ip=$2
@@ -279,21 +336,32 @@ setPrimaryReadonly(){
   mysqlCommandExec 'flush tables with read lock;' "${mysql_src_ip}"
 }
 
+getUserAuthPlugin(){
+  local node=$1
+  local user=$2
+  local plugin
+  plugin=$(mysqlNoTablesCommandExec "SELECT plugin FROM mysql.user WHERE User = '$user' and Host = '%';" ${node})
+  echo $plugin
+}
+
 setReplicaUserFromEnv(){
   local nodeType
   nodeType=$(getNodeType)
   [[ "${nodeType}" != "secondary" ]] && { echo "Note type is not secondary"; return ${SUCCESS_CODE}; }
   [[ -z "${REPLICA_USER}" ]] && { echo "Environment variable REPLICA_USER do not set"; return ${FAIL_CODE}; }
   [[ -z "${REPLICA_PSWD}" ]] && { echo "Environment variable REPLICA_PSWD do not set"; return ${FAIL_CODE}; }
-  mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_USER = '${REPLICA_USER}', MASTER_PASSWORD = '${REPLICA_PSWD}'; START SLAVE;" "localhost"
+  mysqlCommandExec "${STOP_SLAVE}; ${RESET_SLAVE}; ${CHANGE_MASTER} TO ${MASTER_USER} = '${REPLICA_USER}', ${MASTER_PASSWORD} = '${REPLICA_PSWD}'; ${START_SLAVE};" "localhost"
+  local plugin="$(getUserAuthPlugin 'localhost' ${REPLICA_USER})"
+  if [[ x$plugin == *"caching_sha2_password"* ]]; then
+    mysqlCommandExec "${STOP_SLAVE}; ${CHANGE_MASTER_TO} ${GET_MASTER_PUBLIC_KEY}=1; ${START_SLAVE};" "localhost"}
+  fi
 }
-
 
 getPrimaryPosition(){
   local node=$1
   local masterName=$2
-  echo "File=$(mysqlCommandExec 'show master status\G;' ${node} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
-  echo "Position=$(mysqlCommandExec 'show master status\G;' ${node}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
+  echo "File=$(mysqlCommandExec "${SHOW_MASTER_STATUS}\G;" ${node} |grep 'File'|cut -d ':' -f2|sed 's/ //g')" > ${REPLICATION_INFO}
+  echo "Position=$(mysqlCommandExec "${SHOW_MASTER_STATUS}\G;" ${node}|grep 'Position'|cut -d ':' -f2|sed 's/ //g')" >> ${REPLICATION_INFO}
   if [[ -n "${ADDITIONAL_PRIMARY}" ]]; then
     echo "ReportHost=${node}" >> ${REPLICATION_INFO}
   else
@@ -307,10 +375,10 @@ getPrimaryPosition(){
 getSecondaryStatus(){
   local node=$1
   local secondary_running_values
-  local SHOW_SLAVE_COMMAND='SHOW ALL SLAVES STATUS \G;'
+  local SHOW_SLAVE_COMMAND="${SHOW_ALL_SLAVES_STATUS}\G;"
 
   mysqlCommandExec "${SHOW_SLAVE_COMMAND}" ${node} > /dev/null 2>&1
-  [[ $? != 0 ]] && SHOW_SLAVE_COMMAND='SHOW SLAVE STATUS \G;'
+  [[ $? != 0 ]] && SHOW_SLAVE_COMMAND="${SHOW_SLAVE_STATUS}\G;"
 
 
   slave_ok=$(mysqlCommandExec "${SHOW_SLAVE_COMMAND}" ${node} |grep -E 'Slave_IO_Running:|Slave_SQL_Running:' |wc -l)
@@ -329,7 +397,7 @@ getSecondaryStatus(){
 
 removeSecondaryFromPrimary(){
   local node=$1
-  mysqlCommandExec "stop slave; reset slave all;" ${node}
+  mysqlCommandExec "${STOP_SLAVE}; ${RESET_SLAVE_ALL};" ${node}
 }
 
 
@@ -339,8 +407,8 @@ getPrimaryStatus(){
   local is_primary_have_secondary
   local status="failed"
 
-  is_primary_have_binlog=$(mysqlCommandExec "SHOW MASTER STATUS \G" "${node}" |grep -E 'File|Position'|wc -l)
-  is_primary_have_secondary=$(mysqlCommandExec "SHOW SLAVE STATUS \G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
+  is_primary_have_binlog=$(mysqlCommandExec "${SHOW_MASTER_STATUS}\G" "${node}" |grep -E 'File|Position'|wc -l)
+  is_primary_have_secondary=$(mysqlCommandExec "${SHOW_SLAVE_STATUS}\G" "${node}" |grep -E 'Slave_IO_Running:|Slave_SQL_Running:'|wc -l)
   if [[ ${is_primary_have_binlog} == 2 ]] && [[ ${is_primary_have_secondary} == 0 ]]; then
     echo 'ok'
     log "[Node: ${node}]: Primary status...ok"
@@ -351,7 +419,7 @@ getPrimaryStatus(){
     return ${SUCCESS_CODE}
   fi
   echo "${status}"
-  log "[Node: ${node}]: Looks like primary not configured, SHOW MASTER STATUS command returned empty result...failed"
+  log "[Node: ${node}]: Looks like primary not configured, ${SHOW_MASTER_STATUS} command returned empty result...failed"
 }
 
 
@@ -377,12 +445,16 @@ setPrimaryWriteMode(){
   mysqlCommandExec "unlock tables;" ${node}
 }
 
-
 restoreSecondaryPosition(){
   local node=$1
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
-  mysqlCommandExec "STOP SLAVE; RESET SLAVE; CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position}; START SLAVE;" ${node}
+  mysqlCommandExec "${STOP_SLAVE}; ${RESET_SLAVE}; ${CHANGE_MASTER} TO ${MASTER_HOST}='${ReportHost}', ${MASTER_USER}='${ReplicaUser}', ${MASTER_PASSWORD}='${ReplicaPassword}', ${MASTER_LOG_FILE}='${File}', ${MASTER_LOG_POS}=${Position}; ${START_SLAVE};" ${node}
+  
+  local plugin="$(getUserAuthPlugin ${node} ${ReplicaUser})"
+  if [[ x$plugin == *"caching_sha2_password"* ]]; then
+    mysqlCommandExec "${STOP_SLAVE}; ${CHANGE_MASTER} TO ${GET_MASTER_PUBLIC_KEY}=1; ${START_SLAVE};" ${node}
+  fi
 }
 
 getMysqlServerName(){
@@ -403,12 +475,19 @@ restoreMultiSecondaryPosition(){
   local node=$1
   local primNane=$2
   local serverName="$(getMysqlServerName)"
+  local plugin="$(getUserAuthPlugin ${node} ${ReplicaUser})"
   source ${REPLICATION_INFO};
   rm -f ${REPLICATION_INFO}
   if [[ "${serverName}" == "mariadb" ]]; then
-    mysqlCommandExec "CHANGE MASTER '${MasterName}' TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position};" ${node}
+    mysqlCommandExec "${CHANGE_MASTER} '${MasterName}' TO ${MASTER_HOST}='${ReportHost}', ${MASTER_USER}='${ReplicaUser}', ${MASTER_PASSWORD}='${ReplicaPassword}', ${MASTER_LOG_FILE}='${File}', ${MASTER_LOG_POS}=${Position};" ${node}
+    if [[ x$plugin == *"caching_sha2_password"* ]]; then
+      mysqlCommandExec "${CHANGE_MASTER} '${MasterName}' TO ${GET_MASTER_PUBLIC_KEY}=1;" ${node}
+    fi
   else
-    mysqlCommandExec "CHANGE MASTER TO MASTER_HOST='${ReportHost}', MASTER_USER='${ReplicaUser}', MASTER_PASSWORD='${ReplicaPassword}', MASTER_LOG_FILE='${File}', MASTER_LOG_POS=${Position} FOR CHANNEL '${primNane}';" ${node}
+    mysqlCommandExec "${CHANGE_MASTER} TO ${MASTER_HOST}='${ReportHost}', ${MASTER_USER}='${ReplicaUser}', ${MASTER_PASSWORD}='${ReplicaPassword}', ${MASTER_LOG_FILE}='${File}', ${MASTER_LOG_POS}=${Position} FOR CHANNEL '${primNane}';" ${node}
+    if [[ x$plugin == *"caching_sha2_password"* ]]; then
+      mysqlCommandExec "${CHANGE_MASTER} TO ${GET_MASTER_PUBLIC_KEY}=1 FOR CHANNEL '${primNane}';" ${node}
+    fi
   fi
 }
 
@@ -416,9 +495,9 @@ stopAllSlaves(){
   local node=$1
   local serverName="$(getMysqlServerName)"
   if [[ "${serverName}" == "mariadb" ]]; then
-    mysqlCommandExec "STOP ALL SLAVES; RESET SLAVE ALL;" ${node}
+    mysqlCommandExec "${STOP_ALL_SLAVES}; ${RESET_SLAVE_ALL};" ${node}
   else
-    mysqlCommandExec "STOP SLAVE; RESET SLAVE ALL;" ${node}
+    mysqlCommandExec "${STOP_SLAVE}; ${RESET_SLAVE_ALL};" ${node}
   fi
 }
 
@@ -426,9 +505,9 @@ startAllSlaves(){
   local node=$1
   local serverName="$(getMysqlServerName)"
   if [[ "${serverName}" == "mariadb" ]]; then
-    mysqlCommandExec "START ALL SLAVES;" ${node}
+    mysqlCommandExec "${START_ALL_SLAVES};" ${node}
   else
-    mysqlCommandExec "START SLAVE;" ${node}
+    mysqlCommandExec "${START_SLAVE};" ${node}
   fi
 }
 
