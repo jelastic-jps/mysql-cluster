@@ -20,11 +20,11 @@ ___
 
 ___
 
-### Cluster Orchestrator Panel
+### ProxySQL Web Panel
 
-**Admin panel URL:** [http://proxy.${env.domain}](http://proxy.${env.domain}/)  
-**Username:** admin  
-**Password:** ${globals.ORCH_PASS}  
+**Web panel URL:** [https://node${nodes.proxy.master.id}-${env.domain}:${globals.proxy_web_port}](https://node${nodes.proxy.master.id}-${env.domain}:${globals.proxy_web_port})  
+**Username:** ${globals.ADMIN_USER}  
+**Password:** ${globals.ADMIN_PASS}  
 
 ___
 

@@ -1,7 +1,44 @@
 globals:
   db_cluster_path: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+  proxy_web_port: 4848
 
 actions:
+  
+  setReplicaCommands:
+    - if ((/mariadb/.test("${nodes.sqldb.nodeType}")) && ('${fn.compare([nodes.sqldb.version], 11.0)}' >= 0)):
+        setGlobals:
+          show_slave_hosts: "SHOW REPLICA HOSTS"
+    - elif ((/mysql/.test("${nodes.sqldb.nodeType}")) && ('${fn.compare([nodes.sqldb.version], 8.1)}' >= 0)):
+        setGlobals:
+          show_slave_hosts: "SHOW REPLICAS"
+    - elif ((/percona/.test("${nodes.sqldb.nodeType}")) && ('${fn.compare([nodes.sqldb.version], 8.1)}' >= 0)):
+        setGlobals:
+          show_slave_hosts: "SHOW REPLICAS"
+    - else:
+        setGlobals:
+          show_slave_hosts: "SHOW SLAVE HOSTS"
+
+  disableOrchestrator:
+    - log: Disabling orchestrator
+    - cmd [proxy]: |-
+        mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
+        if systemctl list-unit-files --type=service | grep -q 'orchestrator.service'; then
+          systemctl stop orchestrator;
+          systemctl disable orchestrator;
+        fi
+      user: root
+
+  setupProxySQLGUI:
+    - log: ProxySQL GUI configuration
+    - cmd[proxy]: |-
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='true' WHERE variable_name='admin-web_enabled';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.proxy_web_port}' WHERE variable_name='admin-web_port';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.ADMIN_USER}:${globals.ADMIN_PASS}' WHERE variable_name='admin-stats_credentials';"
+        MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD ADMIN VARIABLES TO RUNTIME; SAVE ADMIN VARIABLES TO DISK;"
+    - script[proxy]: ${globals.db_cluster_path}/scripts/firewallRules.js?_r=${fn.random}
+      ports: ${globals.proxy_web_port}
+      name: ProxySQL Admin Web 
+  
   setupOrchestrator:
     - log: Orchestrator configuration
     - cmd [proxy]: |-
