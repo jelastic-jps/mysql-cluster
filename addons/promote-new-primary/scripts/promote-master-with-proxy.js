@@ -15,7 +15,6 @@ function promoteNewPrimary() {
 
     this.run = function() {
         let resp = this.auth();
-        this.log("auth resp ->" + resp);
         if (resp.result != 0) return resp;
 
         resp = this.newPrimaryOnProxy();
@@ -314,9 +313,54 @@ function promoteNewPrimary() {
         return { result: 0 }
     };
 
-    this.cmdByGroup = function(command, nodeGroup, timeout) {
+    this.getAvailableProxy = function() {
+        return this.availableProxy || "";
+    };
+
+    this.setAvailableProxy = function(nodeid) {
+        this.availableProxy = nodeid;
+    };
+
+    this.checkNodesAvailability = function(nodeGroup) {
+        let nodeid;
+
+        if (this.getAvailableProxy()) {
+            return {
+                result: 0,
+                nodeid: this.getAvailableProxy()
+            }
+        }
+
+        let resp = this.cmdByGroup("echo 1", nodeGroup, null, true);
+        this.log("checkNodesAvailability resp1 ->" + resp);
+        if (resp.result != 0) {
+            let nodeResp;
+            for (let i = 0, n = resp.responses.length; i < n; i++) {
+                nodeResp = resp.responses[i];
+                if (nodeResp.result == 0) {
+                    nodeid = nodeResp.nodeid;
+                    this.setAvailableProxy(nodeResp.nodeid);
+                    break;
+                }
+            }
+        }
+
+        return {
+            result: 0,
+            nodeid: this.getAvailableProxy()
+        }
+    };
+
+    this.cmdByGroup = function(command, nodeGroup, timeout, test) {
         if (timeout) {
             command = "timeout " + timeout + "s bash -c \"" + command + "\"";
+        }
+
+        if (nodeGroup == PROXY && !test) {
+            let resp = this.checkNodesAvailability(PROXY);
+            if (resp.nodeid) {
+                return this.cmdById(resp.nodeid, command);
+            }
         }
 
         return api.env.control.ExecCmdByGroup(envName, session, nodeGroup, toJSON([{ command: command }]), true, false, ROOT);
