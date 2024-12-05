@@ -91,12 +91,16 @@ fi
 
 if [[ "${diagnostic}" != "YES" ]] && [[ "${check_corrupts}" != "YES" ]]; then
   [ "${SCENARIO}" == "init" ] && DONOR_IP='localhost'
-  [ "${SCENARIO}" == "restore_galera" ] && DONOR_IP='localhost'
+  [ "${SCENARIO}" == "restore_galera" ] && DONOR_IP="$DONOR_IP"
   [ "${SCENARIO}" == "promote_new_primary" ] && DONOR_IP='localhost'
   if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
       usage
       exit 1;
+  fi
+  if [[ "${DONOR_IP}" != "galera" && ! "${DONOR_IP}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+      echo "Invalid donor-ip specified: '${DONOR_IP}'. Allowed values: 'galera' or a valid IP address."
+      exit 1
   fi
 fi
 
@@ -665,14 +669,22 @@ galeraMyisamCheck(){
   return ${SUCCESS_CODE}
 }
 
-galeraFix(){
+
+getGaleraNodes(){
   local list_nodes=''
+  list_nodes=$(grep wsrep_cluster_address ${GALERA_CONF} | awk -F '/' '{print $3}' | xargs -d ',')
+  [[ -z "${list_nodes}" ]] && { log "Can't detect galera hosts in ${GALERA_CONF}"; return ${FAIL_CODE}; }
+  echo "${list_nodes}"
+}
+
+
+galeraFix(){
   local primary_nodes=()
   local nodes_to_fix=()
   local primary_node
 
-  list_nodes=$(grep wsrep_cluster_address ${GALERA_CONF} |awk -F '/' '{print $3}'|xargs -d ',')
-  [[ -z "${list_nodes}" ]] && { log "Can't detect galera hosts in ${GALERA_CONF}"; return ${FAIL_CODE}; }
+  local list_nodes=$(getGaleraNodes) || return ${FAIL_CODE}
+  
   for node in ${list_nodes}; do
     [[ "${node}" == "${NODE_ADDRESS}" ]] && node="localhost"
     wsrep_cluster_status=$(galeraGetClusterStatus ${node})
@@ -689,6 +701,34 @@ galeraFix(){
   fi
 }
 
+galeraRecoverFromDonor() {
+  local donor_ip="$1"
+  local list_nodes=$(getGaleraNodes) || return ${FAIL_CODE}
+
+  if [[ ! " ${list_nodes} " =~ (^|[[:space:]])"${donor_ip}"($|[[:space:]]) ]]; then
+    log "Donor IP '${donor_ip}' is not part of the Galera nodes!"
+    return ${FAIL_CODE}
+  fi
+
+  for node in ${list_nodes}; do
+    if [[ "${node}" == "${donor_ip}" || "${node}" == "${NODE_ADDRESS}" ]]; then
+      log "[Node: ${node}]: Skipping donor node (${donor_ip})."
+      continue
+    fi
+
+    log "[Node: ${node}]: Stopping MySQL service..."
+    stopMysqlService "${node}"
+
+    log "[Node: ${node}]: Removing grastate.dat..."
+    local command="${SSH} ${node} 'rm -f /var/lib/mysql/grastate.dat'"
+    execSshReturn "$command" "[Node: ${node}]: Remove grastate.dat"
+
+    log "[Node: ${node}]: Starting MySQL service..."
+    startMysqlService "${node}"
+  done
+
+  log "Cluster recovery using donor node '${donor_ip}' is complete."
+}
 
 
 diagnosticResponse(){
@@ -825,7 +865,11 @@ restore_primary_from_primary(){
 
 restore_galera(){
   execAction 'checkAuth' 'Authentication check'
-  galeraFix
+  if [[ "${DONOR_IP}" == "galera" ]]; then
+    galeraFix
+  else
+    galeraRecoverFromDonor "${DONOR_IP}"
+  fi
 }
 
 init(){
@@ -897,7 +941,9 @@ elif [[ "${check_corrupts}" == "YES" ]]; then
   log ">>>END CORRUPTION CHECK"
 else
   log ">>>BEGIN RESTORE SCENARIO [${SCENARIO}]"
-  execAction "checkSelfRestoreLoop" 'Check Self Restore Loop'
+  if [[ "${SCENARIO}" != "restore_galera" ]]; then
+    execAction "checkSelfRestoreLoop" 'Check Self Restore Loop'
+  fi
   $SCENARIO
   sleep 10
   nodeDiagnostic
