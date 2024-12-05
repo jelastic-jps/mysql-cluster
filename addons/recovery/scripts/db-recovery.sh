@@ -99,7 +99,7 @@ if [[ "${diagnostic}" != "YES" ]] && [[ "${check_corrupts}" != "YES" ]]; then
       exit 1;
   fi
   if [[ "${DONOR_IP}" != "galera" && "${DONOR_IP}" != "localhost" && ! "${DONOR_IP}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-      echo "Invalid donor-ip specified: '${DONOR_IP}'. Allowed values: 'galera' or a valid IP address."
+      echo "Invalid donor-ip specified: '${DONOR_IP}'. Allowed values: 'galera', 'localhost' or a valid IP address."
       exit 1
   fi
 fi
