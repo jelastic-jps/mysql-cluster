@@ -722,11 +722,17 @@ galeraRecoverFromDonor() {
     log "[Node: ${node}]: Removing grastate.dat..."
     local command="${SSH} ${node} 'rm -f /var/lib/mysql/grastate.dat'"
     execSshReturn "$command" "[Node: ${node}]: Remove grastate.dat"
-
+  done
+  
+  for node in ${list_nodes}; do
+    if [[ "${node}" == "${donor_ip}" || "${node}" == "${NODE_ADDRESS}" ]]; then
+      log "[Node: ${node}]: Skipping donor node (${donor_ip})."
+      continue
+    fi
     log "[Node: ${node}]: Starting MySQL service..."
     startMysqlService "${node}"
   done
-
+  
   log "Cluster recovery using donor node '${donor_ip}' is complete."
 }
 
