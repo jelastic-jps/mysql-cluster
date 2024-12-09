@@ -91,7 +91,6 @@ fi
 
 if [[ "${diagnostic}" != "YES" ]] && [[ "${check_corrupts}" != "YES" ]]; then
   [ "${SCENARIO}" == "init" ] && DONOR_IP='localhost'
-  [ "${SCENARIO}" == "restore_galera" ] && DONOR_IP="$DONOR_IP"
   [ "${SCENARIO}" == "promote_new_primary" ] && DONOR_IP='localhost'
   if [ -z "${DONOR_IP}" ] || [ -z "${SCENARIO}" ]; then
       echo "Not all arguments passed!"
