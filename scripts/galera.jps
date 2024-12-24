@@ -6,7 +6,7 @@ description: MariaDB Galera Auto Clustering
 baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-73374
 
 success:
-  text: /texts/galera.md
+  text: /texts/phpmyadmin-credentials-galera.md
 
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
