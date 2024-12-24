@@ -11,3 +11,5 @@ Keep in mind the Galera cluster database shall comply with the requirements:
   2. **Primary Keys**.  Every table that is to be replicated must have an explicit primary key, either a single or a multi-column index.  
   
 **Note**: Ignoring these requirements will result in replication failure.
+
+**Note**: When restoring the Galera Cluster from the database dump, no extra actions are required if working via the Backup/Restore add-on provided with this solution. However, in the case of manual restoration, it is essential to consider the limitations of the MariaDB Galera Cluster. We recommend following our dedicated "Galera Manual Restore from Dump" guide.
