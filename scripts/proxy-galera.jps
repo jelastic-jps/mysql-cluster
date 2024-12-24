@@ -5,7 +5,7 @@ description: Galera/XtraDB Cluster
 
 baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
-success: /texts/proxy-entrypoint.md
+success: /texts/proxy-entrypoint-galera.md
 
 targetNodes: none
 nodeGroupAlias:
