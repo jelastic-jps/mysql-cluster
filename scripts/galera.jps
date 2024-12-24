@@ -17,7 +17,7 @@ mixins:
 globals:
   DB_USER: ${settings.db_user:user-[fn.random]}
   DB_PASS: ${settings.db_pass:[fn.password(20)]}
-  CLUSTER_NAME: galera-${env.name}
+  CLUSTER_NAME: cluster-${fn.random}
   GALERA_CONF: /etc/mysql/conf.d/galera.cnf
   CUSTOM_CONF: ${settings.custom_conf}
 

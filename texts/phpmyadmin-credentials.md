@@ -5,3 +5,5 @@
 **Password**: ${globals.DB_PASS} 
 
 The provided credentials can be used to access all database nodes in the layer.
+
+**Note**: Check the database add-ons tab to be aware about extended functionality available.
