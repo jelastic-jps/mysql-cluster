@@ -17,7 +17,7 @@ logo: /images/mysql-mariadb-percona-logo.png?_r=1
 
 onBeforeInit: /scripts/settings.js?_r=${fn.random}
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-73042
 
 settings:
   fields:
