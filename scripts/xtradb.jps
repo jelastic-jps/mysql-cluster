@@ -58,11 +58,12 @@ onAfterStart:
       cmd[proxy]: sudo service proxysql restart
 
 onBeforeRestartNode[sqldb]:
-  - forEach(i:nodes.sqldb):
-      cmd [${@i.id}]: sudo jem service restart
-  - stopEvent:
-      type: success
-      message: Galera cluster successfully restarted
+  if ('${event.params.nodeGroup}' == '${targetNodes.nodeGroup}'):
+    - forEach(i:nodes.sqldb):
+        cmd [${@i.id}]: sudo jem service restart
+    - stopEvent:
+        type: success
+        message: Galera cluster successfully restarted
 
 onAfterSetCloudletCount[sqldb]:
   - forEach(i:nodes.sqldb):
