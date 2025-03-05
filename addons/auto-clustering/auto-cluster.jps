@@ -16,6 +16,8 @@ logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images
 globals:
   logic_jps: ${baseUrl}/addons/auto-clustering/scripts/auto-cluster-logic.jps?_r=${fn.random}
 
+permanent: true
+
 nodeGroupAlias:
   ${targetNodes.nodeGroup}: sqldb
 
