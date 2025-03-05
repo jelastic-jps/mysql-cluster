@@ -14,6 +14,8 @@ globals:
   path: "${settings.path}"
   scripts: "${settings.path}/scripts"
 
+permanent: true
+
 nodeGroupAlias:
   "${targetNodes.nodeGroup}": sqldb
 
