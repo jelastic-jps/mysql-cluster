@@ -14,7 +14,7 @@ targetNodes:
   nodeGroup: ${settings.nodeGroup:sqldb}
 
 nodeGroupAlias:
-  ${targetNodes.nodeGroup}: sqldb
+  ${settings.nodeGroup}: sqldb
 
 mixins:
   - /scripts/common.yml
