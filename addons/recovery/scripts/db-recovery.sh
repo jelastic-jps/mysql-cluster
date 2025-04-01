@@ -134,7 +134,7 @@ fi
 
 source /etc/jelastic/metainf.conf
 
-COMPUTE_TYPE_FULL_VERSION_FORMATTED=$(echo "$COMPUTE_TYPE_FULL_VERSION" | sed 's/\.//')
+COMPUTE_TYPE_FULL_VERSION_FORMATTED=$(sed -re 's/^([[:digit:]]+)\.([[:digit:]]+).*/\1\2/' <<< ${COMPUTE_TYPE_FULL_VERSION} )
 
 if [[ ("$COMPUTE_TYPE" == "mysql" || "$COMPUTE_TYPE" == "percona") && "$COMPUTE_TYPE_FULL_VERSION_FORMATTED" -ge "81" ]]; then
   STOP_SLAVE="STOP REPLICA"
