@@ -8,7 +8,11 @@ baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 success:
   text: /texts/phpmyadmin-credentials.md
 
-targetNodes: none
+permanent: true
+
+targetNodes: 
+  nodeGroup: ${settings.nodeGroup:sqldb}
+
 nodeGroupAlias:
   ${settings.nodeGroup}: sqldb
 

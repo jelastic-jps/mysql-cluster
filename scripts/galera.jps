@@ -8,8 +8,13 @@ baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/stage-cluster
 success:
   text: /texts/phpmyadmin-credentials-galera.md
 
+permanent: true
+
+targetNodes: 
+  nodeGroup: ${settings.nodeGroup:sqldb}
+
 nodeGroupAlias:
-  "${targetNodes.nodeGroup}": sqldb
+  ${settings.nodeGroup}: sqldb
 
 mixins:
   - /scripts/common.yml
@@ -73,11 +78,12 @@ onAfterStart:
       cmd[proxy]: sudo service proxysql restart
 
 onBeforeRestartNode[sqldb]:
-  - forEach(i:nodes.sqldb):
-      cmd [${@i.id}]: sudo jem service restart
-  - stopEvent:
-      type: success
-      message: Galera cluster successfully restarted
+  if ('${event.params.nodeGroup}' == '${targetNodes.nodeGroup}'):
+    - forEach(i:nodes.sqldb):
+        cmd [${@i.id}]: sudo jem service restart
+    - stopEvent:
+        type: success
+        message: Galera cluster successfully restarted
 
 onAfterSetCloudletCount[sqldb]:
   - forEach(i:nodes.sqldb):
