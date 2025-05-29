@@ -2,8 +2,14 @@ jpsType: update
 id: percona-xtradb-cluster
 name: Percona XtraDB Cluster
 description: Percona XtraDB Auto Clustering
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+globals:
+  cdnUrl: https://cdn.jsdelivr.net/gh
+  DB_USER: ${settings.db_user:user-[fn.random]}
+  DB_PASS: ${settings.db_pass:[fn.password(20)]}
+  CLUSTER_NAME: xtradb-${env.name}
+  CLUSTER_CONF: /etc/mysql/conf.d/galera.cnf
 
 success:
   text: /texts/phpmyadmin-credentials.md
@@ -18,12 +24,6 @@ nodeGroupAlias:
 
 mixins:
   - /scripts/common.yml
-
-globals:
-  DB_USER: ${settings.db_user:user-[fn.random]}
-  DB_PASS: ${settings.db_pass:[fn.password(20)]}
-  CLUSTER_NAME: xtradb-${env.name}
-  CLUSTER_CONF: /etc/mysql/conf.d/galera.cnf
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):

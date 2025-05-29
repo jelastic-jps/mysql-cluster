@@ -1,9 +1,17 @@
-jpsType: update
+type: update
 id: mysql-galera-cluster
 name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/stage-cluster
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
+
+globals:
+  cdnUrl: https://cdn.jsdelivr.net/gh
+  DB_USER: ${settings.db_user:user-[fn.random]}
+  DB_PASS: ${settings.db_pass:[fn.password(20)]}
+  CLUSTER_NAME: cluster-${fn.random}
+  GALERA_CONF: /etc/mysql/conf.d/galera.cnf
+  CUSTOM_CONF: ${settings.custom_conf}
 
 success:
   text: /texts/phpmyadmin-credentials-galera.md
@@ -18,13 +26,6 @@ nodeGroupAlias:
 
 mixins:
   - /scripts/common.yml
-
-globals:
-  DB_USER: ${settings.db_user:user-[fn.random]}
-  DB_PASS: ${settings.db_pass:[fn.password(20)]}
-  CLUSTER_NAME: cluster-${fn.random}
-  GALERA_CONF: /etc/mysql/conf.d/galera.cnf
-  CUSTOM_CONF: ${settings.custom_conf}
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
