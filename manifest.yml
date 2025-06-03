@@ -1,23 +1,23 @@
 jpsType: install
 jpsVersion: '1.5.2'
-name: MySQL/MariaDB/Percona Cluster
 id: mysql-cluster-main
+name: MySQL/MariaDB/Percona Cluster
 
 categories:
   - apps/clustered-dbs
   - apps/popular
   - apps/clusters
   - apps/databases
-  
+
+logo: /images/mysql-mariadb-percona-logo.png?_r=1
+
 description: 
   text: "/texts/description.md?_r=1"
   short: A set of MySQL/MariaDB/Percona cluster topologies with pre-configured replication and auto-discovery of the nodes.
-  
-logo: /images/mysql-mariadb-percona-logo.png?_r=1
+
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
 
 onBeforeInit: /scripts/settings.js?_r=${fn.random}
-
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
 
 settings:
   fields:

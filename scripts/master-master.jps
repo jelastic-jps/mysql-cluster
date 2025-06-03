@@ -3,7 +3,12 @@ id: mysql-master-master-replication-cluster
 name: MySQL/MariaDB/Percona Primary-Primary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
+
+globals:
+  cdnUrl: https://cdn.jsdelivr.net/gh
+  DB_USER: ${settings.db_user:user-[fn.random]}
+  DB_PASS: ${settings.db_pass:[fn.password(20)]}
 
 success:
    text: /texts/phpmyadmin-credentials.md
@@ -18,10 +23,6 @@ nodeGroupAlias:
 
 mixins:
   - /scripts/common.yml
-
-globals:
-  DB_USER: ${settings.db_user:user-[fn.random]}
-  DB_PASS: ${settings.db_pass:[fn.password(20)]}
 
 onBeforeMigrate:
   - isEnvRunning
@@ -49,14 +50,14 @@ onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     settings:
-      nodeGroup: ${settings.nodeGroup}
+      nodeGroup: ${settings.nodeGroup:sqldb}
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     envName: ${event.response.env.envName}
     settings:
-      nodeGroup: ${settings.nodeGroup}
+      nodeGroup: ${settings.nodeGroup:sqldb}
 
 onInstall:
   - getReplicaUser
@@ -112,7 +113,7 @@ actions:
     
   setupPrimaryPrimaryReplication:
     - cmd[${globals.primary2_id}]: |-
-        curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh;
+        curl --silent ${globals.cdnUrl}/jelastic-jps/mysql-cluster@master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh;
         bash /tmp/db-recovery.sh  --scenario restore_primary_from_primary --donor-ip ${globals.primary1_ip};
       user: root
   

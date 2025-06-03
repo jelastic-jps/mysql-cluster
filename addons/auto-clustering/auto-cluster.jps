@@ -1,7 +1,7 @@
 jpsType: update
 id: mysql-auto-cluster
 name: Scalable Database cluster
-
+logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png
 description:
   text: Ready-to-work scalable MySQL Cluster with primary-secondary asynchronous replication
     and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator
@@ -9,11 +9,10 @@ description:
     healthcheck and autodiscovery of newly added DB nodes
   short: Scalable MySQL cluster with ProxySQL for even load distribution
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
-
-logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
 
 globals:
+  cdnUrl: https://cdn.jsdelivr.net/gh
   logic_jps: ${baseUrl}/addons/auto-clustering/scripts/auto-cluster-logic.jps?_r=${fn.random}
 
 permanent: true
@@ -53,4 +52,3 @@ actions:
         repl_user: repl-${fn.random}
         repl_pass: ${fn.password(20)}
         is_proxysql: ${this.is_proxysql}
-        
