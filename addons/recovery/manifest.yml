@@ -17,7 +17,7 @@ targetNodes:
     - perconadb
     
 mixins:
-  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
+  - https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0/scripts/common.yml
 
 globals:
   cdnUrl: https://cdn.jsdelivr.net/gh
