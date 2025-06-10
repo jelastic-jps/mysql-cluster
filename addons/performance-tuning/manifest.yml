@@ -3,7 +3,7 @@ name: DB Cluster Tuning (Alpha)
 id: proxysql-db-tune-addon
 logo: addons/performance-tuning/images/mysql-proxysql-tuning.png
 description: Change ProxySQL and Database settings according to your particular use case
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/
 targetNodes: proxysql
 
 globals:
