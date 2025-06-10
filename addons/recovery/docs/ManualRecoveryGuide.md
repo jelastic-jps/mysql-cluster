@@ -4,7 +4,7 @@
 
 ## Manual Recovery Guide of Database Servers for MariaDB/MySQL Clusters
 
-This guide is an addition to the automatic database recovery flow that is carried out using the [Database Cluster Recovery addon](https://github.com/jelastic-jps/mysql-cluster/tree/master/addons/recovery) within Virtuozzo Appplication Platform. If the automatic recovery fails, the user can use this guide and try to restore the failed database server manually.
+This guide is an addition to the automatic database recovery flow that is carried out using the [Database Cluster Recovery addon](https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/recovery) within Virtuozzo Appplication Platform. If the automatic recovery fails, the user can use this guide and try to restore the failed database server manually.
 Supported topologies:
   - [MySQL/MariaDB Primary-Secondary](https://jelastic.com/blog/master-master-slave-replication-mysql-mariadb-auto-clustering/)
   - [MySQL/MariaDB Primary-Primary](https://jelastic.com/blog/master-master-slave-replication-mysql-mariadb-auto-clustering/)

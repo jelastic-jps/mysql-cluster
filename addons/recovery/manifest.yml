@@ -1,13 +1,13 @@
 type: update
 jpsVersion: 1.5.2
-name: Database Cluster Recovery
 id: db-recovery
+name: Database Cluster Recovery
 description:
   text: The Database Cluster Recovery add-on performs a comprehensive diagnostic of your MySQL/MariaDB/Percona Cluster (Galera, XtraDB, Primary-Primary, Primary-Secondary) to detect any disruptions of the provisioned service. In case of errors, the automatic Cluster Recovery functionality can restore the cluster operability after most of the problems.
   short: The add-on performs a comprehensive diagnostic of your database cluster and can perform automatic recovery.
 logo: /images/database-recovery.png
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/recovery
 
 targetNodes:
   nodeType:
@@ -17,9 +17,10 @@ targetNodes:
     - perconadb
     
 mixins:
-  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/common.yml
+  - https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0/scripts/common.yml
 
 globals:
+  cdnUrl: https://cdn.jsdelivr.net/gh
   ssh_root: /root/.ssh/
   ssh-key: id_rsa_db_monitoring
   tmp: /tmp/
