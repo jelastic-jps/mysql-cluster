@@ -25,7 +25,7 @@ globals:
   ssh-key: id_rsa_db_monitoring
   tmp: /tmp/
   diagnostic-failed: |
-    Errors were discovered during the Database Cluster diagnostic. Please check the /var/log/db_recovery.log log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery. Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+    Errors were discovered during the Database Cluster diagnostic. Please check the /var/log/db_recovery.log log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery. Follow the [Manual Recovery](https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
 buttons:
   - name: diagnostic
@@ -92,14 +92,14 @@ responses:
     message: |
       An error occurs while recovering the Database Cluster.  
       Please check the **/var/log/db_recovery.log** log file for details.
-      Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+      Follow the [Manual Recovery](https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
   99:
     type: warning
     message: |
       Errors were discovered during the Database Cluster diagnostic.
       Please check the **/var/log/db_recovery.log** log file for details. Click the "Cluster Recovery" button in the add-on's tab for automatic recovery.
-      Follow the [Manual Recovery](https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
+      Follow the [Manual Recovery](https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/recovery/docs/ManualRecoveryGuide.md) guide to recover the cluster manually.
 
   96:
     type: warning

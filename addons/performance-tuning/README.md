@@ -54,7 +54,7 @@ The add-on can be installed on top of the [MySQL/MariaDB/Percona cluster](https:
 1\. [Import](https://www.virtuozzo.com/application-platform-docs/environment-import/) the add-on using a link to the ***manifest*** file in this repository:
 
 ```
-https://github.com/jelastic-jps/mysql-cluster/blob/master/addons/performance-tuning/manifest.yml
+https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/performance-tuning/manifest.yml
 ```
 
 ![import tuning add-on](images/01-import-tuning-addon.png)
