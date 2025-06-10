@@ -93,7 +93,7 @@ function setCorruptedDisplayNode(node, removeLabelCorrupted) {
 }
 function execRecovery(nodeid) {
     api.marketplace.console.WriteLog("curl --silent https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + exec);
-    return nodeManager.cmd({
+    return cmd({
         command: "curl --silent https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh && bash /tmp/db-recovery.sh " + exec,
         nodeid: nodeid || ""
     });
