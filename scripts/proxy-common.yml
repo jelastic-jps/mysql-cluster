@@ -1,5 +1,5 @@
 globals:
-  db_cluster_path: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+  db_cluster_path: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
   proxy_web_port: 4848
 
 actions:
