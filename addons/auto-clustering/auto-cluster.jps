@@ -1,7 +1,7 @@
 jpsType: update
 id: mysql-auto-cluster
 name: Scalable Database cluster
-logo: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/images/mysql-logo.png
+logo: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/images/mysql-logo.png
 description:
   text: Ready-to-work scalable MySQL Cluster with primary-secondary asynchronous replication
     and ProxySQL load balancer in front of it. Is supplied with embedded Orchestrator
