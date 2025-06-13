@@ -49,14 +49,14 @@ onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     settings:
-      nodeGroup: ${settings.nodeGroup}
+      nodeGroup: ${settings.nodeGroup:sqldb}
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     envName: ${event.response.env.envName}
     settings:
-      nodeGroup: ${settings.nodeGroup}
+      nodeGroup: ${settings.nodeGroup:sqldb}
 
 onInstall:
   - getReplicaUser
