@@ -61,11 +61,8 @@ actions:
               
   init:
     log: Monitoring is initialized
+  
   setupCron:
-    - forEach(i:nodes.sqldb):
-      - cmd[${@i.id}]: |-
-          curl -fsSL ${baseUrl}/scripts/db-monitoring.sh -o /usr/local/bin/db-monitoring.sh && chmod +x /usr/local/bin/db-monitoring.sh
-      - cmd[${@i.id}]: |-
-          echo "* * * * * root /usr/local/bin/db-monitoring.sh ${settings.user} ${settings.password} >/dev/null 2>&1" > /etc/cron.d/db-monitoring && chmod 644 /etc/cron.d/db-monitoring
-      - cmd[${@i.id}]: |-
-          if command -v systemctl >/dev/null 2>&1; then systemctl reload crond 2>/dev/null || systemctl reload cron 2>/dev/null || true; else service crond reload 2>/dev/null || service cron reload 2>/dev/null || true; fi
+    - cmd[sqldb]: |-
+        curl -fsSL ${baseUrl}/scripts/db-monitoring.sh -o /usr/local/sbin/db-monitoring.sh && chmod +x /usr/local/sbin/db-monitoring.sh && echo "* * * * * root /usr/local/sbin/db-monitoring.sh >/dev/null 2>&1" > /etc/cron.d/db-monitoring && chmod 644 /etc/cron.d/db-monitoring && (systemctl reload crond 2>/dev/null || systemctl reload cron 2>/dev/null || service crond reload 2>/dev/null || service cron reload 2>/dev/null || true)
+      user: root

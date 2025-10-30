@@ -1,9 +1,10 @@
 #!/bin/bash
 
-DB_USER=$1
-DB_PASSWORD=$2
+DB_USER=""
+DB_PASSWORD=""
 MONITORING_LOG=/var/log/db-monitoring.log
 STATUS_FILE=/var/tmp/db-monitoring.status
+BODY_ERROR_PREFIX="MySQL/MariaDB monitoring error on ${ENV_NAME}"
 
 # email notification via Jelastic API
 function sendEmailNotification(){
@@ -54,11 +55,42 @@ send_on_status_change(){
 
 echo "Monitoring started at $(date)" >> $MONITORING_LOG
 
+# Read credentials from /.jelenv (REPLICA_USER/REPLICA_PSWD) only; if absent -> notify and exit
+if [ ! -f "/.jelenv" ]; then
+    BODY="${BODY_ERROR_PREFIX}
+
+Issue: Credentials file /.jelenv not found
+Action required: Ensure REPLICA_USER/REPLICA_PSWD are provisioned in /.jelenv
+Timestamp: $(date)"
+    echo "$BODY" >> $MONITORING_LOG
+    send_on_status_change "CREDENTIALS_MISSING" "$BODY"
+    echo "Monitoring finished at $(date)" >> $MONITORING_LOG
+    exit 1
+fi
+
+source "/.jelenv"
+
+DB_USER="$REPLICA_USER"
+DB_PASSWORD="$REPLICA_PSWD"
+
+if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ]; then
+    BODY="${BODY_ERROR_PREFIX}
+
+Issue: Missing REPLICA_USER or REPLICA_PSWD in /.jelenv
+Observed values: REPLICA_USER='${REPLICA_USER:-EMPTY}', REPLICA_PSWD='${REPLICA_PSWD:+SET}'
+Action required: Populate both variables in /.jelenv
+Timestamp: $(date)"
+    echo "$BODY" >> $MONITORING_LOG
+    send_on_status_change "CREDENTIALS_MISSING" "$BODY"
+    echo "Monitoring finished at $(date)" >> $MONITORING_LOG
+    exit 1
+fi
+
 # Collect metrics using mysqladmin status
 STATUS_RAW=$(mysqladmin status -u"$DB_USER" -p"$DB_PASSWORD" 2>&1)
 RET=$?
 if [ $RET -ne 0 ] || [ -z "$STATUS_RAW" ]; then
-    BODY="MySQL/MariaDB monitoring error on ${ENV_NAME}
+    BODY="${BODY_ERROR_PREFIX}
 
 Action: mysqladmin status
 Exit code: $RET
@@ -98,7 +130,7 @@ if ! [[ "$MAX_CONNECTIONS" =~ ^[0-9]+$ ]]; then
 fi
 
 if ! [[ "$MAX_CONNECTIONS" =~ ^[0-9]+$ ]]; then
-    BODY="MySQL/MariaDB monitoring error on ${ENV_NAME}
+    BODY="${BODY_ERROR_PREFIX}
 
 Issue: Unable to determine max_connections
 mysqladmin variables exit: $VARS_RC
