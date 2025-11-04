@@ -6,6 +6,11 @@ MONITORING_LOG=/var/log/db-monitoring.log
 STATUS_FILE=/var/tmp/db-monitoring.status
 BODY_ERROR_PREFIX="MySQL/MariaDB monitoring error on ${ENV_NAME}"
 
+
+# Accept USER_SESSION and USER_EMAIL via positional args if provided
+if [ -n "$1" ]; then USER_SESSION="$1"; fi
+if [ -n "$2" ]; then USER_EMAIL="$2"; fi
+
 # email notification via Jelastic API
 function sendEmailNotification(){
     if [ -e "/usr/lib/jelastic/modules/api.module" ]; then
