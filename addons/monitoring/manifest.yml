@@ -53,6 +53,9 @@ buttons:
     loadingText: Configuring...
     successText: The monitoring configs have been updated successfully.
 
+globals:
+  scriptSufix: db-monitoring
+
 onAfterClone:
   install: ${baseUrl}/manifest.yml?_r=${fn.random}
   envName: ${event.response.env.envName}
@@ -90,8 +93,8 @@ actions:
     script: |
       let Response = com.hivext.api.Response;
       let Transport = com.hivext.api.core.utils.Transport;
-      let scriptBody = new Transport().get("${baseUrl}/scripts/monitoring-runner.js");
-      let scriptName = "${env.name}-dbMonitoringRunner";
+      let scriptBody = new Transport().get("${baseUrl}/scripts/db-monitoring.js");
+      let scriptName = "${env.name}-${globals.scriptSufix}";
 
       var resp = api.dev.scripting.GetScript(appid, session, scriptName);
       if (resp.result == Response.OK) {
@@ -107,7 +110,7 @@ actions:
 
   createMonitoringSchedule:
     script: |
-      let scriptName = "${env.name}-dbMonitoringRunner";
+      let scriptName = "${env.name}-${globals.scriptSufix}";
       let trigger = "cron:0 0/${settings.monitorInterval} * ? * * *";
 
       var tasks = api.utils.scheduler.GetTasks({ appid: appid, session: session }).objects;
@@ -129,7 +132,7 @@ actions:
 
   removeMonitoringSchedule:
     script: |
-      let scriptName = "${env.name}-dbMonitoringRunner";
+      let scriptName = "${env.name}-${globals.scriptSufix}";
       let tasks = api.utils.scheduler.GetTasks({ appid: appid, session: session }).objects;
       for (var i = 0, l = tasks.length; i < l; i++) {
         if (tasks[i].script == scriptName) {
@@ -140,7 +143,7 @@ actions:
 
   removeMonitoringScript:
     script: |
-      let scriptName = "${env.name}-dbMonitoringRunner";
+      let scriptName = "${env.name}-${globals.scriptSufix}";
       var resp = api.dev.scripting.GetScript(appid, session, scriptName);
       if (resp.result == com.hivext.api.Response.OK) {
         api.dev.scripting.DeleteScript(appid, session, scriptName);
@@ -149,7 +152,7 @@ actions:
 
   removeMonitoringBinary:
     - cmd[sqldb]: |-
-        rm -f /usr/local/sbin/db-monitoring.sh /etc/cron.d/db-monitoring || true
+        rm -f /usr/local/sbin/db-monitoring.sh || true
       user: root
 
   configure:
