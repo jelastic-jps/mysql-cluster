@@ -76,91 +76,74 @@ onAfterClone:
 
 onInstall:
   - getReplicaUser
-  - downloadMonitoringScript
-  - createMonitoringScript
-  - createMonitoringSchedule
+  - applyMonitoring
 
 onUninstall:
-  - removeMonitoringSchedule
-  - removeMonitoringScript
-  - removeMonitoringBinary
+  - cleanupMonitoring
 
 onBeforeDelete:
-  - removeMonitoringSchedule
-  - removeMonitoringScript
-  - removeMonitoringBinary
+  - cleanupMonitoring
 
 actions:
-  downloadMonitoringScript:
-    - cmd[sqldb]: |-
-        curl -fsSL ${baseUrl}/scripts/db-monitoring.sh -o /usr/local/sbin/db-monitoring.sh && chmod +x /usr/local/sbin/db-monitoring.sh
-      user: root
-
-  createMonitoringScript:
+  applyMonitoring:
     script: |
-      let Response = com.hivext.api.Response;
+      let envName = "${env.name}";
+      let scriptName = envName + "-${globals.scriptSufix}";
       let Transport = com.hivext.api.core.utils.Transport;
-      let scriptBody = new Transport().get("${baseUrl}/scripts/db-monitoring.js");
-      let scriptName = "${env.name}-${globals.scriptSufix}";
+      let Response = com.hivext.api.Response;
 
+      var downloadCmd = "curl -fsSL ${baseUrl}/scripts/db-monitoring.sh -o /usr/local/sbin/db-monitoring.sh && chmod +x /usr/local/sbin/db-monitoring.sh";
+      var cmdResp = api.env.control.ExecCmdByGroup(envName, session, "sqldb", toJSON([{command: downloadCmd}]), true, false, "root");
+      if (cmdResp.result != 0) return cmdResp;
+
+      var body = new Transport().get("${baseUrl}/scripts/db-monitoring.js");
       var resp = api.dev.scripting.GetScript(appid, session, scriptName);
       if (resp.result == Response.OK) {
         api.dev.scripting.DeleteScript(appid, session, scriptName);
       }
-
-      resp = api.dev.scripting.CreateScript(appid, session, scriptName, "js", scriptBody);
+      resp = api.dev.scripting.CreateScript(appid, session, scriptName, "js", body);
       if (resp.result != 0) return resp;
       java.lang.Thread.sleep(500);
       resp = api.dev.scripting.Build(appid, session, scriptName);
       if (resp.result != 0) return resp;
-      return { result: 0 };
 
-  createMonitoringSchedule:
-    script: |
-      let scriptName = "${env.name}-${globals.scriptSufix}";
-      let trigger = "cron:0 0/${settings.monitorInterval} * ? * * *";
-
-      var tasks = api.utils.scheduler.GetTasks({ appid: appid, session: session }).objects;
-      for (var i = 0, l = tasks.length; i < l; i++) {
+      var tasks = api.utils.scheduler.GetTasks({appid: appid, session: session}).objects;
+      for (var i=0; i<tasks.length; i++) {
         if (tasks[i].script == scriptName) {
-          api.utils.scheduler.RemoveTask({ appid: appid, session: session, id: tasks[i].id });
+          api.utils.scheduler.RemoveTask({appid: appid, session: session, id: tasks[i].id});
         }
       }
 
+      var trigger = "cron:0 0/${settings.monitorInterval} * ? * * *";
       return api.utils.scheduler.CreateEnvTask({
         appid: appid,
-        envName: "${env.name}",
+        envName: envName,
         session: session,
         script: scriptName,
         trigger: trigger,
         description: "Run DB monitoring",
-        params: { envName: "${env.name}" }
+        params: { envName: envName }
       });
 
-  removeMonitoringSchedule:
+  cleanupMonitoring:
     script: |
-      let scriptName = "${env.name}-${globals.scriptSufix}";
-      let tasks = api.utils.scheduler.GetTasks({ appid: appid, session: session }).objects;
-      for (var i = 0, l = tasks.length; i < l; i++) {
+      let envName = "${env.name}";
+      let scriptName = envName + "-${globals.scriptSufix}";
+      var tasks = api.utils.scheduler.GetTasks({ appid: appid, session: session }).objects;
+      for (var i = 0; i < tasks.length; i++) {
         if (tasks[i].script == scriptName) {
           api.utils.scheduler.RemoveTask({ appid: appid, session: session, id: tasks[i].id });
         }
       }
-      return { result: 0 };
 
-  removeMonitoringScript:
-    script: |
-      let scriptName = "${env.name}-${globals.scriptSufix}";
       var resp = api.dev.scripting.GetScript(appid, session, scriptName);
       if (resp.result == com.hivext.api.Response.OK) {
         api.dev.scripting.DeleteScript(appid, session, scriptName);
       }
+
+      var rmResp = api.env.control.ExecCmdByGroup(envName, session, "sqldb", toJSON([{command: "rm -f /usr/local/sbin/db-monitoring.sh || true"}]), true, false, "root");
+      if (rmResp.result != 0) return rmResp;
       return { result: 0 };
 
-  removeMonitoringBinary:
-    - cmd[sqldb]: |-
-        rm -f /usr/local/sbin/db-monitoring.sh || true
-      user: root
-
   configure:
-    - createMonitoringSchedule
+    - applyMonitoring
