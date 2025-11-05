@@ -24,11 +24,10 @@ function sendEmailNotification(){
             echo $(date) ${HOSTNAME_SHORT} "E-mail notification is sent successfully" | tee -a $MONITORING_LOG
         fi
     else
-        echo $(date) ${HOSTNAME_SHORT} "Email notification is not sent because this functionality is unavailable for current platform version." | tee -a $MONITORING_LOG
+        echo $(date) ${HOSTNAME_SHORT} "Email notification is not sent because this functionality is unavailable for current platform." | tee -a $MONITORING_LOG
     fi
 }
 
-# status helpers: send email once per status change
 function get_last_status(){
     [ -f "$STATUS_FILE" ] && cat "$STATUS_FILE" 2>/dev/null || echo ""
 }
@@ -44,17 +43,15 @@ function build_metrics_body(){
 <div style="font-family:monospace">
 <b>Database connections ${title} on ${HOSTNAME_SHORT}</b><br/>
 <br/>
-<b>Status</b><br/>
+<b>STATUS</b><br/>
 <b>Uptime:</b> $UPTIME_HUMAN<br/>
 <b>Threads:</b> $THREADS<br/>
-<b>Questions:</b> $QUESTIONS<br/>
 <b>Slow queries:</b> $SLOW<br/>
-<b>Opens:</b> $OPENS<br/>
 <b>Open tables:</b> $OPEN_TABLES<br/>
 <b>QPS:</b> $QPS<br/>
 <br/>
-<b>max_connections:</b> $MAX_CONNECTIONS<br/>
-<b>Current threads (connections):</b> $THREADS<br/>
+<b>Max connections:</b> $MAX_CONNECTIONS<br/>
+<b>Current connections:</b> $THREADS<br/>
 <b>Usage:</b> ${USAGE_PCT}%<br/>
 <b>Timestamp:</b> $(date)
 </div>
@@ -143,7 +140,6 @@ mysql SHOW VARIABLES output:\n${VAR_RAW}
 Timestamp: $(date)"
         echo "$BODY" >> $MONITORING_LOG
         send_on_status_change "MAXCONN_ERROR" "$BODY"
-        # continue with MAX_CONNECTIONS=0 to avoid division errors
         MAX_CONNECTIONS=0
     fi
 
@@ -153,12 +149,10 @@ Timestamp: $(date)"
     fi
 }
 
-
 echo "Monitoring started at $(date)" >> $MONITORING_LOG
 check_credentials
 collect_metrics
 METRICS_BODY=$(build_metrics_body "usage alert")
-echo "$METRICS_BODY" >> $MONITORING_LOG
 
 # Determine status and send only on change
 if [ "$USAGE_PCT" -ge "$THRESHOLD" ]; then
