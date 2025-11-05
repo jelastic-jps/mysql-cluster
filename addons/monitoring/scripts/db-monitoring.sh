@@ -48,7 +48,7 @@ function build_metrics_body(){
 <b>Threads:</b> $THREADS<br/>
 <b>Slow queries:</b> $SLOW<br/>
 <b>Open tables:</b> $OPEN_TABLES<br/>
-<b>QPS:</b> $QPS<br/>
+<b>Queries per second avg:</b> $QPS<br/>
 <br/>
 <b>Max connections:</b> $MAX_CONNECTIONS<br/>
 <b>Current connections:</b> $THREADS<br/>
