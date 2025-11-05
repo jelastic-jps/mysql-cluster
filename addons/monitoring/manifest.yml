@@ -45,6 +45,16 @@ settings:
             caption: Every 50 minutes
         default: 10
 
+      - name: user
+        caption: DB User
+        type: string
+        required: true
+      - name: password
+        caption: DB Password
+        type: string
+        inputType: password
+        required: true
+
 buttons:
   - name: Configure
     caption: Configure
@@ -65,7 +75,7 @@ onAfterClone:
     monitorInterval: ${settings.monitorInterval}
 
 onInstall:
-  - if (!${settings.install:false}): init
+  - getReplicaUser
   - downloadMonitoringScript
   - createMonitoringScript
   - createMonitoringSchedule
@@ -81,9 +91,6 @@ onBeforeDelete:
   - removeMonitoringBinary
 
 actions:
-  init:
-    log: Monitoring is initialized
-
   downloadMonitoringScript:
     - cmd[sqldb]: |-
         curl -fsSL ${baseUrl}/scripts/db-monitoring.sh -o /usr/local/sbin/db-monitoring.sh && chmod +x /usr/local/sbin/db-monitoring.sh
