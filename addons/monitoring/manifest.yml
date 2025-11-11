@@ -3,8 +3,8 @@ name: Database Monitoring
 id: db-monitoring
 
 description:
-  text:  The Database Monitoring add-on performs a comprehensive monitoring of your MySQL/MariaDB/Percona Database to detect data corruption and inconsistency in the components. Add-on will **temporarily stop all database services** for the duration of the diagnostic to ensure accurate results. Detected issues will be listed in the recovery log.
-  short: The add-on checks your database for corrupted or inconsistent data in the components.
+  text:  The Database Monitoring add-on tracks MySQL/MariaDB/Percona connection usage and sends single-on-state-change email alerts. It periodically collects mysqladmin status and max_connections, alerts when usage reaches 70%, and includes detailed metrics with human‑readable uptime. The check runs online without stopping database services and supports configurable intervals.
+  short: Email alerts for DB connection usage with detailed metrics.
 
 logo: /images/database-monitoring.png
 
@@ -29,6 +29,8 @@ settings:
         type: list
         editable: false
         values:
+          - value: 2
+            caption: Every 2 minutes
           - value: 5
             caption: Every 5 minutes
           - value: 10

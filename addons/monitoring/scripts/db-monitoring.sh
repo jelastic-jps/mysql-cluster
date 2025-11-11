@@ -33,7 +33,8 @@ function get_last_status(){
 }
 
 function set_status(){
-    echo "$1" > "$STATUS_FILE" 2>/dev/null || true
+    local status="$1"
+    echo "$status" > "$STATUS_FILE" 2>/dev/null || true
 }
 
 # Build reusable metrics body
@@ -154,7 +155,6 @@ check_credentials
 collect_metrics
 METRICS_BODY=$(build_metrics_body "usage alert")
 
-# Determine status and send only on change
 if [ "$USAGE_PCT" -ge "$THRESHOLD" ]; then
     send_on_status_change "THRESHOLD" "$METRICS_BODY"
 else
