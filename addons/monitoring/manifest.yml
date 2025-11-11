@@ -29,8 +29,6 @@ settings:
         type: list
         editable: false
         values:
-          - value: 2
-            caption: Every 2 minutes
           - value: 5
             caption: Every 5 minutes
           - value: 10

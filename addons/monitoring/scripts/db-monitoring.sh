@@ -78,12 +78,17 @@ function check_credentials(){
     DB_PASSWORD="$REPLICA_PSWD"
 
     if [ -z "$DB_USER" ] || [ -z "$DB_PASSWORD" ]; then
-        BODY="${BODY_ERROR_PREFIX}
-
-Issue: Missing REPLICA_USER or REPLICA_PSWD in environment variables
-Observed values: REPLICA_USER='${REPLICA_USER:-EMPTY}', REPLICA_PSWD='${REPLICA_PSWD:+SET}'
-Action required: Populate both variables in environment variables
-Timestamp: $(date)"
+        BODY=$(cat <<EOF
+<div style="font-family:monospace">
+<b>${BODY_ERROR_PREFIX}</b><br/>
+<br/>
+<b>Issue:</b> Missing REPLICA_USER or REPLICA_PSWD in environment variables<br/>
+<b>Observed values:</b> REPLICA_USER='${REPLICA_USER:-EMPTY}', REPLICA_PSWD='${REPLICA_PSWD:+SET}'<br/>
+<b>Action required:</b> Populate both variables in environment variables<br/>
+<b>Timestamp:</b> $(date)
+</div>
+EOF
+)
         echo "$BODY" >> $MONITORING_LOG
         send_on_status_change "CREDENTIALS_MISSING" "$BODY"
         echo "Monitoring finished at $(date)" >> $MONITORING_LOG
@@ -96,12 +101,18 @@ function collect_metrics(){
     STATUS_RAW=$(mysqladmin status -u"$DB_USER" -p"$DB_PASSWORD" 2>&1)
     RET=$?
     if [ $RET -ne 0 ] || [ -z "$STATUS_RAW" ]; then
-        BODY="${BODY_ERROR_PREFIX}
-
-Action: mysqladmin status
-Exit code: $RET
-Output:\n$STATUS_RAW
-Timestamp: $(date)"
+        OUT_ESC=$(printf '%s' "$STATUS_RAW" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' | sed ':a;N;$!ba;s/\n/<br\/>/g')
+        BODY=$(cat <<EOF
+<div style="font-family:monospace">
+<b>${BODY_ERROR_PREFIX}</b><br/>
+<br/>
+<b>Action:</b> mysqladmin status<br/>
+<b>Exit code:</b> $RET<br/>
+<b>Output:</b> $OUT_ESC<br/>
+<b>Timestamp:</b> $(date)
+</div>
+EOF
+)
         echo "$BODY" >> $MONITORING_LOG
         send_on_status_change "STATUS_ERROR" "$BODY"
         echo "Monitoring finished at $(date)" >> $MONITORING_LOG
@@ -133,12 +144,18 @@ Timestamp: $(date)"
     fi
 
     if ! [[ "$MAX_CONNECTIONS" =~ ^[0-9]+$ ]]; then
-        BODY="${BODY_ERROR_PREFIX}
-
-Issue: Unable to determine max_connections
-mysql SHOW VARIABLES exit: ${VAR_RC}
-mysql SHOW VARIABLES output:\n${VAR_RAW}
-Timestamp: $(date)"
+        VAR_ESC=$(printf '%s' "$VAR_RAW" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' | sed ':a;N;$!ba;s/\n/<br\/>/g')
+        BODY=$(cat <<EOF
+<div style="font-family:monospace">
+<b>${BODY_ERROR_PREFIX}</b><br/>
+<br/>
+<b>Issue:</b> Unable to determine max_connections<br/>
+<b>mysql SHOW VARIABLES exit:</b> ${VAR_RC}<br/>
+<b>mysql SHOW VARIABLES output:</b> ${VAR_ESC}<br/>
+<b>Timestamp:</b> $(date)
+</div>
+EOF
+)
         echo "$BODY" >> $MONITORING_LOG
         send_on_status_change "MAXCONN_ERROR" "$BODY"
         MAX_CONNECTIONS=0
