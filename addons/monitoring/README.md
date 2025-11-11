@@ -1,22 +1,17 @@
-# Database Monitoring Add-On (Connections Usage Alerts)
-
-Detailed description of the add-on that monitors MySQL/MariaDB/Percona connections and sends email alerts.
-
+# Database Monitoring Add-On
 ## Purpose
 The add-on tracks database connection usage and sends an email alert when usage reaches 70% of `max_connections`. Alerts are stateful (sent once per state change) to avoid spam. Emails include detailed metrics.
 
 ## Key features
 - Monitors connection usage (Usage = Threads / max_connections).
-- Default threshold: 70% (state `THRESHOLD`).
 - Stateful notifications (one email per state change):
   - `OK` — Usage < 70% (back to normal).
   - `THRESHOLD` — Usage ≥ 70% (threshold exceeded).
   - `STATUS_ERROR` — failed to get `mysqladmin status`.
   - `MAXCONN_ERROR` — failed to get `max_connections` (`SHOW VARIABLES`).
 - Metrics from `mysqladmin status` and `SHOW VARIABLES LIKE 'max_connections'`.
-- HTML email: monospace block, bold labels, `<br/>` line breaks, hostname in subject/body, uptime shown as “X days Y hours Z minutes”.
-- Configurable schedule (Quartz cron) via add-on settings: 2, 5, 10, 15, 20, 30, 40, 50 minutes.
-- Online check (does not stop database services). Runs on all `sqldb` nodes.
+- Configurable schedule (Quartz cron) via add-on settings: 5, 10, 15, 20, 30, 40, 50 minutes.
+- Runs on all `sqldb` nodes.
 
 ## How it works
 1. Install:
