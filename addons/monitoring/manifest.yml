@@ -1,0 +1,149 @@
+type: update
+name: Database Monitoring
+id: db-monitoring
+
+description:
+  text:  The Database Monitoring add-on tracks MySQL/MariaDB/Percona connection usage and sends single-on-state-change email alerts. It periodically collects mysqladmin status and max_connections, alerts when usage reaches 70%, and includes detailed metrics with human‑readable uptime. The check runs online without stopping database services and supports configurable intervals.
+  short: Email alerts for DB connection usage with detailed metrics.
+
+logo: /images/database-monitoring.png
+
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-66040/addons/monitoring
+
+mixins:
+  - https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0/scripts/common.yml
+
+targetNodes:
+  nodeType:
+    - mysql
+    - mariadb-dockerized
+    - mariadb
+    - perconadb
+
+settings:
+  main:
+    submitUnchanged: true
+    fields:
+      - name: monitorInterval
+        caption: Monitoring interval
+        type: list
+        editable: false
+        values:
+          - value: 5
+            caption: Every 5 minutes
+          - value: 10
+            caption: Every 10 minutes
+          - value: 15
+            caption: Every 15 minutes
+          - value: 20
+            caption: Every 20 minutes
+          - value: 30
+            caption: Every 30 minutes
+          - value: 40
+            caption: Every 40 minutes
+          - value: 50
+            caption: Every 50 minutes
+        default: 10
+
+      - name: user
+        caption: DB User
+        type: string
+        required: true
+      - name: password
+        caption: DB Password
+        type: string
+        inputType: password
+        required: true
+
+buttons:
+  - name: Configure
+    caption: Configure
+    action: configure
+    settings: main
+    loadingText: Configuring...
+    successText: The monitoring configs have been updated successfully.
+
+globals:
+  scriptSufix: db-monitoring
+
+onAfterClone:
+  install: ${baseUrl}/manifest.yml?_r=${fn.random}
+  envName: ${event.response.env.envName}
+  nodeGroup: ${targetNodes.nodeGroup}
+  settings:
+    install: true
+    monitorInterval: ${settings.monitorInterval}
+
+onInstall:
+  - getReplicaUser
+  - applyMonitoring
+
+onUninstall:
+  - cleanupMonitoring
+
+onBeforeDelete:
+  - cleanupMonitoring
+
+actions:
+  applyMonitoring:
+    script: |
+      let envName = "${env.name}";
+      let scriptName = envName + "-${globals.scriptSufix}";
+      let Transport = com.hivext.api.core.utils.Transport;
+      let Response = com.hivext.api.Response;
+
+      var downloadCmd = "curl -fsSL ${baseUrl}/scripts/db-monitoring.sh -o /usr/local/sbin/db-monitoring.sh && chmod +x /usr/local/sbin/db-monitoring.sh";
+      var cmdResp = api.env.control.ExecCmdByGroup(envName, session, "sqldb", toJSON([{command: downloadCmd}]), true, false, "root");
+      if (cmdResp.result != 0) return cmdResp;
+
+      var body = new Transport().get("${baseUrl}/scripts/db-monitoring.js");
+      var resp = api.dev.scripting.GetScript(appid, session, scriptName);
+      if (resp.result == Response.OK) {
+        api.dev.scripting.DeleteScript(appid, session, scriptName);
+      }
+      resp = api.dev.scripting.CreateScript(appid, session, scriptName, "js", body);
+      if (resp.result != 0) return resp;
+      java.lang.Thread.sleep(500);
+      resp = api.dev.scripting.Build(appid, session, scriptName);
+      if (resp.result != 0) return resp;
+
+      var tasks = api.utils.scheduler.GetTasks({appid: appid, session: session}).objects;
+      for (var i=0; i<tasks.length; i++) {
+        if (tasks[i].script == scriptName) {
+          api.utils.scheduler.RemoveTask({appid: appid, session: session, id: tasks[i].id});
+        }
+      }
+
+      var trigger = "cron:0 0/${settings.monitorInterval} * ? * * *";
+      return api.utils.scheduler.CreateEnvTask({
+        appid: appid,
+        envName: envName,
+        session: session,
+        script: scriptName,
+        trigger: trigger,
+        description: "Run DB monitoring",
+        params: { envName: envName }
+      });
+
+  cleanupMonitoring:
+    script: |
+      let envName = "${env.name}";
+      let scriptName = envName + "-${globals.scriptSufix}";
+      var tasks = api.utils.scheduler.GetTasks({ appid: appid, session: session }).objects;
+      for (var i = 0; i < tasks.length; i++) {
+        if (tasks[i].script == scriptName) {
+          api.utils.scheduler.RemoveTask({ appid: appid, session: session, id: tasks[i].id });
+        }
+      }
+
+      var resp = api.dev.scripting.GetScript(appid, session, scriptName);
+      if (resp.result == com.hivext.api.Response.OK) {
+        api.dev.scripting.DeleteScript(appid, session, scriptName);
+      }
+
+      var rmResp = api.env.control.ExecCmdByGroup(envName, session, "sqldb", toJSON([{command: "rm -f /usr/local/sbin/db-monitoring.sh || true"}]), true, false, "root");
+      if (rmResp.result != 0) return rmResp;
+      return { result: 0 };
+
+  configure:
+    - applyMonitoring
