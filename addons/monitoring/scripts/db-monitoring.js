@@ -1,4 +1,4 @@
-//@auth
+//@reg(envName, token, uid)
 
 var ROOT = "root";
 var envName = getParam("envName", "${env.envName}");

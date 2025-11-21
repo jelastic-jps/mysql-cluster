@@ -101,12 +101,13 @@ onCustomNodeEvent [name:executeScript]:
     return { result: 0 }
 
 actions:
+  
   downloadScripts:
     - cmd[sqldb]: |-
         curl -fsSL ${baseUrl}/scripts/db-monitoring.sh -o /usr/local/sbin/db-monitoring.sh
         chmod +x /usr/local/sbin/db-monitoring.sh
-        [ -f /var/log/db-monitoring.log ] || : > /var/log/db-monitoring.log
       user: root
+
   createScript:
     script: |
       let Response = com.hivext.api.Response;
@@ -126,9 +127,11 @@ actions:
       let command = "sed -ri 's|^PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/db-monitoring.sh; " +
                     "sed -ri 's|^USER_SCRIPT_PATH=.*|USER_SCRIPT_PATH=\"${platformUrl}${globals.scriptName}\"|g' /usr/local/sbin/db-monitoring.sh";
       return api.env.control.ExecCmdByGroup("${env.name}", session, "sqldb", toJSON([{ command: command }]), true, false, "root");
+
   addSchedulerToDB:
     - cmd[sqldb]: bash /usr/local/sbin/db-monitoring.sh addScheduler
       user: root
+  
   setSchedulerTimeout:
     - cmd[sqldb]: bash /usr/local/sbin/db-monitoring.sh setSchedulerTimeout --interval=${settings.monitorInterval}
       user: root
@@ -141,12 +144,13 @@ actions:
         api.dev.scripting.DeleteScript(appid, session, "${globals.scriptName}");
       }
 
-      var rmResp = api.env.control.ExecCmdByGroup(envName, session, "sqldb", toJSON([
+      resp = api.env.control.ExecCmdByGroup(envName, session, "sqldb", toJSON([
         {command: "rm -f /etc/cron.d/db-monitoring || true"},
         {command: "rm -f /usr/local/sbin/db-monitoring.sh || true"},
         {command: "systemctl reload crond || service cron reload || true"}
       ]), true, false, "root");
-      if (rmResp.result != 0) return rmResp;
+      if (resp.result != 0) return resp;
+      
       return { result: 0 };
 
   configure:
