@@ -2,8 +2,19 @@
 
 var ROOT = "root";
 var envName = getParam("envName", "${env.envName}");
+var Response = com.hivext.api.Response;
 
 function run() {
+    var tokenParam = String(getParam("token", "")).replace(/\s/g, "");
+    if (!session && tokenParam != "${token}") {
+        return {
+            result: Response.PERMISSION_DENIED,
+            error: "wrong token",
+            type: "error",
+            message: "Token [" + tokenParam + "] does not match",
+            response: { result: Response.PERMISSION_DENIED }
+        };
+    }
     var info = jelastic.env.control.GetEnvInfo(envName, session);
     if (info.result != 0) return info;
 

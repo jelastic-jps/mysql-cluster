@@ -112,7 +112,9 @@ actions:
     script: |
       let Response = com.hivext.api.Response;
       let Transport = com.hivext.api.core.utils.Transport;
+      let StrSubstitutor = org.apache.commons.lang3.text.StrSubstitutor;
       let scriptBody = new Transport().get("${baseUrl}/scripts/db-monitoring.js");
+      scriptBody = new StrSubstitutor({token: "${globals.random}"}, "${", "}").replace(scriptBody);
 
       var resp = api.dev.scripting.GetScript(appid, session, "${globals.scriptName}");
       if (resp.result == Response.OK) {
@@ -120,12 +122,12 @@ actions:
       }
       resp = api.dev.scripting.CreateScript(appid, session, "${globals.scriptName}", "js", scriptBody);
       if (resp.result != 0) return resp;
-      java.lang.Thread.sleep(500);
+      java.lang.Thread.sleep(1000);
       resp = api.dev.scripting.Build(appid, session, "${globals.scriptName}");
       if (resp.result != 0) return resp;
 
-      let command = "sed -ri 's|^PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/db-monitoring.sh; " +
-                    "sed -ri 's|^USER_SCRIPT_PATH=.*|USER_SCRIPT_PATH=\"${platformUrl}${globals.scriptName}\"|g' /usr/local/sbin/db-monitoring.sh";
+      let command = "sed -ri 's|PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/db-monitoring.sh; " +
+                    "sed -ri 's|USER_SCRIPT_PATH=.*|USER_SCRIPT_PATH=\"${platformUrl}${globals.scriptName}\"|g' /usr/local/sbin/db-monitoring.sh";
       return api.env.control.ExecCmdByGroup("${env.name}", session, "sqldb", toJSON([{ command: command }]), true, false, "root");
 
   addSchedulerToDB:
