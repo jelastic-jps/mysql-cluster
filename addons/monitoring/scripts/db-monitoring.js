@@ -11,7 +11,7 @@ function run() {
     var userEmail = user.email;
     var userSession = session;
     // pass USER_SESSION and USER_EMAIL as positional arguments
-    var command = "/usr/local/sbin/db-monitoring.sh '" + userSession + "' '" + userEmail + "'";
+    var command = "/usr/local/sbin/db-monitoring.sh sendEmail '" + userSession + "' '" + userEmail + "'";
 
     for (var i = 0, n = nodes.length; i < n; i++) {
         node = nodes[i];

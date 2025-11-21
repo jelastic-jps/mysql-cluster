@@ -1,4 +1,6 @@
 #!/bin/bash
+PLATFORM_DOMAIN="{PLATFORM_DOMAIN}"
+USER_SCRIPT_PATH="{URL}"
 USER_SESSION="$1"
 USER_EMAIL="$2"
 THRESHOLD=70
@@ -26,6 +28,14 @@ function sendEmailNotification(){
     else
         echo $(date) ${HOSTNAME_SHORT} "Email notification is not sent because this functionality is unavailable for current platform." | tee -a $MONITORING_LOG
     fi
+}
+
+# trigger sendevent for onCustomNodeEvent flow
+function trigger_sendevent(){
+    echo $(date) ${HOSTNAME_SHORT} "Trigger onCustomNodeEvent 'executeScript'" | tee -a $MONITORING_LOG
+    curl -fsSL --max-time 10 --retry 1 --retry-max-time 15 \
+      --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" \
+      --data-urlencode "params={'name': 'executeScript'}" >/dev/null 2>&1 || true
 }
 
 function get_last_status(){
@@ -61,10 +71,9 @@ EOF
 
 function send_on_status_change(){
     local new_status="$1"
-    local body="$2"
     local last_status="$(get_last_status)"
     if [ "$new_status" != "$last_status" ]; then
-        sendEmailNotification "$body"
+        trigger_sendevent
         set_status "$new_status"
     else
         echo "$(date) ${HOSTNAME_SHORT} Status '$new_status' unchanged, skipping email" >> $MONITORING_LOG
@@ -167,18 +176,88 @@ EOF
     fi
 }
 
-echo "Monitoring started at $(date)" >> $MONITORING_LOG
-check_credentials
-collect_metrics
-METRICS_BODY=$(build_metrics_body "usage alert")
+# cron management: add scheduler and adjust interval
+function addScheduler(){
+    local cron_file="/etc/cron.d/db-monitoring"
+    echo "*/10 * * * * root /usr/local/sbin/db-monitoring.sh check >> /var/log/db-monitoring.log 2>&1" > "$cron_file"
+    chmod 0644 "$cron_file"
+    chown root:root "$cron_file" 2>/dev/null || true
+    (systemctl reload crond || service cron reload || service crond reload || true) >/dev/null 2>&1
+    echo "$(date) ${HOSTNAME_SHORT} Cron installed at $cron_file" >> $MONITORING_LOG
+}
 
-if [ "$USAGE_PCT" -ge "$THRESHOLD" ]; then
-    send_on_status_change "THRESHOLD" "$METRICS_BODY"
-else
-    OK_BODY=$(build_metrics_body "back to normal")
-    send_on_status_change "OK" "$OK_BODY"
-fi
+function setSchedulerTimeout(){
+    local INTERVAL=10
+    for i in "$@"; do
+        case $i in
+            --interval=*)
+            INTERVAL=${i#*=}
+            shift
+            shift
+            ;;
+            *)
+            ;;
+        esac
+    done
+    local cron_file="/etc/cron.d/db-monitoring"
+    [ -f "$cron_file" ] || addScheduler
+    # update minutes field to */INTERVAL
+    sed -ri "s|^[#]*[^ ]+ +\* +\* +\* +\* +root .*$|*/${INTERVAL} * * * * root /usr/local/sbin/db-monitoring.sh check >> /var/log/db-monitoring.log 2>\&1|" "$cron_file"
+    (systemctl reload crond || service cron reload || service crond reload || true) >/dev/null 2>&1
+    echo "$(date) ${HOSTNAME_SHORT} Cron interval set to every ${INTERVAL} minutes" >> $MONITORING_LOG
+}
 
-echo "Monitoring finished at $(date)" >> $MONITORING_LOG
+function check(){
+    echo "Monitoring started at $(date)" >> $MONITORING_LOG
+    check_credentials
+    collect_metrics
+    if [ "$USAGE_PCT" -ge "$THRESHOLD" ]; then
+        send_on_status_change "THRESHOLD"
+    else
+        send_on_status_change "OK"
+    fi
+    echo "Monitoring finished at $(date)" >> $MONITORING_LOG
+}
+
+function sendEmail(){
+    local USER_SESSION="$1"
+    local USER_EMAIL="$2"
+    echo "Send email started at $(date)" >> $MONITORING_LOG
+    check_credentials
+    collect_metrics
+    local status="$(get_last_status)"
+    local title="usage alert"
+    if [ "$status" = "OK" ]; then
+        title="back to normal"
+    fi
+    local BODY="$(build_metrics_body "$title")"
+    sendEmailNotification "$BODY"
+    echo "Send email finished at $(date)" >> $MONITORING_LOG
+}
+
+case "$1" in
+    addScheduler)
+        addScheduler
+        ;;
+    setSchedulerTimeout)
+        shift
+        setSchedulerTimeout "$@"
+        ;;
+    check)
+        check
+        ;;
+    sendEmail)
+        shift
+        sendEmail "$@"
+        ;;
+    *)
+        # Backward compatibility: if called with two args, send email directly
+        if [ -n "$USER_SESSION" ] && [ -n "$USER_EMAIL" ]; then
+            sendEmail "$USER_SESSION" "$USER_EMAIL"
+        else
+            echo "Usage: $0 {addScheduler|setSchedulerTimeout --interval=N|check|sendEmail USER_SESSION USER_EMAIL}" | tee -a $MONITORING_LOG
+        fi
+        ;;
+esac
 
 exit 0
