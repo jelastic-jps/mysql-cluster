@@ -127,16 +127,15 @@ EOF
         echo "Monitoring finished at $(date)" >> $MONITORING_LOG
         exit 1
     fi
-    STATUS="$STATUS_RAW"
 
-    UPTIME=$(echo "$STATUS" | grep -o 'Uptime: [0-9]\+' | awk '{print $2}')
-    THREADS=$(echo "$STATUS" | grep -o 'Threads: [0-9]\+' | awk '{print $2}')
-    QUESTIONS=$(echo "$STATUS" | grep -o 'Questions: [0-9]\+' | awk '{print $2}')
-    SLOW=$(echo "$STATUS" | grep -o 'Slow queries: [0-9]\+' | awk '{print $3}')
-    OPENS=$(echo "$STATUS" | grep -o 'Opens: [0-9]\+' | awk '{print $2}')
-    FLUSHES=$(echo "$STATUS" | grep -o 'Flush tables: [0-9]\+' | awk '{print $3}')
-    OPEN_TABLES=$(echo "$STATUS" | grep -o 'Open tables: [0-9]\+' | awk '{print $3}')
-    QPS=$(echo "$STATUS" | sed -n 's/.*Queries per second avg: \([0-9.]*\).*/\1/p')
+    UPTIME=$(echo "$STATUS_RAW" | grep -o 'Uptime: [0-9]\+' | awk '{print $2}')
+    THREADS=$(echo "$STATUS_RAW" | grep -o 'Threads: [0-9]\+' | awk '{print $2}')
+    QUESTIONS=$(echo "$STATUS_RAW" | grep -o 'Questions: [0-9]\+' | awk '{print $2}')
+    SLOW=$(echo "$STATUS_RAW" | grep -o 'Slow queries: [0-9]\+' | awk '{print $3}')
+    OPENS=$(echo "$STATUS_RAW" | grep -o 'Opens: [0-9]\+' | awk '{print $2}')
+    FLUSHES=$(echo "$STATUS_RAW" | grep -o 'Flush tables: [0-9]\+' | awk '{print $3}')
+    OPEN_TABLES=$(echo "$STATUS_RAW" | grep -o 'Open tables: [0-9]\+' | awk '{print $3}')
+    QPS=$(echo "$STATUS_RAW" | sed -n 's/.*Queries per second avg: \([0-9.]*\).*/\1/p')
 
     UPTIME_HUMAN="$UPTIME"
     if [[ "$UPTIME" =~ ^[0-9]+$ ]]; then
