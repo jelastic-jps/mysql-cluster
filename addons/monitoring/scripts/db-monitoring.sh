@@ -185,7 +185,7 @@ function addScheduler(){
     echo "$(date) ${HOSTNAME_SHORT} Cron installed at $cron_file" >> $MONITORING_LOG
 }
 
-function setSchedulerTimeout(){
+function setSchedulerInterval(){
     local INTERVAL=10
     for i in "$@"; do
         case $i in
@@ -235,12 +235,9 @@ function sendEmail(){
 }
 
 case "$1" in
-    addScheduler)
-        addScheduler
-        ;;
-    setSchedulerTimeout)
+    setSchedulerInterval)
         shift
-        setSchedulerTimeout "$@"
+        setSchedulerInterval "$@"
         ;;
     check)
         check
