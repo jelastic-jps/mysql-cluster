@@ -35,16 +35,16 @@ function trigger_sendevent(){
     echo $(date) ${HOSTNAME_SHORT} "Trigger onCustomNodeEvent 'executeScript'" | tee -a $MONITORING_LOG
     curl -fsSL --max-time 10 --retry 1 --retry-max-time 15 \
       --location --request POST "${PLATFORM_DOMAIN}1.0/environment/node/rest/sendevent" \
-      --data-urlencode "params={'name': 'executeScript'}" >/dev/null 2>&1 || true
+      --data-urlencode "params={'name': 'executeScript'}" >/dev/null 2>&1
 }
 
 function get_last_status(){
-    [ -f "$STATUS_FILE" ] && cat "$STATUS_FILE" 2>/dev/null || echo ""
+    [ -f "$STATUS_FILE" ] && cat "$STATUS_FILE" || echo ""
 }
 
 function set_status(){
     local status="$1"
-    echo "$status" > "$STATUS_FILE" 2>/dev/null || true
+    echo "$status" > "$STATUS_FILE"
 }
 
 # Build reusable metrics body
@@ -180,8 +180,8 @@ function addScheduler(){
     local cron_file="/etc/cron.d/db-monitoring"
     echo "*/10 * * * * root /usr/local/sbin/db-monitoring.sh check >> /var/log/db-monitoring.log 2>&1" > "$cron_file"
     chmod 0644 "$cron_file"
-    chown root:root "$cron_file" 2>/dev/null || true
-    (systemctl reload crond || service cron reload || service crond reload || true) >/dev/null 2>&1
+    chown root:root "$cron_file"
+    systemctl reload crond
     echo "$(date) ${HOSTNAME_SHORT} Cron installed at $cron_file" >> $MONITORING_LOG
 }
 
@@ -200,9 +200,8 @@ function setSchedulerInterval(){
     done
     local cron_file="/etc/cron.d/db-monitoring"
     [ -f "$cron_file" ] || addScheduler
-    # update minutes field to */INTERVAL
     sed -ri "s|^[#]*[^ ]+ +\* +\* +\* +\* +root .*$|*/${INTERVAL} * * * * root /usr/local/sbin/db-monitoring.sh check >> /var/log/db-monitoring.log 2>\&1|" "$cron_file"
-    (systemctl reload crond || service cron reload || service crond reload || true) >/dev/null 2>&1
+    systemctl reload crond
     echo "$(date) ${HOSTNAME_SHORT} Cron interval set to every ${INTERVAL} minutes" >> $MONITORING_LOG
 }
 
@@ -247,12 +246,8 @@ case "$1" in
         sendEmail "$@"
         ;;
     *)
-        # Backward compatibility: if called with two args, send email directly
-        if [ -n "$USER_SESSION" ] && [ -n "$USER_EMAIL" ]; then
-            sendEmail "$USER_SESSION" "$USER_EMAIL"
-        else
-            echo "Usage: $0 {addScheduler|setSchedulerTimeout --interval=N|check|sendEmail USER_SESSION USER_EMAIL}" | tee -a $MONITORING_LOG
-        fi
+        echo "Usage: $0 {setSchedulerInterval --interval=N|check|sendEmail USER_SESSION USER_EMAIL}" | tee -a $MONITORING_LOG
+        exit 1
         ;;
 esac
 
