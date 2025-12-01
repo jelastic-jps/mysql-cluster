@@ -91,19 +91,14 @@ onBeforeDelete:
 
 onCustomNodeEvent [name:executeScript]:
   script: |
-    let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}&session=" + session;
+    let URL = "${platformUrl}${globals.scriptName}?appid=" + appid + "&token=${globals.random}&envName=${env.name}&uid=${user.uid}&session=" + session + "&userEmail=${user.email}";
     let Transport = com.hivext.api.core.utils.Transport;
-    let resp = new Transport().get(URL);
-    try {
+      resp = new Transport().get(URL);
       resp = JSON.parse(resp);
-    } catch (e) {
-      return { result: 1704, error: "Invalid response from script endpoint", response: resp };
-    }
-    if (resp.response && resp.response != 0) {
-      return new Transport().get("${platformUrl}/1.0/environment/jerror/rest/jerror?appid=" + appid + "&actionname=db-monitoring&callparameters=" + URL + "&email=${user.email}&errorcode=4121&errormessage=" + encodeURIComponent(resp.response.message) + "&priority=high");
-      return resp.response;
-    }
-    return { result: 0 }
+      if (resp.response && resp.response != 0) {
+        return new Transport().get("${platformUrl}/1.0/environment/jerror/rest/jerror?appid=" + appid + "&actionname=db-monitoring&callparameters=" + URL + "&email=${user.email}&errorcode=4121&errormessage=" + encodeURIComponent(resp.response.message) + "&priority=high");
+      }
+      return { result: 0 }
 
 actions:
   
