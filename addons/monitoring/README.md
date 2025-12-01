@@ -11,18 +11,19 @@ The add-on tracks database connection usage and sends an email alert when usage 
   - `MAXCONN_ERROR` — failed to get `max_connections` (`SHOW VARIABLES`).
 - Metrics from `mysqladmin status` and `SHOW VARIABLES LIKE 'max_connections'`.
 - Configurable schedule (Quartz cron) via add-on settings: 5, 10, 15, 20, 30, 40, 50 minutes.
-- Runs on all `sqldb` nodes.
+- Runs on all `sqldb` nodes (group execution).
 
 ## How it works
 1. Install:
-   - Downloads `/usr/local/sbin/db-monitoring.sh` to `sqldb` nodes.
-   - Creates a script runner `db-monitoring.js` that executes the shell script on all `sqldb` nodes, passing `USER_SESSION` and `USER_EMAIL`.
-   - Creates a scheduler task with Quartz trigger `cron:0 0/N * ? * * *` (N is the chosen interval).
+   - Downloads `/usr/local/sbin/db-monitoring.sh` to all `sqldb` nodes.
+   - Creates a runner script `db-monitoring.js` that invokes the shell script on the `sqldb` group, passing `USER_SESSION` and `USER_EMAIL`.
+   - Installs a system cron job `/etc/cron.d/db-monitoring` and sets interval via `setSchedulerInterval` (every `N` minutes): `*/N * * * * root /usr/local/sbin/db-monitoring.sh check`.
 2. Runtime:
    - Reads DB credentials from `/.jelenv`: `REPLICA_USER`/`REPLICA_PSWD`.
    - Collects metrics: `mysqladmin status` and `SHOW VARIABLES LIKE 'max_connections'`.
    - Calculates usage and determines state (OK/THRESHOLD/ERROR).
    - Stores the last state in `/var/tmp/db-monitoring.status` and sends email only on state changes.
+   - On state change, triggers platform event `onCustomNodeEvent [name:executeScript]`, which calls the runner script and sends the email.
    - Logs to `/var/log/db-monitoring.log`.
 
 ## Email content and metrics
@@ -41,4 +42,10 @@ Emails are HTML with bold labels and `<br/>` line breaks. Included:
 ## Logs and artifacts
 - Monitoring log: `/var/log/db-monitoring.log` (start/finish, email send, errors).
 - State file: `/var/tmp/db-monitoring.status` (last state to suppress duplicate emails).
+- Cron: `/etc/cron.d/db-monitoring` (interval managed by the add-on).
+
+## Configuration
+- Monitoring interval is controlled in the add-on settings (5/10/15/20/30/40/50 minutes).
+- The add-on updates cron with `setSchedulerInterval` to `*/N * * * *`.
+- Email sending uses platform messaging API and requires valid `session` and `userEmail`, which are passed by the add-on during event handling.
 

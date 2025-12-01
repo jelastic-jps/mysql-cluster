@@ -80,8 +80,7 @@ onInstall:
   - getReplicaUser
   - downloadScripts
   - createScript
-  - addSchedulerToDB
-  - setSchedulerTimeout
+  - setSchedulerInterval
 
 onUninstall:
   - cleanupMonitoring
@@ -129,12 +128,8 @@ actions:
       let command = "sed -ri 's|PLATFORM_DOMAIN=.*|PLATFORM_DOMAIN=\"${platformUrl}\"|g' /usr/local/sbin/db-monitoring.sh; " +
                     "sed -ri 's|USER_SCRIPT_PATH=.*|USER_SCRIPT_PATH=\"${platformUrl}${globals.scriptName}\"|g' /usr/local/sbin/db-monitoring.sh";
       return api.env.control.ExecCmdByGroup("${env.name}", session, "sqldb", toJSON([{ command: command }]), true, false, "root");
-
-  addSchedulerToDB:
-    - cmd[sqldb]: bash /usr/local/sbin/db-monitoring.sh addScheduler
-      user: root
   
-  setSchedulerTimeout:
+  setSchedulerInterval:
     - cmd[sqldb]: bash /usr/local/sbin/db-monitoring.sh setSchedulerTimeout --interval=${settings.monitorInterval}
       user: root
 
@@ -156,4 +151,4 @@ actions:
       return { result: 0 };
 
   configure:
-    - setSchedulerTimeout
+    - setSchedulerInterval

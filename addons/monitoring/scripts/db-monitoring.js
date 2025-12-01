@@ -25,7 +25,6 @@ function run() {
     api.marketplace.console.WriteLog(appid, session, "DB Monitoring: sendEmail started for env " + envName);
     var command = "/usr/local/sbin/db-monitoring.sh sendEmail '" + userSession + "' '" + userEmail + "'";
 
-    // execute on all SQL DB nodes, analogous to promote-master.js style
     resp = api.env.control.ExecCmdByGroup(envName, session, SQLDB, toJSON([{ command: command }]), true, false, ROOT);
     if (resp.result != 0) return resp;
 
