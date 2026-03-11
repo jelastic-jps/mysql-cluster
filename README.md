@@ -39,7 +39,7 @@ The package includes Highly Available [*ProxySQL Load Balancer*](http://www.prox
 
 To get started, you can click the **Deploy to Cloud** button, specify your email address within the widget, choose one of the [Virtuozzo Public Cloud Providers](https://www.virtuozzo.com/application-platform-partners/) providers and press **Install**.
 
-[![Deploy](images/deploy-to-cloud.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/manifest.yml)
+[![Deploy](images/deploy-to-cloud.png)](https://jelastic.com/install-application/?manifest=https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@v3.0.0/manifest.yml)
 
 If you are already registered at Virtuozzo Application Platform(VAP), you can deploy this cluster from Marketplace.
 
@@ -60,6 +60,5 @@ After successful installation, you’ll receive a number of default emails based
 ## MySQL/MariaDB/Percona Managed Hosting Business
 
 To start offering this solution to your customers please follow to [Auto-Scalable Clusters for Managed Cloud Business](https://www.virtuozzo.com/application-platform/?referer=jelastic)
-
 
 

@@ -1,5 +1,5 @@
 {
-    "jps": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/addons/auto-clustering/auto-cluster.jps",
+    "jps": "https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0/addons/auto-clustering/auto-cluster.jps",
     "defaultState": false,
     "skipOnEnvInstall": true,
     "nodeGroupData": {
@@ -20,15 +20,15 @@
             "values": [{
                    "value": "master",
                    "caption": "Primary-Primary",
-                   "tooltip": "<h3>Primary-Primary with Scalable Secondaries</h3>Pre-configured replication with two interconnected primary databases. While scaling horizontally, the cluster is extended with additional secondary nodes. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mariadb/tip-cluster-mm.svg?sanitize=true'>"
+                   "tooltip": "<h3>Primary-Primary with Scalable Secondaries</h3>Pre-configured replication with two interconnected primary databases. While scaling horizontally, the cluster is extended with additional secondary nodes. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://cdn.jsdelivr.net/gh/jelastic/icons@master/mariadb/tip-cluster-mm.svg?sanitize=true'>"
                }, {
                    "value": "slave",
                    "caption": "Primary-Secondary",
-                   "tooltip": "<h3>Primary-Secondary with Scalable Secondaries</h3>Pre-configured replication with one primary and one secondary database. While scaling horizontally, the cluster is extended with additional secondaries. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mariadb/tip-cluster-ms.svg?sanitize=true'>"
+                   "tooltip": "<h3>Primary-Secondary with Scalable Secondaries</h3>Pre-configured replication with one primary and one secondary database. While scaling horizontally, the cluster is extended with additional secondaries. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://cdn.jsdelivr.net/gh/jelastic/icons@master/mariadb/tip-cluster-ms.svg?sanitize=true'>"
                }, {
                    "value": "galera",
                    "caption": "Galera",
-                   "tooltip": "<h3>Galera Cluster</h3>Multi-Primary synchronous replication which is performed at a transaction commit time. All servers can accept write transactions even if being issued concurrently. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://raw.githubusercontent.com/jelastic/icons/master/mariadb/tip-cluster-gl.svg?sanitize=true'>"
+                   "tooltip": "<h3>Galera Cluster</h3>Multi-Primary synchronous replication which is performed at a transaction commit time. All servers can accept write transactions even if being issued concurrently. <a href='https://jelastic.com/blog/mysql-mariadb-database-auto-clustering-cloud-hosting/'>Learn More</a> <img width='314' height='280' src='https://cdn.jsdelivr.net/gh/jelastic/icons@master/mariadb/tip-cluster-gl.svg?sanitize=true'>"
                }
            ],
            "tipParams": {"dismissDelay":600000,"anchor":"l","hideOnOver":false,"showDelay":0,"text":"LT_Tip_Cluster_MariaDB_%(value)"}

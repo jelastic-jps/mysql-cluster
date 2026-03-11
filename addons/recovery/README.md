@@ -65,4 +65,3 @@ To perform automatic recovery, provide database user credentials either you got 
 In case the automatic recovery failed and you go with manual recovery flow, first take a look at **/var/log/db_recovery.log** file to get better understanding of a nature of detected error. Then you can try to do recovery yourself using our guide following the link in the **Information** window and official documentation from [MySQL](https://mysql.org)/[MariaDB](https://mariadb.org) teams. 
 
 
-

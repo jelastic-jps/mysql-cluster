@@ -15,11 +15,11 @@ ___
 
 ___
 
-### Cluster Orchestrator Panel
+### ProxySQL Web Panel
 
-**Admin panel URL:** [http://proxy.${env.domain}](http://proxy.${env.domain}/)  
-**Username:** admin  
-**Password:** ${globals.ORCH_PASS}  
+**Web panel URL:** [https://node${nodes.proxy.master.id}-${env.domain}:${globals.proxy_web_port}](https://node${nodes.proxy.master.id}-${env.domain}:${globals.proxy_web_port})  
+**Username:** ${globals.ADMIN_USER}  
+**Password:** ${globals.ADMIN_PASS}  
 
 ___
 
@@ -31,4 +31,3 @@ The instructions below can help you with the further managing your database clus
 - [Monitor the statistics](https://docs.jelastic.com/view-app-statistics) & [view log files](https://docs.jelastic.com/view-log-files)
 - [Access environment via SSH](https://docs.jelastic.com/ssh-access)
 - [DNS Hostnames for Direct Connection](https://jelastic.com/blog/dns-hostnames-for-direct-container-connection-at-jelastic-paas/)
-

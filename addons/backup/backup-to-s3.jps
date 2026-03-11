@@ -14,7 +14,7 @@
             "postgres", "postgres8", "postgres9"
         ]
     },
-    "baseUrl": "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/backup",
+    "baseUrl": "https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/backup",
     "logo": "/images/backup-to-s3.png",
     "globals": {
         "backup_path": "/data/backups"

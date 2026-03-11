@@ -2,19 +2,26 @@ type: update
 id: mysql-master-slave-replication-cluster
 name: MySQL/MariaDB/Percona Primary-Secondary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-68949
+globals:
+  cdnUrl: https://cdn.jsdelivr.net/gh
+  DB_USER: ${settings.db_user:user-[fn.random]}
+  DB_PASS: ${settings.db_pass:[fn.password(20)]}
 
-targetNodes: none
+success:
+  text: /texts/phpmyadmin-credentials.md
+
+permanent: true
+
+targetNodes: 
+  nodeGroup: ${settings.nodeGroup:sqldb}
+
 nodeGroupAlias:
   ${settings.nodeGroup}: sqldb
 
 mixins:
   - /scripts/common.yml
-
-globals:
-  DB_USER: ${settings.db_user:user-[fn.random]}
-  DB_PASS: ${settings.db_pass:[fn.password(20)]}
 
 onBeforeMigrate:
   - isEnvRunning
@@ -42,14 +49,14 @@ onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     settings:
-      nodeGroup: ${settings.nodeGroup}
+      nodeGroup: ${settings.nodeGroup:sqldb}
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     envName: ${event.response.env.envName}
     settings:
-      nodeGroup: ${settings.nodeGroup}
+      nodeGroup: ${settings.nodeGroup:sqldb}
 
 onInstall:
   - getReplicaUser
@@ -75,6 +82,11 @@ actions:
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/master.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/master.cnf
         sed -i "/auto-increment/d" /etc/mysql/conf.d/master.cnf
+        
+    - applyVersionConfiguration:
+        id: ${this}
+        conf_file: /etc/mysql/conf.d/master.cnf
+    
     - if (!${settings.clone:false}):
       - setupUsers:
           id: ${this}
@@ -85,6 +97,11 @@ actions:
         wget ${baseUrl}/configs/slave.cnf -O /etc/mysql/conf.d/slave.cnf &>> /var/log/run.log
         sed -i "s/server-id.*/server-id = ${this}/" /etc/mysql/conf.d/slave.cnf
         sed -i "s/report_host.*/report_host = node${this}/" /etc/mysql/conf.d/slave.cnf
+        
+    - applyVersionConfiguration:
+        id: ${this}
+        conf_file: /etc/mysql/conf.d/slave.cnf
+    
     - setNodeDisplayName[${this}]: Secondary
 
   addSlave:
@@ -95,6 +112,6 @@ actions:
       - setGlobals:
           PRIMARY_IP: ${nodes.sqldb.master.address}
     - cmd[${this}]: |-
-        curl --silent https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
+        curl --silent https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@master/addons/recovery/scripts/db-recovery.sh > /tmp/db-recovery.sh; 
         bash /tmp/db-recovery.sh --scenario restore_secondary_from_primary --donor-ip ${globals.PRIMARY_IP};
       user: root

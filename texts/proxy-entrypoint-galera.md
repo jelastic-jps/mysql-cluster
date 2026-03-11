@@ -1,15 +1,14 @@
-
 ### Entry Point for Connecting to Database Cluster  
 
 **Hostname:** proxy.${env.domain}:3306  
 **Username:** ${globals.DB_USER}  
 **Password:** ${globals.DB_PASS}  
 
-Keep in mind the Galera cluster database shall comply with the requirements:  
-  1. **InnoDB Storage Engine**.  Data must be stored in the [InnoDB](https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html) transactional storage engine.  
-  2. **Primary Keys**.  Every table that is to be replicated must have an explicit primary key, either a single or a multi-column index.  
-  
-**Note**: Ignoring these requirements will result in replication failure.
+Be aware of the **[Galera Cluster - Known Limitations](https://mariadb.com/kb/en/mariadb-galera-cluster-known-limitations/)**. 
+Ignoring these requirements may result in replication failure.
+
+**Note**: When restoring the Galera Cluster from the database dump, no extra actions are required if working via the **Backup/Restore** add-on provided with this solution. However, in the case of <u>manual restoration</u>, it is essential to consider the limitations of the MariaDB Galera Cluster. We recommend following our dedicated "**[Galera Manual Restore from Dump](https://cdn.jsdelivr.net/gh/jelastic-jps/database-backup-addon@main/docs/ManualRestoreFromDump.md)**" guide.
+
 ___
 
 ### PHP MyAdmin at Master Node
@@ -20,11 +19,11 @@ ___
 
 ___
 
-### Cluster Orchestrator Panel
+### ProxySQL Web Panel
 
-**Admin panel URL:** [http://proxy.${env.domain}](http://proxy.${env.domain}/)  
-**Username:** admin  
-**Password:** ${globals.ORCH_PASS}  
+**Web panel URL:** [https://node${nodes.proxy.master.id}-${env.domain}:${globals.proxy_web_port}](https://node${nodes.proxy.master.id}-${env.domain}:${globals.proxy_web_port})  
+**Username:** ${globals.ADMIN_USER}  
+**Password:** ${globals.ADMIN_PASS}  
 
 ___
 

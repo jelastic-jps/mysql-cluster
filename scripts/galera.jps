@@ -1,22 +1,31 @@
-jpsType: update
+type: update
 id: mysql-galera-cluster
 name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
 
-baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-68949
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
+
+globals:
+  cdnUrl: https://cdn.jsdelivr.net/gh
+  DB_USER: ${settings.db_user:user-[fn.random]}
+  DB_PASS: ${settings.db_pass:[fn.password(20)]}
+  CLUSTER_NAME: cluster-${fn.random}
+  GALERA_CONF: /etc/mysql/conf.d/galera.cnf
+  CUSTOM_CONF: ${settings.custom_conf}
+
+success:
+  text: /texts/phpmyadmin-credentials-galera.md
+
+permanent: true
+
+targetNodes: 
+  nodeGroup: ${settings.nodeGroup:sqldb}
 
 nodeGroupAlias:
-  "${targetNodes.nodeGroup}": sqldb
+  ${settings.nodeGroup}: sqldb
 
 mixins:
   - /scripts/common.yml
-
-globals:
-  DB_USER: ${settings.db_user:user-[fn.random]}
-  DB_PASS: ${settings.db_pass:[fn.password(20)]}
-  CLUSTER_NAME: galera-${env.name}
-  GALERA_CONF: /etc/mysql/conf.d/galera.cnf
-  CUSTOM_CONF: ${settings.custom_conf}
 
 onAfterScaleOut[sqldb]:
   - forEach(event.response.nodes):
@@ -53,13 +62,16 @@ onBeforeClone:
 onAfterMigrate:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
-    nodeGroup: sqldb
+    settings:
+      nodeGroup: ${settings.nodeGroup:sqldb}
+
 
 onAfterClone:
   - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
   - install: ${response.jps}
     envName: ${event.response.env.envName}
-    nodeGroup: sqldb
+    settings:
+      nodeGroup: ${settings.nodeGroup:sqldb}
 
 onBeforeStop:
   - forEach(i:nodes.sqldb):
@@ -70,11 +82,12 @@ onAfterStart:
       cmd[proxy]: sudo service proxysql restart
 
 onBeforeRestartNode[sqldb]:
-  - forEach(i:nodes.sqldb):
-      cmd [${@i.id}]: sudo jem service restart
-  - stopEvent:
-      type: success
-      message: Galera cluster successfully restarted
+  if ('${event.params.nodeGroup}' == '${targetNodes.nodeGroup}'):
+    - forEach(i:nodes.sqldb):
+        cmd [${@i.id}]: sudo jem service restart
+    - stopEvent:
+        type: success
+        message: Galera cluster successfully restarted
 
 onAfterSetCloudletCount[sqldb]:
   - forEach(i:nodes.sqldb):
@@ -149,6 +162,7 @@ actions:
         [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
         [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
+        [ -f /var/lib/mysql/tc.log ] && rm -f /var/lib/mysql/tc.log
         pgrep mysql 1>/dev/null && pkill -9 mysql;
         pgrep mariadb 1>/dev/null && pkill -9 mariadb || true
       user: root

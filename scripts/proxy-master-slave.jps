@@ -3,7 +3,17 @@ id: mysql-proxy-master-slave-cluster
 name: MySQL/MariaDB/Percona Database Cluster with ProxySQL
 description: ProxySQL Load Balancer Entry Point
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
+baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
+
+globals:
+  cdnUrl: https://cdn.jsdelivr.net/gh
+  DB_USER: ${settings.db_user}
+  DB_PASS: ${settings.db_pass}
+  SCHEME: ${settings.scheme}
+  ORCH_PASS: ${fn.password(10)}
+  ADMIN_USER: admin-${fn.random}
+  ADMIN_PASS: ${fn.password(10)}
+  MAX_REPL_LAG: 20
 
 success: /texts/proxy-entrypoint.md
 
@@ -14,25 +24,6 @@ nodeGroupAlias:
 mixins:
   - /scripts/common.yml
   - /scripts/proxy-common.yml
-
-globals:
-  DB_USER: ${settings.db_user}
-  DB_PASS: ${settings.db_pass}
-  SCHEME: ${settings.scheme}
-  ORCH_PASS: ${fn.password(10)}
-  ADMIN_USER: admin-${fn.random}
-  ADMIN_PASS: ${fn.password(10)}
-  MAX_REPL_LAG: 20
-  
-onBeforeRemoveNode[proxy]:
-  stopEvent:
-    type: warning
-    message: Scaling is not supported for ProxySQL.
-
-onBeforeAddNode[proxy]:
-  stopEvent:
-    type: warning
-    message: Scaling is not supported for ProxySQL.
 
 onAfterScaleOut[sqldb]:
   forEach(event.response.nodes):
@@ -66,11 +57,13 @@ onAfterMigrate:
       db_pass: "${globals.DB_PASS}"
 
 onInstall:
+  - setReplicaCommands
   - getReplicaUser
   - resetProxyNodes
-  - setupOrchestrator
+  - disableOrchestrator
   - setupProxySQLCluster
   - setupProxySQL
+  - setupProxySQLGUI
   - if ('${globals.SCHEME}'.toLowerCase() == 'master'):
     - setGlobals:
         MAX_REPL_LAG: 0
@@ -113,9 +106,6 @@ actions:
     cmd [proxy]: |-
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_servers (hostgroup_id, hostname, port) VALUES (10, 'node${this.id}', 3306);"
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-      MYSQL_PWD=${globals.DB_PASS} mysql -u${globals.DB_USER} -hnode${this.id} -e "show slave hosts;"
-      /usr/local/orchestrator/orchestrator -c discover -i node${this.id} cli;
-    user: root
   
   addSlave:
     cmd[proxy]: |-
@@ -127,7 +117,6 @@ actions:
     cmd[proxy]: |-
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "DELETE FROM mysql_servers WHERE hostname = 'node${this.id}';"
       MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin  -e "LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;"
-      MYSQL_PWD=${globals.ORCH_PASS} mysql -h 127.0.0.1 -P3360 -uadmin  -e "DELETE FROM orchestrator.database_instance where hostname='node${this.id}-${env.domain}';"
       
   getMastersIDs:
     - script: |
