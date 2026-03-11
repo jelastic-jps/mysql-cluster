@@ -11,9 +11,6 @@ globals:
   CLUSTER_NAME: xtradb-${env.name}
   CLUSTER_CONF: /etc/mysql/conf.d/galera.cnf
 
-success:
-  text: /texts/phpmyadmin-credentials.md
-
 permanent: true
 
 targetNodes: 
@@ -98,6 +95,7 @@ onInstall:
     path: /var/lib/mysql/grastate.dat
     keyword: grastate.dat
     isDir: false
+  - sendSuccess
 
 actions:
   initialSetup:

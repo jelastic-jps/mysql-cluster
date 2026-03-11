@@ -13,9 +13,6 @@ globals:
   GALERA_CONF: /etc/mysql/conf.d/galera.cnf
   CUSTOM_CONF: ${settings.custom_conf}
 
-success:
-  text: /texts/phpmyadmin-credentials-galera.md
-
 permanent: true
 
 targetNodes: 
@@ -115,6 +112,7 @@ onInstall:
     path: /var/lib/mysql/grastate.dat
     keyword: grastate.dat
     isDir: false
+  - sendSuccess
         
 actions:
   initialSetup:
