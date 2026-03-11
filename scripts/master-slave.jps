@@ -72,6 +72,7 @@ onInstall:
   - forEach(i:nodes.sqldb):
     - if (!${@i.ismaster}):
         addSlave: ${@i.id}
+  - sendSuccess
 
 actions:
 

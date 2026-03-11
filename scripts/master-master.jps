@@ -65,6 +65,7 @@ onInstall:
   - getMasterNodes
   - setupMasters
   - addAllSlaves
+  - sendSuccess
 
 actions:
 

@@ -115,6 +115,7 @@ onInstall:
     path: /var/lib/mysql/grastate.dat
     keyword: grastate.dat
     isDir: false
+  - sendSuccess
         
 actions:
   initialSetup:

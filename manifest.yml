@@ -124,4 +124,7 @@ nodes:
     ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
     SCHEME: "${settings.scheme}"
     IS_PROXYSQL: "${settings.is_proxysql}"
-success: You should receive a bunch of emails ;). There are credentials and endpoints.
+
+success:
+  text: You should receive a bunch of emails ;). There are credentials and endpoints.
+  email: false
