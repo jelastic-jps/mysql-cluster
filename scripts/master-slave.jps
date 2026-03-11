@@ -9,9 +9,6 @@ globals:
   DB_USER: ${settings.db_user:user-[fn.random]}
   DB_PASS: ${settings.db_pass:[fn.password(20)]}
 
-success:
-  text: /texts/phpmyadmin-credentials.md
-
 permanent: true
 
 targetNodes: 
