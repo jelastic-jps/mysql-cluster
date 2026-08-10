@@ -3,7 +3,7 @@ id: mysql-galera-cluster
 name: MariaDB Galera Cluster
 description: MariaDB Galera Auto Clustering
 
-baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64366-new
 
 globals:
   cdnUrl: https://cdn.jsdelivr.net/gh
@@ -86,11 +86,7 @@ onBeforeRestartNode[sqldb]:
         type: success
         message: Galera cluster successfully restarted
 
-onAfterSetCloudletCount[sqldb]:
-  - forEach(i:nodes.sqldb):
-    - wsrepSlaveThreads:
-        id: ${@i.id}
-    - cmd [${@i.id}]: sudo jem service restart;
+onBeforeSetCloudletCount[sqldb]: setCloudletsCountSequential
 
 onInstall:
   - getReplicaUser

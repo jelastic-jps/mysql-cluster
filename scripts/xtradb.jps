@@ -2,7 +2,7 @@ jpsType: update
 id: percona-xtradb-cluster
 name: Percona XtraDB Cluster
 description: Percona XtraDB Auto Clustering
-baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64366-new
 
 globals:
   cdnUrl: https://cdn.jsdelivr.net/gh
@@ -69,11 +69,7 @@ onBeforeRestartNode[sqldb]:
         type: success
         message: Galera cluster successfully restarted
 
-onAfterSetCloudletCount[sqldb]:
-  - forEach(i:nodes.sqldb):
-    - wsrepSlaveThreads:
-        id: ${@i.id}
-    - cmd [${@i.id}]: sudo jem service restart;
+onBeforeSetCloudletCount[sqldb]: setCloudletsCountSequential
 
 onInstall:
   - getReplicaUser

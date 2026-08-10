@@ -1,5 +1,5 @@
 {
-    "jps": "https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0/addons/auto-clustering/auto-cluster.jps",
+    "jps": "https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64366-new/addons/auto-clustering/auto-cluster.jps",
     "defaultState": false,
     "skipOnEnvInstall": true,
     "nodeGroupData": {

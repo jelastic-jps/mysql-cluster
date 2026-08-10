@@ -1,15 +1,19 @@
-#!/bin/bash -e
+#!/bin/bash
 
-MYSQL=`which mysql`
 GALERA_CONF="/etc/mysql/conf.d/galera.cnf"
+RETRIES=40
+INTERVAL=3
+WAIT=false
 
 ARGUMENT_LIST=(
     "db-user"
     "db-password"
+    "retries"
+    "interval"
 )
 
 opts=$(getopt \
-    --longoptions "$(printf "%s:," "${ARGUMENT_LIST[@]}")" \
+    --longoptions "$(printf "%s:," "${ARGUMENT_LIST[@]}")wait" \
     --name "$(basename "$0")" \
     --options "" \
     -- "$@"
@@ -26,38 +30,62 @@ while [[ $# -gt 0 ]]; do
             dbPassword=$2
             shift 2
             ;;
+        --wait)
+            WAIT=true
+            shift
+            ;;
+        --retries)
+            RETRIES=$2
+            shift 2
+            ;;
+        --interval)
+            INTERVAL=$2
+            shift 2
+            ;;
         *)
-        break
-        ;;
+            break
+            ;;
     esac
 done
 
-if [[ ! -f ${GALERA_CONF} ]]
-then
-  echo "The Galera configuration file /etc/mysql/conf.d/galera.cnf was not found.";
-  exit 1;
+if [[ ! -f ${GALERA_CONF} ]]; then
+    echo "The Galera configuration file ${GALERA_CONF} was not found."
+    exit 0
 fi
 
-message="Galera cluster size is wrong"
-unset mysqlCheck;
-mysqlCheck=$(mysqladmin -u${dbUser} -p${dbPassword} ping)
-if [[ "${mysqlCheck}" == "mysqld is alive" ]]
-then
-    retries=20;
-    while [ $retries -gt 0 ];
-        do
-            currentClusterSize=$(mysql -u${dbUser} -p${dbPassword} -Nse "show global status like 'wsrep_cluster_size';" | awk '{print $NF}')
-            nodesCountInConf=$(grep wsrep_cluster_address ${GALERA_CONF} |awk -F '/' '{print $3}'| tr ',' ' ' | wc -w)
-            if [[  "${currentClusterSize}" == "${nodesCountInConf}" ]]
-            then
-                message="true";
-                break;
-            else
-                sleep 3;
-                let retries=${retries}-1;
-            fi
-        done
-else
-        message="Cannot connect to the mysql service.";
+if [[ -z "${dbUser}" || -z "${dbPassword}" ]]; then
+    echo "Database credentials are not set."
+    exit 0
 fi
-echo $message
+
+node_ready() {
+    local ready state status
+
+    mysqladmin -u"${dbUser}" -p"${dbPassword}" ping 2>/dev/null | grep -q "mysqld is alive" || return 1
+
+    ready=$(mysql -u"${dbUser}" -p"${dbPassword}" -Nse "SHOW STATUS LIKE 'wsrep_ready';" 2>/dev/null | awk '{print $2}')
+    state=$(mysql -u"${dbUser}" -p"${dbPassword}" -Nse "SHOW STATUS LIKE 'wsrep_local_state';" 2>/dev/null | awk '{print $2}')
+    status=$(mysql -u"${dbUser}" -p"${dbPassword}" -Nse "SHOW STATUS LIKE 'wsrep_cluster_status';" 2>/dev/null | awk '{print $2}')
+
+    [[ "${ready}" == "ON" && "${state}" == "4" && "${status}" == "Primary" ]]
+}
+
+if ${WAIT}; then
+    while [[ ${RETRIES} -gt 0 ]]; do
+        if node_ready; then
+            echo "true"
+            exit 0
+        fi
+        sleep "${INTERVAL}"
+        RETRIES=$((RETRIES - 1))
+    done
+    echo "Galera node is not ready after restart (wsrep_ready/local_state/cluster_status)"
+else
+    if node_ready; then
+        echo "true"
+    else
+        echo "Galera node is not ready"
+    fi
+fi
+
+exit 0

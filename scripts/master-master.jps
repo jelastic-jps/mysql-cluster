@@ -3,7 +3,7 @@ id: mysql-master-master-replication-cluster
 name: MySQL/MariaDB/Percona Primary-Primary Replication Database Cluster
 description: 'DB Auto Clustering: 1 x Primary + N x Secondary'
 
-baseUrl: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
+baseUrl: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64366-new
 
 globals:
   cdnUrl: https://cdn.jsdelivr.net/gh
