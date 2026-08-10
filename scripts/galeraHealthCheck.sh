@@ -1,8 +1,8 @@
 #!/bin/bash
 
 GALERA_CONF="/etc/mysql/conf.d/galera.cnf"
-RETRIES=40
-INTERVAL=3
+RETRIES=20
+INTERVAL=5
 WAIT=false
 
 ARGUMENT_LIST=(
@@ -58,6 +58,21 @@ if [[ -z "${dbUser}" || -z "${dbPassword}" ]]; then
     exit 0
 fi
 
+invalid_db_credentials() {
+    local err
+
+    err=$(mysql -u"${dbUser}" -p"${dbPassword}" -Nse "SELECT 1;" 2>&1) || true
+    [[ "${err}" == "1" ]] && return 1
+    grep -qiE 'access denied|error 1045' <<< "${err}"
+}
+
+assert_db_credentials() {
+    if invalid_db_credentials; then
+        echo "Database credentials are invalid."
+        exit 0
+    fi
+}
+
 node_ready() {
     local ready state status
 
@@ -70,8 +85,13 @@ node_ready() {
     [[ "${ready}" == "ON" && "${state}" == "4" && "${status}" == "Primary" ]]
 }
 
+assert_db_credentials
+
 if ${WAIT}; then
     while [[ ${RETRIES} -gt 0 ]]; do
+        if mysqladmin -u"${dbUser}" -p"${dbPassword}" ping 2>/dev/null | grep -q "mysqld is alive"; then
+            assert_db_credentials
+        fi
         if node_ready; then
             echo "true"
             exit 0
@@ -79,12 +99,12 @@ if ${WAIT}; then
         sleep "${INTERVAL}"
         RETRIES=$((RETRIES - 1))
     done
-    echo "Galera node is not ready after restart (wsrep_ready/local_state/cluster_status)"
+    echo "Galera node is not part of the cluster after restart (wsrep_ready/local_state/cluster_status)"
 else
     if node_ready; then
         echo "true"
     else
-        echo "Galera node is not ready"
+        echo "Galera node is not part of the cluster"
     fi
 fi
 
