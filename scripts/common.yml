@@ -75,7 +75,7 @@ actions:
 
   setupAdminUser:
     - cmd[${this.id}]: |-
-        wget ${globals.db_cluster_path}/scripts/setupUser.sh -O ~/setupUser.sh;
+        wget --tries=10 -qO ~/setupUser.sh ${globals.db_cluster_path}/scripts/setupUser.sh;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
 
@@ -88,7 +88,7 @@ actions:
         pswd: ${globals.REPLICA_PSWD}
 
   addCustomConfig:
-    - cmd[sqldb]: wget ${globals.db_cluster_path}/configs/custom.cnf -O ${globals.customConfigFile};
+    - cmd[sqldb]: wget --tries=10 -qO ${globals.customConfigFile} ${globals.db_cluster_path}/configs/custom.cnf;
     - env.file.AddFavorite:
       nodeGroup: sqldb
       path: ${globals.customConfigFile}
@@ -145,7 +145,7 @@ actions:
   installGaleraHealthCheck:
     - cmd[${this.id}]: |-
         if [[ ! -x /usr/local/sbin/galeraHealthCheck.sh ]]; then
-          wget ${globals.db_cluster_path}/scripts/galeraHealthCheck.sh -O /usr/local/sbin/galeraHealthCheck.sh
+          wget --tries=10 -qO /usr/local/sbin/galeraHealthCheck.sh ${globals.db_cluster_path}/scripts/galeraHealthCheck.sh
           chmod +x /usr/local/sbin/galeraHealthCheck.sh
         fi
       user: root
