@@ -1,5 +1,5 @@
 globals:
-  db_cluster_path: https://cdn.jsdelivr.net/gh/jelastic-jps/mysql-cluster@3.0.0
+  db_cluster_path: https://raw.githubusercontent.com/sych74/mysql-cluster/JE-64366-new
   customConfigFile: /etc/mysql/conf.d/my_custom.cnf
   
 actions:
@@ -75,7 +75,7 @@ actions:
 
   setupAdminUser:
     - cmd[${this.id}]: |-
-        wget ${globals.db_cluster_path}/scripts/setupUser.sh -O ~/setupUser.sh;
+        wget --tries=10 -qO ~/setupUser.sh ${globals.db_cluster_path}/scripts/setupUser.sh;
         bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log;
       user: root
 
@@ -88,7 +88,7 @@ actions:
         pswd: ${globals.REPLICA_PSWD}
 
   addCustomConfig:
-    - cmd[sqldb]: wget ${globals.db_cluster_path}/configs/custom.cnf -O ${globals.customConfigFile};
+    - cmd[sqldb]: wget --tries=10 -qO ${globals.customConfigFile} ${globals.db_cluster_path}/configs/custom.cnf;
     - env.file.AddFavorite:
       nodeGroup: sqldb
       path: ${globals.customConfigFile}
@@ -141,3 +141,48 @@ actions:
           type: success
           text: /texts/phpmyadmin-credentials.md?_r=${fn.random}
           email: /texts/phpmyadmin-credentials.md?_r=${fn.random}
+
+  installGaleraHealthCheck:
+    - cmd[${this.id}]: |-
+        if [[ ! -x /usr/local/sbin/galeraHealthCheck.sh ]]; then
+          wget --tries=10 -qO /usr/local/sbin/galeraHealthCheck.sh ${globals.db_cluster_path}/scripts/galeraHealthCheck.sh
+          chmod +x /usr/local/sbin/galeraHealthCheck.sh
+        fi
+      user: root
+
+  galeraNodeReadyCheck:
+    - cmd[${this.id}]: bash /usr/local/sbin/galeraHealthCheck.sh --db-user ${globals.REPLICA_USER} --db-password ${globals.REPLICA_PSWD} ${this.wait:}
+
+  setCloudletsCountSequential:
+    - if (!${event.params.isInternal:false}):
+        - getReplicaUser
+        - forEach(i:nodes.sqldb):
+            - installGaleraHealthCheck:
+                id: ${@i.id}
+        - forEach(i:nodes.sqldb):
+            - galeraNodeReadyCheck:
+                id: ${@i.id}
+            - if ("${response.out}" != "true"):
+                - stopEvent:
+                    type: warning
+                    message: "Node ${@i.id}: ${response.out}. Cloudlet change aborted."
+        - forEach(i:nodes.sqldb):
+            - api: environment.control.SetCloudletsCountById
+              nodeId: ${@i.id}
+              envName: ${env.envName}
+              flexibleCloudlets: ${event.params.flexibleCloudlets}
+              fixedCloudlets: ${event.params.fixedCloudlets}
+              isInternal: true
+            - wsrepSlaveThreads:
+                id: ${@i.id}
+            - cmd[${@i.id}]: sudo jem service restart
+            - galeraNodeReadyCheck:
+                id: ${@i.id}
+                wait: "--wait"
+            - if ("${response.out}" != "true"):
+                - stopEvent:
+                    type: warning
+                    message: "Node ${@i.id}: ${response.out}. Cloudlet change aborted."
+        - stopEvent:
+            type: success
+            message: Cloudlets successfully applied.
