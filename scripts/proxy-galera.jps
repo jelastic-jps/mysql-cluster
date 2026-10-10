@@ -71,7 +71,7 @@ actions:
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_USER}' WHERE variable_name='mysql-monitor_username';"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "UPDATE global_variables SET variable_value='${globals.REPLICA_PSWD}' WHERE variable_name='mysql-monitor_password';"
-        wget ${baseUrl}/scripts/proxysql_galera_checker.sh -O /var/lib/proxysql/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
+        wget --tries=10 -qO /var/lib/proxysql/proxysql_galera_checker.sh ${baseUrl}/scripts/proxysql_galera_checker.sh &>> /var/log/run.log; chmod +x /var/lib/proxysql/proxysql_galera_checker.sh
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO scheduler(id,interval_ms,filename,arg1,arg2,arg3,arg4) VALUES
         (1,'2000','/var/lib/proxysql/proxysql_galera_checker.sh','127.0.0.1','6032','2', '/var/lib/proxysql/proxysql_galera_checker.log');"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "LOAD SCHEDULER TO RUNTIME; SAVE SCHEDULER TO DISK;"
