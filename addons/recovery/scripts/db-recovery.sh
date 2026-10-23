@@ -192,7 +192,13 @@ fi
 mysqlCommandExec(){
   command="$1"
   server_ip=$2
-  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL -u${MYSQL_USER} -h${server_ip} -e "$command"
+  local args=()
+  # \G is a client command. MySQL 9.4+ does not process it unless --commands is enabled.
+  if [[ "$command" == *'\G'* ]]; then
+    args+=(-E)
+    command="${command//\\G/}"
+  fi
+  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL "${args[@]}" -u${MYSQL_USER} -h${server_ip} -e "$command"
 }
 
 mysqlNoTablesCommandExec(){
@@ -263,7 +269,7 @@ checkAuth(){
   for host in ${cluster_hosts}
   do
     check_count=$((check_count+1))
-    stderr=$( { mysqlCommandExec "exit" "${host}"; } 2>&1 ) && return ${SUCCESS_CODE}
+    stderr=$( { mysqlCommandExec "SELECT 1" "${host}"; } 2>&1 ) && return ${SUCCESS_CODE}
     [[ x"$(echo ${stderr}| grep 'ERROR 1045')" != x ]] && { echo ${stderr}; return ${FAIL_CODE}; }
   done
 
@@ -568,7 +574,7 @@ checkMysqlOperable(){
   local node=$1
   for retry in $(seq 1 10)
   do
-    stderr=$( { mysqlCommandExec "exit" "${node}"; } 2>&1 ) && return ${SUCCESS_CODE}
+    stderr=$( { mysqlCommandExec "SELECT 1" "${node}"; } 2>&1 ) && return ${SUCCESS_CODE}
     log "[Node: ${node}]: [Retry: ${retry}/10] MySQL service operable check...waiting"
     sleep 5
   done
