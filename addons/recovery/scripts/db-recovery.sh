@@ -192,13 +192,13 @@ fi
 mysqlCommandExec(){
   command="$1"
   server_ip=$2
-  local vertical=()
+  local args=()
   # \G is a client command. MySQL 9.4+ does not process it unless --commands is enabled.
   if [[ "$command" == *'\G'* ]]; then
-    vertical=(-E)
+    args+=(-E)
     command="${command//\\G/}"
   fi
-  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL "${vertical[@]}" -u${MYSQL_USER} -h${server_ip} -e "$command"
+  MYSQL_PWD=${MYSQL_PASSWORD} $MYSQL "${args[@]}" -u${MYSQL_USER} -h${server_ip} -e "$command"
 }
 
 mysqlNoTablesCommandExec(){
