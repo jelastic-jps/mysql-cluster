@@ -352,7 +352,7 @@ function promoteNewPrimary() {
             };
         }
 
-        return this.cmdByGroup("touch " + TMP_FILE, PROXY, 3, true);
+        return this.cmdByGroup("touch " + TMP_FILE, PROXY, 3);
     };
 
     this.setContainerVar = function() {
@@ -579,7 +579,7 @@ function promoteNewPrimary() {
 
             if (this.getAddOnType()) {
                 let command = "bash /usr/local/sbin/jcm.sh newPrimary --server=node" + this.getNewPrimaryNode().id;
-                return this.cmdByGroup(command, PROXY, 20, true);
+                return this.cmdByGroup(command, PROXY, 20);
             }
         }
 
