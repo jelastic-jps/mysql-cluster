@@ -161,7 +161,8 @@ actions:
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
         [ -f /var/lib/mysql/tc.log ] && rm -f /var/lib/mysql/tc.log
         pgrep mysql 1>/dev/null && pkill -9 mysql;
-        pgrep mariadb 1>/dev/null && pkill -9 mariadb || true
+        pgrep mariadb 1>/dev/null && pkill -9 mariadb || true;
+        rm -f /var/lib/mysql/mysql.sock
       user: root
  
   restartNodesInOrder:
